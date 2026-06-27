@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <title>TAJIMA 生産管理</title>
 <style>
-:root{--bg1:#dbeafe;--bg2:#bfdbfe;--blue:#2563eb;--blue-dark:#1e3a8a;--text:#0f172a;--soft:#eff6ff;--white:#fff;--danger:#ef4444;--warn:#f59e0b}
+:root{--bg1:#dbeafe;--bg2:#bfdbfe;--blue:#2563eb;--blue-dark:#1e3a8a;--text:#0f172a;--soft:#eff6ff;--white:#fff;--danger:#ef4444}
 *{box-sizing:border-box}
 body{margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;padding:14px}
 .wrap{max-width:760px;margin:0 auto;padding-bottom:90px}
@@ -59,21 +59,19 @@ button{border:none;border-radius:12px;padding:10px 12px;font-weight:800;font-siz
     <button class="btn-light" onclick="resetCurrentMonth()">この月を初期化</button>
     <button class="btn-light" onclick="exportBackup()">バックアップ出力</button>
   </div>
-  <div class="note">
-    Web版 v0.8。入力後、下の「保存」ボタンを押すと保存されます。
-  </div>
+  <div class="note">Web版 v0.9。基本品番は KMX / KRF / KMG / KRA / #81、数量はすべて0から開始します。</div>
 </div>
-
-<div class="save-bar">
-  <div class="save-inner">
-    <button class="btn-save" onclick="manualSave()">保存</button>
-    <div id="bottomState">変更なし</div>
-  </div>
-</div>
+<div class="save-bar"><div class="save-inner"><button class="btn-save" onclick="manualSave()">保存</button><div id="bottomState">変更なし</div></div></div>
 
 <script>
-const APP_KEY="tajima-production-v08";
-const DEFAULT_PRODUCTS=[{name:"A-100",order:1000,finished:850,step21:80,step1:50},{name:"B-200",order:800,finished:830,step21:20,step1:10},{name:"C-300",order:500,finished:430,step21:40,step1:30},{name:"D-400",order:600,finished:600,step21:0,step1:0},{name:"E-500",order:900,finished:500,step21:200,step1:120}];
+const APP_KEY="tajima-production-v09";
+const DEFAULT_PRODUCTS=[
+  {name:"KMX",order:0,finished:0,step21:0,step1:0},
+  {name:"KRF",order:0,finished:0,step21:0,step1:0},
+  {name:"KMG",order:0,finished:0,step21:0,step1:0},
+  {name:"KRA",order:0,finished:0,step21:0,step1:0},
+  {name:"#81",order:0,finished:0,step21:0,step1:0}
+];
 let currentYear=2026,currentMonth=6,data=[],dirty=false;
 function monthKey(y=currentYear,m=currentMonth){return `${APP_KEY}-${y}-${String(m).padStart(2,"0")}`}
 function clone(x){return JSON.parse(JSON.stringify(x))}
