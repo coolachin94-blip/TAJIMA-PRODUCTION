@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="manifest.json">
+<title>TAJIMA 生産管理</title>
+<style>
+:root{--bg1:#dbeafe;--bg2:#bfdbfe;--blue:#2563eb;--blue-dark:#1e3a8a;--text:#0f172a;--soft:#eff6ff;--white:#fff;--danger:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;padding:14px}
+.wrap{max-width:760px;margin:0 auto;padding-bottom:40px}
+.header{background:var(--white);border:3px solid var(--blue);border-radius:22px;padding:16px;box-shadow:0 10px 24px rgba(37,99,235,.18);margin-bottom:14px}
+h1{margin:0;text-align:center;color:var(--blue-dark);font-size:26px}
+.month-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;flex-wrap:wrap}
+.month-title{font-weight:800;color:var(--blue-dark);min-width:110px;text-align:center}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.sum-card{background:var(--white);border:2px solid var(--blue);border-radius:16px;padding:10px;text-align:center}
+.sum-card span{display:block;font-size:12px;color:#475569}.sum-card b{font-size:20px;color:var(--blue-dark)}
+.product-card{background:var(--white);border:3px solid var(--blue);border-radius:20px;padding:14px;box-shadow:0 8px 20px rgba(37,99,235,.15);margin-bottom:14px}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.name-input{flex:1;font-size:22px;font-weight:800;color:var(--blue-dark);border:none;outline:none;background:var(--soft);border-radius:12px;padding:8px 10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{background:var(--soft);border-radius:14px;padding:10px}.label{font-size:12px;color:#475569;margin-bottom:4px}
+.num-input{width:100%;border:none;outline:none;background:transparent;font-size:22px;color:var(--text);font-weight:700}
+.remaining{margin-top:12px;padding:12px;border-radius:14px;background:#dbeafe;color:var(--blue-dark);font-size:22px;font-weight:900;text-align:center}
+.remaining.short{background:#fee2e2;color:#991b1b}.remaining.over{background:#e0f2fe}
+button{border:none;border-radius:12px;padding:10px 12px;font-weight:800;font-size:14px;cursor:pointer}
+.btn-blue{background:var(--blue);color:white}.btn-light{background:var(--soft);color:var(--blue-dark);border:2px solid var(--blue)}.btn-danger{background:var(--danger);color:white}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.note{font-size:12px;color:#334155;text-align:center;line-height:1.6;margin-top:14px}.save-state{text-align:center;font-size:12px;color:#475569;margin-top:8px}
+@media(max-width:430px){body{padding:10px}h1{font-size:22px}.sum-card{padding:8px 4px}.sum-card b{font-size:16px}.num-input{font-size:20px}.name-input{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>TAJIMA 生産管理</h1>
+    <div class="month-row">
+      <button class="btn-light" onclick="changeMonth(-1)">◀ 前月</button>
+      <div class="month-title" id="monthTitle"></div>
+      <button class="btn-light" onclick="changeMonth(1)">翌月 ▶</button>
+    </div>
+    <div class="save-state" id="saveState">保存済み</div>
+  </div>
+  <div class="summary">
+    <div class="sum-card"><span>総受注数</span><b id="totalOrder">0</b></div>
+    <div class="sum-card"><span>総完成品</span><b id="totalFinished">0</b></div>
+    <div class="sum-card"><span>総残り</span><b id="totalRemaining">0</b></div>
+  </div>
+  <div id="cards"></div>
+  <div class="controls">
+    <button class="btn-blue" onclick="addProduct()">＋ 品番追加</button>
+    <button class="btn-light" onclick="copyPreviousMonth()">前月品番コピー</button>
+    <button class="btn-light" onclick="resetCurrentMonth()">この月を初期化</button>
+    <button class="btn-light" onclick="exportBackup()">バックアップ出力</button>
+  </div>
+  <div class="note">
+    Web版 v0.7。現在は端末内保存です。次にSupabaseを接続すると全員で同じデータを共有できます。
+  </div>
+</div>
+<script>
+const APP_KEY="tajima-production-v07";
+const DEFAULT_PRODUCTS=[{name:"A-100",order:1000,finished:850,step21:80,step1:50},{name:"B-200",order:800,finished:830,step21:20,step1:10},{name:"C-300",order:500,finished:430,step21:40,step1:30},{name:"D-400",order:600,finished:600,step21:0,step1:0},{name:"E-500",order:900,finished:500,step21:200,step1:120}];
+let currentYear=2026,currentMonth=6,data=[];
+function monthKey(y=currentYear,m=currentMonth){return `${APP_KEY}-${y}-${String(m).padStart(2,"0")}`}
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function loadMonth(){const s=localStorage.getItem(monthKey());data=s?JSON.parse(s):clone(DEFAULT_PRODUCTS);save();draw()}
+function save(){localStorage.setItem(monthKey(),JSON.stringify(data));const e=document.getElementById("saveState");if(e)e.textContent="保存済み"}
+function editing(){document.getElementById("saveState").textContent="入力中..."}
+function num(v){const n=Number(v);return Number.isFinite(n)?n:0}
+function esc(s){return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
+function updateMonthTitle(){document.getElementById("monthTitle").textContent=`${currentYear}年${currentMonth}月`}
+function changeMonth(d){currentMonth+=d;if(currentMonth<=0){currentMonth=12;currentYear--}if(currentMonth>=13){currentMonth=1;currentYear++}loadMonth()}
+function updateTotals(){let o=0,f=0;data.forEach((p,i)=>{o+=num(p.order);f+=num(p.finished);const r=num(p.order)-num(p.finished),e=document.getElementById("rem-"+i);if(e){e.textContent=r<0?`超過 ${Math.abs(r)}`:`残り ${r}`;e.className="remaining "+(r<0?"over":"short")}});totalOrder.textContent=o;totalFinished.textContent=f;totalRemaining.textContent=o-f}
+function updateName(i,v){data[i].name=v;editing()} function finishName(){save()}
+function updateNumber(i,k,v){data[i][k]=num(v);editing();updateTotals();save()}
+function addProduct(){data.push({name:"新規品番",order:0,finished:0,step21:0,step1:0});save();draw()}
+function deleteProduct(i){const n=data[i]?.name||"この品番";if(!confirm(`${n} を削除しますか？`))return;data.splice(i,1);save();draw()}
+function resetCurrentMonth(){if(!confirm(`${currentYear}年${currentMonth}月を初期化しますか？`))return;localStorage.removeItem(monthKey());loadMonth()}
+function copyPreviousMonth(){let y=currentYear,m=currentMonth-1;if(m<=0){m=12;y--}const prev=localStorage.getItem(`${APP_KEY}-${y}-${String(m).padStart(2,"0")}`);if(!prev){alert("前月データがありません。");return}data=JSON.parse(prev).map(p=>({name:p.name,order:0,finished:0,step21:0,step1:0}));save();draw()}
+function exportBackup(){const b=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`TAJIMA-${currentYear}-${String(currentMonth).padStart(2,"0")}.json`;a.click()}
+function draw(){updateMonthTitle();cards.innerHTML="";data.forEach((p,i)=>{const r=num(p.order)-num(p.finished),c=document.createElement("div");c.className="product-card";c.innerHTML=`<div class="card-top"><input class="name-input" value="${esc(p.name)}" oninput="updateName(${i},this.value)" onblur="finishName()"><button class="btn-danger" onclick="deleteProduct(${i})">削除</button></div><div class="grid"><div class="field"><div class="label">受注数</div><input class="num-input" inputmode="numeric" value="${p.order}" oninput="updateNumber(${i},'order',this.value)"></div><div class="field"><div class="label">完成品</div><input class="num-input" inputmode="numeric" value="${p.finished}" oninput="updateNumber(${i},'finished',this.value)"></div><div class="field"><div class="label">工程2-1</div><input class="num-input" inputmode="numeric" value="${p.step21}" oninput="updateNumber(${i},'step21',this.value)"></div><div class="field"><div class="label">工程1</div><input class="num-input" inputmode="numeric" value="${p.step1}" oninput="updateNumber(${i},'step1',this.value)"></div></div><div id="rem-${i}" class="remaining ${r<0?'over':'short'}">${r<0?`超過 ${Math.abs(r)}`:`残り ${r}`}</div>`;cards.appendChild(c)});updateTotals()}
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+loadMonth();
+</script>
+</body></html>
