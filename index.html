@@ -1,11 +1,11 @@
 <!doctype html><html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8"><link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v6.5</title>
+<title>TAJIMA 生産管理 v6.6</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#dbeafe,#eff6ff);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;color:var(--text);padding:12px}
-.pull-indicator{position:fixed;left:50%;top:8px;transform:translateX(-50%) translateY(-80px);background:#fff;border:2px solid var(--blue);color:var(--deep);border-radius:999px;padding:10px 16px;font-size:14px;font-weight:900;box-shadow:0 8px 24px rgba(37,99,235,.2);z-index:50;transition:transform .18s ease}.pull-indicator.show{transform:translateX(-50%) translateY(0)}.app{max-width:820px;margin:auto;padding-bottom:130px}.header{background:#fff;border:2px solid var(--blue);border-radius:22px;padding:16px;box-shadow:0 10px 24px rgba(37,99,235,.16);position:sticky;top:8px;z-index:5}
+.pull-indicator{position:fixed;left:50%;top:8px;transform:translateX(-50%) translateY(-80px);background:#fff;border:2px solid var(--blue);color:var(--deep);border-radius:999px;padding:10px 16px;font-size:14px;font-weight:900;box-shadow:0 8px 24px rgba(37,99,235,.2);z-index:50;transition:transform .18s ease}.pull-indicator.show{transform:translateX(-50%) translateY(0)}.update-banner{position:fixed;left:10px;right:10px;bottom:105px;background:#fff;border:2px solid var(--green);border-radius:18px;padding:12px;z-index:60;box-shadow:0 10px 30px rgba(22,163,74,.25);display:none;text-align:center}.update-banner b{color:var(--deep)}.update-banner button{margin-top:8px;width:100%}.app{max-width:820px;margin:auto;padding-bottom:130px}.header{background:#fff;border:2px solid var(--blue);border-radius:22px;padding:16px;box-shadow:0 10px 24px rgba(37,99,235,.16);position:sticky;top:8px;z-index:5}
 h1{margin:0;text-align:center;color:var(--deep);font-size:25px}.month-row{display:flex;justify-content:center;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}.month-title{font-weight:900;color:var(--deep);min-width:120px;text-align:center;font-size:18px}
 .state,.mode{text-align:center;font-size:13px;font-weight:900;margin-top:8px}.saved{color:var(--green)}.dirty{color:#b45309}.error{color:#b91c1c}.mode{color:#64748b}.mode.admin{color:var(--blue)}
 .dashboard{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:14px 0}.dash{background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px;text-align:center;box-shadow:0 4px 14px rgba(37,99,235,.08)}.dash span{display:block;font-size:12px;color:#64748b}.dash b{font-size:24px;color:var(--deep)}
@@ -23,6 +23,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}.day,.dow{padding:9px 0;text-align:center;border-radius:12px}.dow{font-size:12px;color:#64748b;font-weight:900}.day{background:var(--soft);border:1px solid var(--line);font-weight:900}.day.has{background:var(--yellow);border:3px solid #f59e0b}.day.empty{background:transparent;border:0}.schedule-list{margin-top:12px}.schedule-item{border:1px solid var(--line);background:#f8fbff;border-radius:14px;padding:10px;margin:8px 0}.schedule-date{font-weight:900;color:var(--deep)}
 @media(max-width:430px){body{padding:9px}h1{font-size:22px}.dashboard,.summary{grid-template-columns:repeat(2,1fr)}.sum{padding:8px 4px}.sum b{font-size:17px}.name{font-size:22px}.num{font-size:23px}.bottom-inner{grid-template-columns:1fr}.bottom-text{grid-column:1}.save,#adminBtn,#settingBtn{width:100%}.custom-row{grid-template-columns:1fr 82px auto}}
 </style></head><body>
+<div id="updateBanner" class="update-banner"><b>新しいバージョンがあります</b><br><span id="updateText">更新できます</span><button class="btn-green" onclick="applyAppUpdate()">更新する</button></div>
 <div id="pullIndicator" class="pull-indicator">↓ 更新</div>
 <div class="app">
 <div class="header"><h1>TAJIMA 生産管理</h1><div class="month-row"><button class="btn-light" onclick="changeMonth(-1)">◀ 前月</button><div id="monthTitle" class="month-title"></div><button class="btn-light" onclick="changeMonth(1)">翌月 ▶</button></div><div id="saveState" class="state saved">接続準備中</div><div id="modeState" class="mode">閲覧モード</div></div>
@@ -31,7 +32,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 <div class="toolbar"><input id="searchBox" class="search" placeholder="品番検索" oninput="draw()"><button class="btn-blue admin-only hidden" onclick="addProduct()">＋ 品番追加</button><button class="btn-light admin-only hidden" onclick="copyPreviousMonth()">前月品番コピー</button></div>
 <div id="cards"></div>
 <div class="actions"><button class="btn-light admin-only hidden" onclick="resetCurrentMonth()">この月を初期化</button><button class="btn-light" onclick="loadAll()">再読み込み</button></div>
-<div class="note">v6.5 更新操作版。画面上部から下に引っ張ると最新データを再読み込みできます。</div>
+<div class="note">v6.6 安定更新版。新バージョン確認と製品別項目テンプレートを強化しました。</div>
 </div>
 <div class="bottom"><div class="bottom-inner"><button id="adminBtn" class="btn-blue" onclick="toggleAdmin()">管理者モード</button><button id="settingBtn" class="btn-light" onclick="openSettings()">設定</button><button id="saveBtn" class="save hidden" onclick="manualSave()">保存</button><div id="bottomText" class="bottom-text">準備中</div></div></div>
 
@@ -45,6 +46,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD=CONFIG.DEFAULT_ADMIN_PASSWORD||"0000";
+const APP_VERSION="6.6";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -96,7 +98,7 @@ async function apiDeleteMonth(m){const r=await fetch(`${API}?month=eq.${encodeUR
 async function seedMonth(){const rows=[];for(const name of ["KMX","KRF","KMG","KRA","#81"]){rows.push({...await defaultProductRow(name),month:monthStr()})}await apiInsert(rows);return await apiGet(monthStr())}
 function normalize(p){return {...p,shipped_qty:p.shipped_qty||0,custom_fields:Array.isArray(p.custom_fields)?p.custom_fields:JSON.parse(JSON.stringify(STANDARD_FIELDS))}}
 async function loadAll(){await loadMonth();await loadMonthSchedules()}
-async function loadMonth(){monthLabel();if(!checkConfig()){setState("APIキー未設定","error");setBottom("config.jsにPublishable keyを入れてください");draw();return}loading=true;setState("読み込み中...");try{let rows=await apiGet(monthStr());if(rows.length===0)rows=await seedMonth();data=rows.map(normalize);dirty=false;draw();updateLastSavedTime();setSaved()}catch(e){console.error(e);setState("接続エラー","error");alert("Supabase接続エラー: "+e.message)}finally{loading=false}}
+async function loadMonth(){monthLabel();if(!checkConfig()){setState("APIキー未設定","error");setBottom("config.jsにPublishable keyを入れてください");draw();return}loading=true;setState("読み込み中...");try{let rows=await apiGet(monthStr());if(rows.length===0)rows=await seedMonth();data=[];for(const row of rows){data.push(await normalizeByTemplate(row))}dirty=false;draw();updateLastSavedTime();setSaved()}catch(e){console.error(e);setState("接続エラー","error");alert("Supabase接続エラー: "+e.message)}finally{loading=false}}
 function formatTime(v){if(!v)return "未保存";try{const d=new Date(v);return d.toLocaleString("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});}catch(e){return "未保存"}}
 function updateLastSavedTime(){let latest=null;data.forEach(p=>{if(p.updated_at){const t=new Date(p.updated_at);if(!latest||t>latest)latest=t}});lastSavedTime.textContent=latest?formatTime(latest):"未保存";}
 function scheduleAutoSave(){clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>{autoSaveNow()},2500)}
@@ -115,29 +117,17 @@ async function addCustomField(i){
   if(!name)return;
   const choice=prompt(`「${product}」に「${name}」を追加します。
 1 = この月だけ追加
-2 = 今後の月も追加`, "1");
+2 = この月以降すべての月に追加`, "1");
   if(choice===null)return;
   if(choice!=="1" && choice!=="2"){alert("1 または 2 を入力してください");return}
   data[i].custom_fields=data[i].custom_fields||[];
+  if(data[i].custom_fields.some(x=>x.name===name)){alert("同じ項目名がすでにあります");return}
   data[i].custom_fields.push({name:name,value:0});
   setDirty();
   if(choice==="2"){
     try{
       await templateUpsert(product, data[i].custom_fields);
-      alert("今後の月にも反映する標準項目として保存しました");
-    }catch(e){alert("テンプレート保存エラー: "+e.message)}
-  }
-  draw();
-}
-async function addStandardFields(i){
-  if(!isAdmin)return;
-  data[i].custom_fields=data[i].custom_fields||[];
-  for(const f of STANDARD_FIELDS){if(!data[i].custom_fields.some(x=>x.name===f.name)){data[i].custom_fields.push({...f})}}
-  setDirty();
-  if(confirm("この月以降すべての月にも標準項目を反映しますか？")){
-    try{
-      await templateUpsert(data[i].product_name,data[i].custom_fields);
-      await applyTemplateToFutureMonths(data[i].product_name,data[i].custom_fields);
+      await applyTemplateToFutureMonths(product, data[i].custom_fields);
       alert("この月以降すべての月に反映しました");
       await loadAll();
       return;
@@ -151,7 +141,7 @@ async function deleteCustomField(i,j){
   const fieldName=data[i].custom_fields[j].name;
   const choice=prompt(`「${product}」から「${fieldName}」を削除します。
 1 = この月だけ削除
-2 = 今後の月も削除`, "1");
+2 = この月以降すべての月から削除`, "1");
   if(choice===null)return;
   if(choice!=="1" && choice!=="2"){alert("1 または 2 を入力してください");return}
   data[i].custom_fields.splice(j,1);
@@ -159,28 +149,13 @@ async function deleteCustomField(i,j){
   if(choice==="2"){
     try{
       await templateUpsert(product, data[i].custom_fields);
-      alert("今後の月にも反映する標準項目として保存しました");
+      await applyTemplateToFutureMonths(product, data[i].custom_fields);
+      alert("この月以降すべての月に反映しました");
+      await loadAll();
+      return;
     }catch(e){alert("テンプレート保存エラー: "+e.message)}
   }
   draw();
-}
-
-async function getFutureProductRows(product){
-  const r=await fetch(`${API}?product_name=eq.${encodeURIComponent(product)}&month=gte.${encodeURIComponent(monthStr())}&select=*`,{headers:headers()});
-  if(!r.ok)throw new Error(await r.text());
-  return await r.json();
-}
-async function applyTemplateToFutureMonths(product, fields){
-  const rows=await getFutureProductRows(product);
-  for(const row of rows){
-    let current=Array.isArray(row.custom_fields)?row.custom_fields:[];
-    let next=[];
-    for(const f of fields||[]){
-      const old=current.find(x=>x.name===f.name);
-      next.push({name:f.name,value:old?num(old.value):num(f.value)});
-    }
-    await apiPatch(row.id,{custom_fields:next,updated_at:new Date().toISOString()});
-  }
 }
 function updateCardRemain(i){const p=data[i],comp=num(p.finished_qty)+num(p.shipped_qty),r=num(p.order_qty)-comp;const rem=document.getElementById("rem-"+i),ce=document.getElementById("comp-"+i),bar=document.getElementById("bar-"+i),rate=document.getElementById("rate-"+i);if(rem){rem.textContent=r<0?`超過 ${Math.abs(r)}`:`残り ${r}`;rem.className="remain "+(r<0?"over":"")}if(ce)ce.textContent=`生産完了 ${comp}（完成品 ${num(p.finished_qty)} + 出荷量 ${num(p.shipped_qty)}）`;const pct=num(p.order_qty)>0?Math.min(100,Math.round(comp/num(p.order_qty)*100)):0;if(bar)bar.style.width=pct+"%";if(rate)rate.textContent=`進捗 ${pct}%`}
 async function addProduct(){if(!isAdmin)return;const name=prompt("品番名を入力してください","新規品番");if(!name)return;data.push({...await defaultProductRow(name),month:monthStr()});setDirty();draw()}
@@ -252,7 +227,34 @@ window.addEventListener("touchend", async ()=>{
   }
 },{passive:true});
 
+
+async function checkAppVersion(){
+  try{
+    const res=await fetch(`./version.json?ts=${Date.now()}`,{cache:"no-store"});
+    if(!res.ok)return;
+    const v=await res.json();
+    if(v.version && v.version!==APP_VERSION){
+      updateText.textContent=`現在 v${APP_VERSION} → 最新 v${v.version}`;
+      updateBanner.style.display="block";
+    }
+  }catch(e){}
+}
+async function applyAppUpdate(){
+  updateText.textContent="更新中...";
+  try{
+    if("serviceWorker" in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      for(const reg of regs){await reg.unregister();}
+    }
+    if(window.caches){
+      const keys=await caches.keys();
+      for(const key of keys){await caches.delete(key);}
+    }
+  }catch(e){}
+  location.reload(true);
+}
+
 window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
-loadAll();setInterval(()=>{if(!dirty&&!loading&&checkConfig())loadAll()},15000);
+loadAll();checkAppVersion();setInterval(()=>{if(!dirty&&!loading&&checkConfig())loadAll()},15000);setInterval(checkAppVersion,60000);
 </script></body></html>
