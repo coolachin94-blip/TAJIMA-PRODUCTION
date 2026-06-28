@@ -1,98 +1,71 @@
-<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1d4ed8">
-<link rel="manifest" href="manifest.json">
+<!doctype html><html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1d4ed8"><link rel="manifest" href="manifest.json">
 <title>TAJIMA 生産管理</title>
 <style>
-:root{--bg:#eaf3ff;--card:#fff;--blue:#2563eb;--deep:#1e3a8a;--text:#0f172a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#dbeafe,#eff6ff);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;padding:12px}
-.app{max-width:780px;margin:0 auto;padding-bottom:100px}.header{background:var(--card);border:2px solid var(--blue);border-radius:22px;padding:16px;box-shadow:0 10px 24px rgba(37,99,235,.16);position:sticky;top:8px;z-index:5}
-h1{margin:0;text-align:center;color:var(--deep);font-size:25px}.month-row{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}.month-title{min-width:120px;text-align:center;font-weight:900;color:var(--deep);font-size:18px}
-.state{margin-top:8px;text-align:center;font-size:13px;font-weight:900}.state.saved{color:var(--green)}.state.dirty{color:#b45309}.state.error{color:#b91c1c}
-.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.sum{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:10px;text-align:center}.sum span{display:block;font-size:12px;color:#64748b}.sum b{display:block;font-size:21px;color:var(--deep)}
-.toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.search{grid-column:1/3;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px;font-size:17px;outline:none}
-.card{background:var(--card);border:2px solid var(--blue);border-radius:22px;padding:14px;margin-bottom:14px;box-shadow:0 8px 22px rgba(37,99,235,.13)}.top{display:flex;gap:10px;align-items:center;margin-bottom:12px}.name{flex:1;border:0;outline:0;background:var(--soft);border-radius:14px;padding:10px 12px;font-size:24px;font-weight:900;color:var(--deep)}
-.remain{border-radius:16px;padding:14px;text-align:center;font-weight:900;font-size:26px;margin-bottom:12px;background:#dbeafe;color:var(--deep)}.remain.short{background:#fee2e2;color:#991b1b}.remain.over{background:#dcfce7;color:#166534}
-.progress{height:14px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-bottom:12px}.bar{height:100%;width:0;background:var(--blue);border-radius:999px;transition:.15s}.rate{text-align:right;font-size:12px;color:#64748b;margin-top:-8px;margin-bottom:10px}
+:root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#dbeafe,#eff6ff);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;color:var(--text);padding:12px}
+.app{max-width:780px;margin:auto;padding-bottom:110px}.header{background:#fff;border:2px solid var(--blue);border-radius:22px;padding:16px;box-shadow:0 10px 24px rgba(37,99,235,.16);position:sticky;top:8px;z-index:5}
+h1{margin:0;text-align:center;color:var(--deep);font-size:25px}.month-row{display:flex;justify-content:center;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}.month-title{font-weight:900;color:var(--deep);min-width:120px;text-align:center;font-size:18px}
+.state,.mode{text-align:center;font-size:13px;font-weight:900;margin-top:8px}.saved{color:var(--green)}.dirty{color:#b45309}.error{color:#b91c1c}.mode{color:#64748b}.mode.admin{color:var(--blue)}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.sum{background:#fff;border:2px solid var(--line);border-radius:16px;padding:10px;text-align:center}.sum span{display:block;font-size:12px;color:#64748b}.sum b{font-size:21px;color:var(--deep)}
+.toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.search{grid-column:1/3;background:#fff;border:2px solid var(--line);border-radius:14px;padding:12px;font-size:17px;outline:none}
+.card{background:#fff;border:2px solid var(--blue);border-radius:22px;padding:14px;margin-bottom:14px;box-shadow:0 8px 22px rgba(37,99,235,.13)}.top{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.name{flex:1;border:0;outline:0;background:var(--soft);border-radius:14px;padding:10px 12px;font-size:24px;font-weight:900;color:var(--deep)}.name:disabled,.num:disabled{opacity:1;color:#334155}
+.remain{border-radius:16px;padding:14px;text-align:center;font-weight:900;font-size:26px;margin-bottom:8px;background:#fee2e2;color:#991b1b}.remain.over{background:#dcfce7;color:#166534}.completed{text-align:center;font-weight:900;color:var(--deep);margin-bottom:10px}
+.progress{height:14px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-bottom:12px}.bar{height:100%;background:var(--blue);border-radius:999px}.rate{text-align:right;font-size:12px;color:#64748b;margin-top:-8px;margin-bottom:10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{background:var(--soft);border-radius:16px;padding:11px}.label{font-size:12px;color:#64748b;margin-bottom:4px;font-weight:700}.num{width:100%;border:0;outline:0;background:transparent;font-size:25px;font-weight:900;color:var(--text)}
-button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:900;cursor:pointer}.btn-blue{background:var(--blue);color:white}.btn-light{background:var(--soft);color:var(--deep);border:2px solid var(--line)}.btn-red{background:var(--red);color:white}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.bottom{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.94);border-top:2px solid var(--line);padding:10px 12px;z-index:9}.bottom-inner{max-width:780px;margin:auto;display:flex;gap:10px;align-items:center}.save{flex:1;background:var(--green);color:white;font-size:18px;padding:14px}.bottom-text{font-size:13px;color:#64748b;min-width:160px}.note{text-align:center;color:#64748b;font-size:12px;line-height:1.6;margin:14px 0}
-@media(max-width:430px){body{padding:9px}.header{top:6px;padding:14px}h1{font-size:22px}.sum{padding:8px 4px}.sum b{font-size:17px}.name{font-size:22px}.num{font-size:23px}.bottom-inner{display:block}.save{width:100%;margin-bottom:5px}.bottom-text{text-align:center}}
-</style>
-</head>
-<body>
+button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:900;cursor:pointer}.btn-blue{background:var(--blue);color:white}.btn-light{background:var(--soft);color:var(--deep);border:2px solid var(--line)}.btn-red{background:var(--red);color:white}.btn-green{background:var(--green);color:white}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.bottom{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.94);border-top:2px solid var(--line);padding:10px 12px;z-index:9}.bottom-inner{max-width:780px;margin:auto;display:flex;gap:10px;align-items:center}.save{flex:1;background:var(--green);color:#fff;font-size:18px;padding:14px}.bottom-text{font-size:13px;color:#64748b;min-width:150px}.note{text-align:center;color:#64748b;font-size:12px;line-height:1.6;margin:14px 0}.hidden{display:none!important}
+@media(max-width:430px){body{padding:9px}h1{font-size:22px}.sum{padding:8px 4px}.sum b{font-size:17px}.name{font-size:22px}.num{font-size:23px}.bottom-inner{display:block}.save,#adminBtn{width:100%;margin-bottom:5px}.bottom-text{text-align:center}}
+</style></head><body>
 <div class="app">
-  <div class="header"><h1>TAJIMA 生産管理</h1><div class="month-row"><button class="btn-light" onclick="changeMonth(-1)">◀ 前月</button><div class="month-title" id="monthTitle"></div><button class="btn-light" onclick="changeMonth(1)">翌月 ▶</button></div><div id="saveState" class="state saved">接続準備中</div></div>
-  <div class="summary"><div class="sum"><span>総受注数</span><b id="totalOrder">0</b></div><div class="sum"><span>総完成品</span><b id="totalFinished">0</b></div><div class="sum"><span>総残り</span><b id="totalRemaining">0</b></div></div>
-  <div class="toolbar"><input id="searchBox" class="search" placeholder="品番検索" oninput="draw()"><button class="btn-blue" onclick="addProduct()">＋ 品番追加</button><button class="btn-light" onclick="copyPreviousMonth()">前月品番コピー</button></div>
-  <div id="cards"></div>
-  <div class="actions"><button class="btn-light" onclick="resetCurrentMonth()">この月を初期化</button><button class="btn-light" onclick="loadMonth()">再読み込み</button></div>
-  <div class="note">v2.0 Supabase共有版。保存すると同じURLを開いた全員が同じデータを見られます。</div>
+<div class="header"><h1>TAJIMA 生産管理</h1><div class="month-row"><button class="btn-light" onclick="changeMonth(-1)">◀ 前月</button><div id="monthTitle" class="month-title"></div><button class="btn-light" onclick="changeMonth(1)">翌月 ▶</button></div><div id="saveState" class="state saved">接続準備中</div><div id="modeState" class="mode">閲覧モード</div></div>
+<div class="summary"><div class="sum"><span>総受注数</span><b id="totalOrder">0</b></div><div class="sum"><span>総生産完了</span><b id="totalCompleted">0</b></div><div class="sum"><span>総残り</span><b id="totalRemaining">0</b></div></div>
+<div class="toolbar"><input id="searchBox" class="search" placeholder="品番検索" oninput="draw()"><button class="btn-blue admin-only hidden" onclick="addProduct()">＋ 品番追加</button><button class="btn-light admin-only hidden" onclick="copyPreviousMonth()">前月品番コピー</button></div>
+<div id="cards"></div>
+<div class="actions"><button class="btn-light admin-only hidden" onclick="resetCurrentMonth()">この月を初期化</button><button class="btn-light" onclick="loadMonth()">再読み込み</button></div>
+<div class="note">v3.0 出荷量追加版。生産完了 = 完成品 + 出荷量。残り = 受注数 - 生産完了。</div>
 </div>
-<div class="bottom"><div class="bottom-inner"><button class="save" onclick="manualSave()">保存</button><div id="bottomText" class="bottom-text">準備中</div></div></div>
+<div class="bottom"><div class="bottom-inner"><button id="adminBtn" class="btn-blue" onclick="toggleAdmin()">管理者モード</button><button id="saveBtn" class="save hidden" onclick="manualSave()">保存</button><div id="bottomText" class="bottom-text">準備中</div></div></div>
 <script>
-const SUPABASE_URL = "https://kufexonxsbscixaauwue.supabase.co";
-const SUPABASE_KEY = "sb_publishable_s3E7Lq5UtP_sfCnPwuHZBA_EfKeQVdh";
-
-const API = `${SUPABASE_URL}/rest/v1/products`;
-const DEFAULT_PRODUCTS=[
-  {product_name:"KMX",order_qty:0,finished_qty:0,process21_qty:0,process1_qty:0},
-  {product_name:"KRF",order_qty:0,finished_qty:0,process21_qty:0,process1_qty:0},
-  {product_name:"KMG",order_qty:0,finished_qty:0,process21_qty:0,process1_qty:0},
-  {product_name:"KRA",order_qty:0,finished_qty:0,process21_qty:0,process1_qty:0},
-  {product_name:"#81",order_qty:0,finished_qty:0,process21_qty:0,process1_qty:0}
-];
-let currentYear=2026,currentMonth=6,data=[],dirty=false,loading=false;
-
+const SUPABASE_URL="https://kufexonxsbscixaauwue.supabase.co";
+const SUPABASE_KEY="sb_publishable_s3E7Lq5UtP_sfCnPwuHZBA_EfKeQVdh";
+const ADMIN_PASSWORD="0000";
+const API=`${SUPABASE_URL}/rest/v1/products`;
+const DEFAULT_PRODUCTS=["KMX","KRF","KMG","KRA","#81"].map(n=>({product_name:n,order_qty:0,finished_qty:0,shipped_qty:0,process21_qty:0,process1_qty:0}));
+let currentYear=2026,currentMonth=6,data=[],dirty=false,loading=false,isAdmin=false;
 function monthStr(){return `${currentYear}-${String(currentMonth).padStart(2,"0")}`}
 function num(v){const n=Number(v);return Number.isFinite(n)?n:0}
 function esc(s){return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
 function headers(){return {"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Content-Type":"application/json","Prefer":"return=representation"}}
-function checkConfig(){return SUPABASE_KEY && !SUPABASE_KEY.includes("ここに")}
-function setState(t,cls="saved"){saveState.textContent=t;saveState.className=`state ${cls}`}
+function checkConfig(){return SUPABASE_KEY&&!SUPABASE_KEY.includes("ここに")}
+function setState(t,c="saved"){saveState.textContent=t;saveState.className=`state ${c}`}
 function setBottom(t){bottomText.textContent=t}
-function setDirty(){dirty=true;setState("未保存","dirty");setBottom("変更があります")}
-function setSaved(){dirty=false;setState("保存済み","saved");setBottom("変更なし")}
+function setDirty(){if(!isAdmin)return;dirty=true;setState("未保存","dirty");setBottom("変更があります")}
+function setSaved(){dirty=false;setState("保存済み","saved");setBottom(isAdmin?"管理者モード":"閲覧モード")}
 function monthLabel(){monthTitle.textContent=`${currentYear}年${currentMonth}月`}
-
-async function apiGet(month){const res=await fetch(`${API}?month=eq.${encodeURIComponent(month)}&select=*&order=id.asc`,{headers:headers()});if(!res.ok)throw new Error(await res.text());return await res.json()}
-async function apiInsert(rows){const res=await fetch(API,{method:"POST",headers:headers(),body:JSON.stringify(rows)});if(!res.ok)throw new Error(await res.text());return await res.json()}
-async function apiPatch(id,row){const res=await fetch(`${API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify(row)});if(!res.ok)throw new Error(await res.text());return await res.json()}
-async function apiDelete(id){const res=await fetch(`${API}?id=eq.${id}`,{method:"DELETE",headers:headers()});if(!res.ok)throw new Error(await res.text())}
-async function apiDeleteMonth(month){const res=await fetch(`${API}?month=eq.${encodeURIComponent(month)}`,{method:"DELETE",headers:headers()});if(!res.ok)throw new Error(await res.text())}
-async function seedMonth(){const rows=DEFAULT_PRODUCTS.map(p=>({...p,month:monthStr()}));await apiInsert(rows);return await apiGet(monthStr())}
-
-async function loadMonth(){
-  monthLabel();
-  if(!checkConfig()){setState("APIキー未設定","error");setBottom("index.htmlにPublishable keyを入れてください");draw();return}
-  loading=true;setState("読み込み中...");setBottom("Supabaseから取得中");
-  try{let rows=await apiGet(monthStr());if(rows.length===0)rows=await seedMonth();data=rows;dirty=false;draw();setSaved()}
-  catch(e){console.error(e);setState("接続エラー","error");setBottom("Supabase設定を確認");alert("Supabase接続エラー: "+e.message)}
-  finally{loading=false}
-}
-async function manualSave(){
-  if(!checkConfig()){alert("Publishable keyを設定してください。");return}
-  setState("保存中...");setBottom("保存中");
-  try{for(const p of data){if(p.id){await apiPatch(p.id,{product_name:p.product_name,order_qty:num(p.order_qty),finished_qty:num(p.finished_qty),process21_qty:num(p.process21_qty),process1_qty:num(p.process1_qty),updated_at:new Date().toISOString()})}else{const inserted=await apiInsert([{...p,month:monthStr()}]);p.id=inserted[0].id}}await loadMonth();setBottom("保存しました")}
-  catch(e){console.error(e);setState("保存エラー","error");alert("保存エラー: "+e.message)}
-}
-function changeMonth(diff){if(dirty&&!confirm("未保存の変更があります。保存せずに月を移動しますか？"))return;currentMonth+=diff;if(currentMonth<=0){currentMonth=12;currentYear--}if(currentMonth>=13){currentMonth=1;currentYear++}loadMonth()}
-function calcTotals(){let o=0,f=0;data.forEach(p=>{o+=num(p.order_qty);f+=num(p.finished_qty)});totalOrder.textContent=o;totalFinished.textContent=f;totalRemaining.textContent=o-f}
+function applyMode(){modeState.textContent=isAdmin?"管理者モード":"閲覧モード";modeState.className=isAdmin?"mode admin":"mode";adminBtn.textContent=isAdmin?"閲覧モードに戻る":"管理者モード";saveBtn.classList.toggle("hidden",!isAdmin);document.querySelectorAll(".admin-only").forEach(e=>e.classList.toggle("hidden",!isAdmin));document.querySelectorAll(".edit-input").forEach(e=>e.disabled=!isAdmin);document.querySelectorAll(".delete-btn").forEach(e=>e.classList.toggle("hidden",!isAdmin));setBottom(isAdmin?"管理者モード":"閲覧モード")}
+function toggleAdmin(){if(isAdmin){isAdmin=false;applyMode();draw();return}const pw=prompt("管理者パスワードを入力してください");if(pw===ADMIN_PASSWORD){isAdmin=true;applyMode();draw()}else if(pw!==null){alert("パスワードが違います")}}
+async function apiGet(m){const r=await fetch(`${API}?month=eq.${encodeURIComponent(m)}&select=*&order=id.asc`,{headers:headers()});if(!r.ok)throw new Error(await r.text());return await r.json()}
+async function apiInsert(rows){const r=await fetch(API,{method:"POST",headers:headers(),body:JSON.stringify(rows)});if(!r.ok)throw new Error(await r.text());return await r.json()}
+async function apiPatch(id,row){const r=await fetch(`${API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify(row)});if(!r.ok)throw new Error(await r.text());return await r.json()}
+async function apiDelete(id){const r=await fetch(`${API}?id=eq.${id}`,{method:"DELETE",headers:headers()});if(!r.ok)throw new Error(await r.text())}
+async function apiDeleteMonth(m){const r=await fetch(`${API}?month=eq.${encodeURIComponent(m)}`,{method:"DELETE",headers:headers()});if(!r.ok)throw new Error(await r.text())}
+async function seedMonth(){await apiInsert(DEFAULT_PRODUCTS.map(p=>({...p,month:monthStr()})));return await apiGet(monthStr())}
+async function loadMonth(){monthLabel();if(!checkConfig()){setState("APIキー未設定","error");setBottom("Publishable keyを入れてください");draw();return}loading=true;setState("読み込み中...");setBottom("Supabaseから取得中");try{let rows=await apiGet(monthStr());if(rows.length===0)rows=await seedMonth();data=rows.map(p=>({...p,shipped_qty:p.shipped_qty||0}));dirty=false;draw();setSaved()}catch(e){console.error(e);setState("接続エラー","error");alert("Supabase接続エラー: "+e.message)}finally{loading=false}}
+async function manualSave(){if(!isAdmin){alert("管理者モードでのみ保存できます");return}setState("保存中...");setBottom("保存中");try{for(const p of data){const row={product_name:p.product_name,order_qty:num(p.order_qty),finished_qty:num(p.finished_qty),shipped_qty:num(p.shipped_qty),process21_qty:num(p.process21_qty),process1_qty:num(p.process1_qty),updated_at:new Date().toISOString()};if(p.id)await apiPatch(p.id,row);else{const ins=await apiInsert([{...row,month:monthStr()}]);p.id=ins[0].id}}await loadMonth();setBottom("保存しました")}catch(e){setState("保存エラー","error");alert("保存エラー: "+e.message)}}
+function changeMonth(d){if(dirty&&!confirm("未保存の変更があります。保存せずに月を移動しますか？"))return;currentMonth+=d;if(currentMonth<=0){currentMonth=12;currentYear--}if(currentMonth>=13){currentMonth=1;currentYear++}loadMonth()}
+function calcTotals(){let order=0,comp=0;data.forEach(p=>{order+=num(p.order_qty);comp+=num(p.finished_qty)+num(p.shipped_qty)});totalOrder.textContent=order;totalCompleted.textContent=comp;totalRemaining.textContent=order-comp}
 function updateName(i,v){data[i].product_name=v;setDirty()}
 function updateNum(i,k,v){data[i][k]=num(v);setDirty();calcTotals();updateCardRemain(i)}
-function updateCardRemain(i){const p=data[i],r=num(p.order_qty)-num(p.finished_qty);const rem=document.getElementById("rem-"+i),bar=document.getElementById("bar-"+i),rate=document.getElementById("rate-"+i);if(rem){rem.textContent=r<0?`超過 ${Math.abs(r)}`:`残り ${r}`;rem.className="remain "+(r<0?"over":"short")}const pct=num(p.order_qty)>0?Math.min(100,Math.round(num(p.finished_qty)/num(p.order_qty)*100)):0;if(bar)bar.style.width=pct+"%";if(rate)rate.textContent=`進捗 ${pct}%`}
-function addProduct(){data.push({month:monthStr(),product_name:"新規品番",order_qty:0,finished_qty:0,process21_qty:0,process1_qty:0});setDirty();draw()}
-async function deleteProduct(i){if(!confirm(`${data[i].product_name} を削除しますか？`))return;const id=data[i].id;data.splice(i,1);setDirty();draw();if(id){try{await apiDelete(id);setSaved();await loadMonth()}catch(e){alert("削除エラー: "+e.message)}}}
-async function resetCurrentMonth(){if(!confirm(`${currentYear}年${currentMonth}月を初期化しますか？`))return;try{await apiDeleteMonth(monthStr());data=await seedMonth();draw();setSaved()}catch(e){alert("初期化エラー: "+e.message)}}
-async function copyPreviousMonth(){if(dirty&&!confirm("未保存の変更があります。続けますか？"))return;let y=currentYear,m=currentMonth-1;if(m<=0){m=12;y--}const prevMonth=`${y}-${String(m).padStart(2,"0")}`;try{const prev=await apiGet(prevMonth);if(prev.length===0){alert("前月データがありません");return}await apiDeleteMonth(monthStr());const rows=prev.map(p=>({month:monthStr(),product_name:p.product_name,order_qty:0,finished_qty:0,process21_qty:0,process1_qty:0}));await apiInsert(rows);await loadMonth()}catch(e){alert("コピーエラー: "+e.message)}}
-function draw(){monthLabel();calcTotals();const q=(searchBox.value||"").toLowerCase();cards.innerHTML="";data.forEach((p,i)=>{if(q&&!String(p.product_name).toLowerCase().includes(q))return;const r=num(p.order_qty)-num(p.finished_qty);const pct=num(p.order_qty)>0?Math.min(100,Math.round(num(p.finished_qty)/num(p.order_qty)*100)):0;const c=document.createElement("div");c.className="card";c.innerHTML=`<div class="top"><input class="name" value="${esc(p.product_name)}" oninput="updateName(${i},this.value)"><button class="btn-red" onclick="deleteProduct(${i})">削除</button></div><div id="rem-${i}" class="remain ${r<0?'over':'short'}">${r<0?`超過 ${Math.abs(r)}`:`残り ${r}`}</div><div class="progress"><div id="bar-${i}" class="bar" style="width:${pct}%"></div></div><div id="rate-${i}" class="rate">進捗 ${pct}%</div><div class="grid"><div class="field"><div class="label">受注数</div><input class="num" inputmode="numeric" value="${p.order_qty}" oninput="updateNum(${i},'order_qty',this.value)"></div><div class="field"><div class="label">完成品</div><input class="num" inputmode="numeric" value="${p.finished_qty}" oninput="updateNum(${i},'finished_qty',this.value)"></div><div class="field"><div class="label">工程2-1</div><input class="num" inputmode="numeric" value="${p.process21_qty}" oninput="updateNum(${i},'process21_qty',this.value)"></div><div class="field"><div class="label">工程1</div><input class="num" inputmode="numeric" value="${p.process1_qty}" oninput="updateNum(${i},'process1_qty',this.value)"></div></div>`;cards.appendChild(c)});}
+function updateCardRemain(i){const p=data[i],comp=num(p.finished_qty)+num(p.shipped_qty),r=num(p.order_qty)-comp;const rem=document.getElementById("rem-"+i),ce=document.getElementById("comp-"+i),bar=document.getElementById("bar-"+i),rate=document.getElementById("rate-"+i);if(rem){rem.textContent=r<0?`超過 ${Math.abs(r)}`:`残り ${r}`;rem.className="remain "+(r<0?"over":"")}if(ce)ce.textContent=`生産完了 ${comp}（完成品 ${num(p.finished_qty)} + 出荷量 ${num(p.shipped_qty)}）`;const pct=num(p.order_qty)>0?Math.min(100,Math.round(comp/num(p.order_qty)*100)):0;if(bar)bar.style.width=pct+"%";if(rate)rate.textContent=`進捗 ${pct}%`}
+function addProduct(){if(!isAdmin)return;data.push({month:monthStr(),product_name:"新規品番",order_qty:0,finished_qty:0,shipped_qty:0,process21_qty:0,process1_qty:0});setDirty();draw()}
+async function deleteProduct(i){if(!isAdmin)return;if(!confirm(`${data[i].product_name} を削除しますか？`))return;const id=data[i].id;data.splice(i,1);setDirty();draw();if(id){try{await apiDelete(id);setSaved();await loadMonth()}catch(e){alert("削除エラー: "+e.message)}}}
+async function resetCurrentMonth(){if(!isAdmin)return;if(!confirm(`${currentYear}年${currentMonth}月を初期化しますか？`))return;try{await apiDeleteMonth(monthStr());data=await seedMonth();draw();setSaved()}catch(e){alert("初期化エラー: "+e.message)}}
+async function copyPreviousMonth(){if(!isAdmin)return;let y=currentYear,m=currentMonth-1;if(m<=0){m=12;y--}const pm=`${y}-${String(m).padStart(2,"0")}`;try{const prev=await apiGet(pm);if(prev.length===0){alert("前月データがありません");return}await apiDeleteMonth(monthStr());await apiInsert(prev.map(p=>({month:monthStr(),product_name:p.product_name,order_qty:0,finished_qty:0,shipped_qty:0,process21_qty:0,process1_qty:0})));await loadMonth()}catch(e){alert("コピーエラー: "+e.message)}}
+function draw(){monthLabel();calcTotals();const q=(searchBox.value||"").toLowerCase();cards.innerHTML="";data.forEach((p,i)=>{if(q&&!String(p.product_name).toLowerCase().includes(q))return;const comp=num(p.finished_qty)+num(p.shipped_qty),r=num(p.order_qty)-comp,pct=num(p.order_qty)>0?Math.min(100,Math.round(comp/num(p.order_qty)*100)):0,dis=isAdmin?"":"disabled";const c=document.createElement("div");c.className="card";c.innerHTML=`<div class="top"><input class="name edit-input" value="${esc(p.product_name)}" oninput="updateName(${i},this.value)" ${dis}><button class="btn-red delete-btn ${isAdmin?'':'hidden'}" onclick="deleteProduct(${i})">削除</button></div><div id="rem-${i}" class="remain ${r<0?'over':''}">${r<0?`超過 ${Math.abs(r)}`:`残り ${r}`}</div><div id="comp-${i}" class="completed">生産完了 ${comp}（完成品 ${num(p.finished_qty)} + 出荷量 ${num(p.shipped_qty)}）</div><div class="progress"><div id="bar-${i}" class="bar" style="width:${pct}%"></div></div><div id="rate-${i}" class="rate">進捗 ${pct}%</div><div class="grid"><div class="field"><div class="label">受注数</div><input class="num edit-input" inputmode="numeric" value="${p.order_qty}" oninput="updateNum(${i},'order_qty',this.value)" ${dis}></div><div class="field"><div class="label">完成品</div><input class="num edit-input" inputmode="numeric" value="${p.finished_qty}" oninput="updateNum(${i},'finished_qty',this.value)" ${dis}></div><div class="field"><div class="label">出荷量</div><input class="num edit-input" inputmode="numeric" value="${p.shipped_qty||0}" oninput="updateNum(${i},'shipped_qty',this.value)" ${dis}></div><div class="field"><div class="label">工程2-1</div><input class="num edit-input" inputmode="numeric" value="${p.process21_qty}" oninput="updateNum(${i},'process21_qty',this.value)" ${dis}></div><div class="field"><div class="label">工程1</div><input class="num edit-input" inputmode="numeric" value="${p.process1_qty}" oninput="updateNum(${i},'process1_qty',this.value)" ${dis}></div></div>`;cards.appendChild(c)});applyMode()}
 window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
-loadMonth();
-setInterval(()=>{if(!dirty&&!loading&&checkConfig())loadMonth()},15000);
-</script>
-</body>
-</html>
+loadMonth();setInterval(()=>{if(!dirty&&!loading&&checkConfig())loadMonth()},15000);
+</script></body></html>
