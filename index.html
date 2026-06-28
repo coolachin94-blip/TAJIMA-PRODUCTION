@@ -1,7 +1,7 @@
 <!doctype html><html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8"><link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v6.3</title>
+<title>TAJIMA 生産管理 v6.4</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#dbeafe,#eff6ff);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;color:var(--text);padding:12px}
@@ -30,7 +30,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 <div class="toolbar"><input id="searchBox" class="search" placeholder="品番検索" oninput="draw()"><button class="btn-blue admin-only hidden" onclick="addProduct()">＋ 品番追加</button><button class="btn-light admin-only hidden" onclick="copyPreviousMonth()">前月品番コピー</button></div>
 <div id="cards"></div>
 <div class="actions"><button class="btn-light admin-only hidden" onclick="resetCurrentMonth()">この月を初期化</button><button class="btn-light" onclick="loadAll()">再読み込み</button></div>
-<div class="note">v6.3 製品別テンプレート版。項目追加・削除を今後の月にも反映できます。</div>
+<div class="note">v6.4 製品別テンプレート版。項目追加・削除をこの月以降すべての月に反映できます。</div>
 </div>
 <div class="bottom"><div class="bottom-inner"><button id="adminBtn" class="btn-blue" onclick="toggleAdmin()">管理者モード</button><button id="settingBtn" class="btn-light" onclick="openSettings()">設定</button><button id="saveBtn" class="save hidden" onclick="manualSave()">保存</button><div id="bottomText" class="bottom-text">準備中</div></div></div>
 
@@ -133,8 +133,14 @@ async function addStandardFields(i){
   data[i].custom_fields=data[i].custom_fields||[];
   for(const f of STANDARD_FIELDS){if(!data[i].custom_fields.some(x=>x.name===f.name)){data[i].custom_fields.push({...f})}}
   setDirty();
-  if(confirm("今後の月にもこの標準項目を反映しますか？")){
-    try{await templateUpsert(data[i].product_name,data[i].custom_fields);alert("標準項目を保存しました")}catch(e){alert("テンプレート保存エラー: "+e.message)}
+  if(confirm("この月以降すべての月にも標準項目を反映しますか？")){
+    try{
+      await templateUpsert(data[i].product_name,data[i].custom_fields);
+      await applyTemplateToFutureMonths(data[i].product_name,data[i].custom_fields);
+      alert("この月以降すべての月に反映しました");
+      await loadAll();
+      return;
+    }catch(e){alert("テンプレート保存エラー: "+e.message)}
   }
   draw();
 }
@@ -156,6 +162,24 @@ async function deleteCustomField(i,j){
     }catch(e){alert("テンプレート保存エラー: "+e.message)}
   }
   draw();
+}
+
+async function getFutureProductRows(product){
+  const r=await fetch(`${API}?product_name=eq.${encodeURIComponent(product)}&month=gte.${encodeURIComponent(monthStr())}&select=*`,{headers:headers()});
+  if(!r.ok)throw new Error(await r.text());
+  return await r.json();
+}
+async function applyTemplateToFutureMonths(product, fields){
+  const rows=await getFutureProductRows(product);
+  for(const row of rows){
+    let current=Array.isArray(row.custom_fields)?row.custom_fields:[];
+    let next=[];
+    for(const f of fields||[]){
+      const old=current.find(x=>x.name===f.name);
+      next.push({name:f.name,value:old?num(old.value):num(f.value)});
+    }
+    await apiPatch(row.id,{custom_fields:next,updated_at:new Date().toISOString()});
+  }
 }
 function updateCardRemain(i){const p=data[i],comp=num(p.finished_qty)+num(p.shipped_qty),r=num(p.order_qty)-comp;const rem=document.getElementById("rem-"+i),ce=document.getElementById("comp-"+i),bar=document.getElementById("bar-"+i),rate=document.getElementById("rate-"+i);if(rem){rem.textContent=r<0?`超過 ${Math.abs(r)}`:`残り ${r}`;rem.className="remain "+(r<0?"over":"")}if(ce)ce.textContent=`生産完了 ${comp}（完成品 ${num(p.finished_qty)} + 出荷量 ${num(p.shipped_qty)}）`;const pct=num(p.order_qty)>0?Math.min(100,Math.round(comp/num(p.order_qty)*100)):0;if(bar)bar.style.width=pct+"%";if(rate)rate.textContent=`進捗 ${pct}%`}
 async function addProduct(){if(!isAdmin)return;const name=prompt("品番名を入力してください","新規品番");if(!name)return;data.push({...await defaultProductRow(name),month:monthStr()});setDirty();draw()}
