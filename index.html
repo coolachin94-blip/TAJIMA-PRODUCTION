@@ -1,7 +1,7 @@
 <!doctype html><html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8"><link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v6.1</title>
+<title>TAJIMA 生産管理 v6.2</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#dbeafe,#eff6ff);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;color:var(--text);padding:12px}
@@ -25,12 +25,12 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 </style></head><body>
 <div class="app">
 <div class="header"><h1>TAJIMA 生産管理</h1><div class="month-row"><button class="btn-light" onclick="changeMonth(-1)">◀ 前月</button><div id="monthTitle" class="month-title"></div><button class="btn-light" onclick="changeMonth(1)">翌月 ▶</button></div><div id="saveState" class="state saved">接続準備中</div><div id="modeState" class="mode">閲覧モード</div></div>
-<div class="dashboard"><div class="dash"><span>今日の出荷予定</span><b id="todayShip">0</b></div><div class="dash"><span>今月の出荷予定</span><b id="monthShip">0</b></div><div class="dash"><span>出荷予定件数</span><b id="shipCount">0</b></div><div class="dash"><span>製品数</span><b id="productCount">0</b></div></div>
+<div class="dashboard"><div class="dash" style="grid-column:1/3"><span>最後に保存された時間</span><b id="lastSavedTime">未保存</b></div></div>
 <div class="summary"><div class="sum"><span>総受注数</span><b id="totalOrder">0</b></div><div class="sum"><span>総生産完了</span><b id="totalCompleted">0</b></div><div class="sum"><span>総残り</span><b id="totalRemaining">0</b></div></div>
 <div class="toolbar"><input id="searchBox" class="search" placeholder="品番検索" oninput="draw()"><button class="btn-blue admin-only hidden" onclick="addProduct()">＋ 品番追加</button><button class="btn-light admin-only hidden" onclick="copyPreviousMonth()">前月品番コピー</button></div>
 <div id="cards"></div>
 <div class="actions"><button class="btn-light admin-only hidden" onclick="resetCurrentMonth()">この月を初期化</button><button class="btn-light" onclick="loadAll()">再読み込み</button></div>
-<div class="note">v6.1 標準項目版。新規製品には工程2-1・工程1が最初から入ります。不要な製品だけ管理者モードで削除してください。</div>
+<div class="note">v6.2 自動保存版。上部には最後に保存された時間を表示します。数字を変更すると自動保存されます。</div>
 </div>
 <div class="bottom"><div class="bottom-inner"><button id="adminBtn" class="btn-blue" onclick="toggleAdmin()">管理者モード</button><button id="settingBtn" class="btn-light" onclick="openSettings()">設定</button><button id="saveBtn" class="save hidden" onclick="manualSave()">保存</button><div id="bottomText" class="bottom-text">準備中</div></div></div>
 
@@ -50,6 +50,7 @@ const STANDARD_FIELDS=[{name:"工程2-1",value:0},{name:"工程1",value:0}];
 const DEFAULT_PRODUCTS=["KMX","KRF","KMG","KRA","#81"].map(n=>({product_name:n,order_qty:0,finished_qty:0,shipped_qty:0,process21_qty:0,process1_qty:0,custom_fields:JSON.parse(JSON.stringify(STANDARD_FIELDS))}));
 let currentYear=2026,currentMonth=6,data=[],dirty=false,loading=false,isAdmin=localStorage.getItem("tajima_admin_logged_in")==="yes";
 let selectedProduct="", calYear=2026, calMonth=6, schedules=[], allMonthSchedules=[];
+let autoSaveTimer=null, autoSaving=false;
 function getAdminPassword(){return localStorage.getItem("tajima_admin_password")||DEFAULT_ADMIN_PASSWORD}
 function monthStr(){return `${currentYear}-${String(currentMonth).padStart(2,"0")}`} function calMonthStr(){return `${calYear}-${String(calMonth).padStart(2,"0")}`}
 function num(v){const n=Number(v);return Number.isFinite(n)?n:0}
@@ -57,7 +58,7 @@ function esc(s){return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").
 function headers(){return {"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Content-Type":"application/json","Prefer":"return=representation"}}
 function checkConfig(){return SUPABASE_URL&&SUPABASE_KEY&&!SUPABASE_KEY.includes("ここに")}
 function setState(t,c="saved"){saveState.textContent=t;saveState.className=`state ${c}`} function setBottom(t){bottomText.textContent=t}
-function setDirty(){if(!isAdmin)return;dirty=true;setState("未保存","dirty");setBottom("変更があります")} function setSaved(){dirty=false;setState("保存済み","saved");setBottom(isAdmin?"管理者モード":"閲覧モード")}
+function setDirty(){if(!isAdmin)return;dirty=true;setState("未保存・自動保存待ち","dirty");setBottom("変更があります。自動保存します");scheduleAutoSave()} function setSaved(){dirty=false;setState("保存済み","saved");setBottom(isAdmin?"管理者モード":"閲覧モード")}
 function monthLabel(){monthTitle.textContent=`${currentYear}年${currentMonth}月`}
 function openSettings(){settingsModal.style.display="flex";oldPw.value="";newPw.value="";newPw2.value=""} function closeSettings(){settingsModal.style.display="none"}
 function changeAdminPassword(){if(oldPw.value!==getAdminPassword()){alert("現在のパスワードが違います");return}if(!newPw.value||newPw.value.length<4){alert("新しいパスワードは4文字以上");return}if(newPw.value!==newPw2.value){alert("確認用パスワードが一致しません");return}localStorage.setItem("tajima_admin_password",newPw.value);alert("変更しました");closeSettings()}
@@ -71,10 +72,16 @@ async function apiDeleteMonth(m){const r=await fetch(`${API}?month=eq.${encodeUR
 async function seedMonth(){await apiInsert(DEFAULT_PRODUCTS.map(p=>({...p,month:monthStr()})));return await apiGet(monthStr())}
 function normalize(p){return {...p,shipped_qty:p.shipped_qty||0,custom_fields:Array.isArray(p.custom_fields)?p.custom_fields:JSON.parse(JSON.stringify(STANDARD_FIELDS))}}
 async function loadAll(){await loadMonth();await loadMonthSchedules()}
-async function loadMonth(){monthLabel();if(!checkConfig()){setState("APIキー未設定","error");setBottom("config.jsにPublishable keyを入れてください");draw();return}loading=true;setState("読み込み中...");try{let rows=await apiGet(monthStr());if(rows.length===0)rows=await seedMonth();data=rows.map(normalize);dirty=false;draw();setSaved()}catch(e){console.error(e);setState("接続エラー","error");alert("Supabase接続エラー: "+e.message)}finally{loading=false}}
-async function manualSave(){if(!isAdmin){alert("管理者モードでのみ保存できます");return}setState("保存中...");try{for(const p of data){const row={product_name:p.product_name,order_qty:num(p.order_qty),finished_qty:num(p.finished_qty),shipped_qty:num(p.shipped_qty),process21_qty:num(p.process21_qty),process1_qty:num(p.process1_qty),custom_fields:p.custom_fields||[],updated_at:new Date().toISOString()};if(p.id)await apiPatch(p.id,row);else{const ins=await apiInsert([{...row,month:monthStr()}]);p.id=ins[0].id}}await loadAll();setBottom("保存しました")}catch(e){setState("保存エラー","error");alert("保存エラー: "+e.message)}}
+async function loadMonth(){monthLabel();if(!checkConfig()){setState("APIキー未設定","error");setBottom("config.jsにPublishable keyを入れてください");draw();return}loading=true;setState("読み込み中...");try{let rows=await apiGet(monthStr());if(rows.length===0)rows=await seedMonth();data=rows.map(normalize);dirty=false;draw();updateLastSavedTime();setSaved()}catch(e){console.error(e);setState("接続エラー","error");alert("Supabase接続エラー: "+e.message)}finally{loading=false}}
+function formatTime(v){if(!v)return "未保存";try{const d=new Date(v);return d.toLocaleString("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});}catch(e){return "未保存"}}
+function updateLastSavedTime(){let latest=null;data.forEach(p=>{if(p.updated_at){const t=new Date(p.updated_at);if(!latest||t>latest)latest=t}});lastSavedTime.textContent=latest?formatTime(latest):"未保存";}
+function scheduleAutoSave(){clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>{autoSaveNow()},2500)}
+async function autoSaveNow(){if(!isAdmin||!dirty||autoSaving)return;autoSaving=true;setState("自動保存中...","dirty");setBottom("自動保存中");try{await saveData(false);setBottom("自動保存しました")}catch(e){setState("自動保存エラー","error");setBottom("保存失敗");console.error(e)}finally{autoSaving=false}}
+async function saveData(showAlert){for(const p of data){const row={product_name:p.product_name,order_qty:num(p.order_qty),finished_qty:num(p.finished_qty),shipped_qty:num(p.shipped_qty),process21_qty:num(p.process21_qty),process1_qty:num(p.process1_qty),custom_fields:p.custom_fields||[],updated_at:new Date().toISOString()};if(p.id)await apiPatch(p.id,row);else{const ins=await apiInsert([{...row,month:monthStr()}]);p.id=ins[0].id}}await loadAll();if(showAlert)alert("保存しました")}
+
+async function manualSave(){if(!isAdmin){alert("管理者モードでのみ保存できます");return}clearTimeout(autoSaveTimer);setState("保存中...");setBottom("保存中");try{await saveData(false);setBottom("保存しました")}catch(e){setState("保存エラー","error");alert("保存エラー: "+e.message)}}
 function changeMonth(d){if(dirty&&!confirm("未保存の変更があります。保存せずに月を移動しますか？"))return;currentMonth+=d;if(currentMonth<=0){currentMonth=12;currentYear--}if(currentMonth>=13){currentMonth=1;currentYear++}loadAll()}
-function calcTotals(){let order=0,comp=0;data.forEach(p=>{order+=num(p.order_qty);comp+=num(p.finished_qty)+num(p.shipped_qty)});totalOrder.textContent=order;totalCompleted.textContent=comp;totalRemaining.textContent=order-comp;productCount.textContent=data.length}
+function calcTotals(){let order=0,comp=0;data.forEach(p=>{order+=num(p.order_qty);comp+=num(p.finished_qty)+num(p.shipped_qty)});totalOrder.textContent=order;totalCompleted.textContent=comp;totalRemaining.textContent=order-comp}
 function updateName(i,v){data[i].product_name=v;setDirty()}function updateNum(i,k,v){data[i][k]=num(v);setDirty();calcTotals();updateCardRemain(i)}
 function updateCustomName(i,j,v){data[i].custom_fields[j].name=v;setDirty()}function updateCustomValue(i,j,v){data[i].custom_fields[j].value=num(v);setDirty()}
 function addCustomField(i){if(!isAdmin)return;data[i].custom_fields=data[i].custom_fields||[];data[i].custom_fields.push({name:"新規項目",value:0});setDirty();draw()}
@@ -89,7 +96,7 @@ function draw(){monthLabel();calcTotals();const q=(searchBox.value||"").toLowerC
 // schedules
 async function shipGet(product,ym){const from=`${ym}-01`;let [y,m]=ym.split("-").map(Number);m++;if(m===13){m=1;y++}const to=`${y}-${String(m).padStart(2,"0")}-01`;const url=`${SHIP_API}?product_name=eq.${encodeURIComponent(product)}&ship_date=gte.${from}&ship_date=lt.${to}&select=*&order=ship_date.asc`;const r=await fetch(url,{headers:headers()});if(!r.ok)throw new Error(await r.text());return await r.json()}
 async function monthScheduleGet(){const ym=monthStr();const from=`${ym}-01`;let y=currentYear,m=currentMonth+1;if(m===13){m=1;y++}const to=`${y}-${String(m).padStart(2,"0")}-01`;const r=await fetch(`${SHIP_API}?ship_date=gte.${from}&ship_date=lt.${to}&select=*`,{headers:headers()});if(!r.ok)return [];return await r.json()}
-async function loadMonthSchedules(){if(!checkConfig())return;allMonthSchedules=await monthScheduleGet();const today=new Date().toISOString().slice(0,10);todayShip.textContent=allMonthSchedules.filter(s=>s.ship_date===today).reduce((a,s)=>a+num(s.quantity),0);monthShip.textContent=allMonthSchedules.reduce((a,s)=>a+num(s.quantity),0);shipCount.textContent=allMonthSchedules.length}
+async function loadMonthSchedules(){if(!checkConfig())return;allMonthSchedules=await monthScheduleGet()}
 async function openCalendar(product){selectedProduct=product;calYear=currentYear;calMonth=currentMonth;calendarModal.style.display="flex";calTitle.textContent=`${product} 出荷予定`;await loadSchedules()}
 function closeCalendar(){calendarModal.style.display="none"} async function loadSchedules(){if(!selectedProduct)return;try{schedules=await shipGet(selectedProduct,calMonthStr());drawCalendar()}catch(e){alert("出荷予定読み込みエラー: "+e.message)}}
 function calendarMonth(d){calMonth+=d;if(calMonth<=0){calMonth=12;calYear--}if(calMonth>=13){calMonth=1;calYear++}loadSchedules()}
