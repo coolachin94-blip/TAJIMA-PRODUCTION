@@ -1,18 +1,31 @@
-<!doctype html><html lang="ja"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1d4ed8"><link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v6.6</title>
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1d4ed8">
+<link rel="manifest" href="manifest.json">
+<title>TAJIMA 生産管理 v7.0</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#dbeafe,#eff6ff);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;color:var(--text);padding:12px}
-.pull-indicator{position:fixed;left:50%;top:8px;transform:translateX(-50%) translateY(-80px);background:#fff;border:2px solid var(--blue);color:var(--deep);border-radius:999px;padding:10px 16px;font-size:14px;font-weight:900;box-shadow:0 8px 24px rgba(37,99,235,.2);z-index:50;transition:transform .18s ease}.pull-indicator.show{transform:translateX(-50%) translateY(0)}.update-banner{position:fixed;left:10px;right:10px;bottom:105px;background:#fff;border:2px solid var(--green);border-radius:18px;padding:12px;z-index:60;box-shadow:0 10px 30px rgba(22,163,74,.25);display:none;text-align:center}.update-banner b{color:var(--deep)}.update-banner button{margin-top:8px;width:100%}.app{max-width:820px;margin:auto;padding-bottom:130px}.header{background:#fff;border:2px solid var(--blue);border-radius:22px;padding:16px;box-shadow:0 10px 24px rgba(37,99,235,.16);position:sticky;top:8px;z-index:5}
-h1{margin:0;text-align:center;color:var(--deep);font-size:25px}.month-row{display:flex;justify-content:center;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}.month-title{font-weight:900;color:var(--deep);min-width:120px;text-align:center;font-size:18px}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#dbeafe,#eff6ff);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;color:var(--text);padding:12px}
+.update-banner{position:fixed;left:10px;right:10px;bottom:105px;background:#fff;border:2px solid var(--green);border-radius:18px;padding:12px;z-index:60;box-shadow:0 10px 30px rgba(22,163,74,.25);display:none;text-align:center}
+.update-banner b{color:var(--deep)}.update-banner button{margin-top:8px;width:100%}
+.pull-indicator{position:fixed;left:50%;top:8px;transform:translateX(-50%) translateY(-80px);background:#fff;border:2px solid var(--blue);color:var(--deep);border-radius:999px;padding:10px 16px;font-size:14px;font-weight:900;box-shadow:0 8px 24px rgba(37,99,235,.2);z-index:50;transition:transform .18s ease}
+.pull-indicator.show{transform:translateX(-50%) translateY(0)}
+.app{max-width:820px;margin:auto;padding-bottom:130px}
+.header{background:#fff;border:2px solid var(--blue);border-radius:22px;padding:16px;box-shadow:0 10px 24px rgba(37,99,235,.16);position:sticky;top:8px;z-index:5}
+h1{margin:0;text-align:center;color:var(--deep);font-size:25px}
+.month-row{display:flex;justify-content:center;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.month-title{font-weight:900;color:var(--deep);min-width:120px;text-align:center;font-size:18px}
 .state,.mode{text-align:center;font-size:13px;font-weight:900;margin-top:8px}.saved{color:var(--green)}.dirty{color:#b45309}.error{color:#b91c1c}.mode{color:#64748b}.mode.admin{color:var(--blue)}
-.dashboard{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:14px 0}.dash{background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px;text-align:center;box-shadow:0 4px 14px rgba(37,99,235,.08)}.dash span{display:block;font-size:12px;color:#64748b}.dash b{font-size:24px;color:var(--deep)}
+.dashboard{display:grid;grid-template-columns:1fr;gap:8px;margin:14px 0}.dash{background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px;text-align:center;box-shadow:0 4px 14px rgba(37,99,235,.08)}.dash span{display:block;font-size:12px;color:#64748b}.dash b{font-size:24px;color:var(--deep)}
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.sum{background:#fff;border:2px solid var(--line);border-radius:16px;padding:10px;text-align:center}.sum span{display:block;font-size:12px;color:#64748b}.sum b{font-size:21px;color:var(--deep)}
 .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.search{grid-column:1/3;background:#fff;border:2px solid var(--line);border-radius:14px;padding:12px;font-size:17px;outline:none}
-.card{background:#fff;border:2px solid var(--blue);border-radius:22px;padding:14px;margin-bottom:14px;box-shadow:0 8px 22px rgba(37,99,235,.13)}.top{display:flex;gap:10px;align-items:center;margin-bottom:12px}
-.name{flex:1;border:0;outline:0;background:var(--soft);border-radius:14px;padding:10px 12px;font-size:24px;font-weight:900;color:var(--deep)}.name:disabled,.num:disabled,.field-name:disabled{opacity:1;color:#334155}
+.card{background:#fff;border:2px solid var(--blue);border-radius:22px;padding:14px;margin-bottom:14px;box-shadow:0 8px 22px rgba(37,99,235,.13)}
+.top{display:flex;gap:10px;align-items:center;margin-bottom:12px}.name{flex:1;border:0;outline:0;background:var(--soft);border-radius:14px;padding:10px 12px;font-size:24px;font-weight:900;color:var(--deep)}
+.name:disabled,.num:disabled,.field-name:disabled{opacity:1;color:#334155}
 .remain{border-radius:16px;padding:14px;text-align:center;font-weight:900;font-size:26px;margin-bottom:8px;background:#fee2e2;color:#991b1b}.remain.over{background:#dcfce7;color:#166534}.completed{text-align:center;font-weight:900;color:var(--deep);margin-bottom:10px}
 .progress{height:14px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-bottom:12px}.bar{height:100%;background:var(--blue);border-radius:999px}.rate{text-align:right;font-size:12px;color:#64748b;margin-top:-8px;margin-bottom:10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{background:var(--soft);border-radius:16px;padding:11px}.label{font-size:12px;color:#64748b;margin-bottom:4px;font-weight:700}.num{width:100%;border:0;outline:0;background:transparent;font-size:25px;font-weight:900;color:var(--text)}
@@ -21,18 +34,29 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.bottom{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.94);border-top:2px solid var(--line);padding:10px 12px;z-index:9}.bottom-inner{max-width:820px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center}.save{background:var(--green);color:#fff;font-size:18px;padding:14px}.bottom-text{font-size:13px;color:#64748b;text-align:center;grid-column:1/3}.note{text-align:center;color:#64748b;font-size:12px;line-height:1.6;margin:14px 0}.hidden{display:none!important}
 .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;z-index:20;padding:14px}.modal{background:#fff;border-radius:22px;border:2px solid var(--blue);max-width:560px;width:100%;padding:16px;box-shadow:0 16px 40px rgba(15,23,42,.25);max-height:90vh;overflow:auto}.modal h2{margin:0 0 12px;color:var(--deep)}.modal input,.modal textarea{width:100%;padding:12px;border:2px solid var(--line);border-radius:14px;font-size:18px;margin:6px 0 10px}.modal .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}.day,.dow{padding:9px 0;text-align:center;border-radius:12px}.dow{font-size:12px;color:#64748b;font-weight:900}.day{background:var(--soft);border:1px solid var(--line);font-weight:900}.day.has{background:var(--yellow);border:3px solid #f59e0b}.day.empty{background:transparent;border:0}.schedule-list{margin-top:12px}.schedule-item{border:1px solid var(--line);background:#f8fbff;border-radius:14px;padding:10px;margin:8px 0}.schedule-date{font-weight:900;color:var(--deep)}
-@media(max-width:430px){body{padding:9px}h1{font-size:22px}.dashboard,.summary{grid-template-columns:repeat(2,1fr)}.sum{padding:8px 4px}.sum b{font-size:17px}.name{font-size:22px}.num{font-size:23px}.bottom-inner{grid-template-columns:1fr}.bottom-text{grid-column:1}.save,#adminBtn,#settingBtn{width:100%}.custom-row{grid-template-columns:1fr 82px auto}}
-</style></head><body>
+@media(max-width:430px){body{padding:9px}h1{font-size:22px}.summary{grid-template-columns:repeat(2,1fr)}.sum{padding:8px 4px}.sum b{font-size:17px}.name{font-size:22px}.num{font-size:23px}.bottom-inner{grid-template-columns:1fr}.bottom-text{grid-column:1}.save,#adminBtn,#settingBtn{width:100%}.custom-row{grid-template-columns:1fr 82px auto}}
+</style>
+</head>
+<body>
 <div id="updateBanner" class="update-banner"><b>新しいバージョンがあります</b><br><span id="updateText">更新できます</span><button class="btn-green" onclick="applyAppUpdate()">更新する</button></div>
 <div id="pullIndicator" class="pull-indicator">↓ 更新</div>
 <div class="app">
-<div class="header"><h1>TAJIMA 生産管理</h1><div class="month-row"><button class="btn-light" onclick="changeMonth(-1)">◀ 前月</button><div id="monthTitle" class="month-title"></div><button class="btn-light" onclick="changeMonth(1)">翌月 ▶</button></div><div id="saveState" class="state saved">接続準備中</div><div id="modeState" class="mode">閲覧モード</div></div>
-<div class="dashboard"><div class="dash" style="grid-column:1/3"><span>最後に保存された時間</span><b id="lastSavedTime">未保存</b></div></div>
+<div class="header">
+  <h1>TAJIMA 生産管理</h1>
+  <div class="month-row">
+    <button class="btn-light" onclick="changeMonth(-1)">◀ 前月</button>
+    <div id="monthTitle" class="month-title"></div>
+    <button class="btn-light" onclick="changeMonth(1)">翌月 ▶</button>
+  </div>
+  <div id="saveState" class="state saved">接続準備中</div>
+  <div id="modeState" class="mode">閲覧モード</div>
+</div>
+<div class="dashboard"><div class="dash"><span>最後に保存された時間</span><b id="lastSavedTime">未保存</b></div></div>
 <div class="summary"><div class="sum"><span>総受注数</span><b id="totalOrder">0</b></div><div class="sum"><span>総生産完了</span><b id="totalCompleted">0</b></div><div class="sum"><span>総残り</span><b id="totalRemaining">0</b></div></div>
 <div class="toolbar"><input id="searchBox" class="search" placeholder="品番検索" oninput="draw()"><button class="btn-blue admin-only hidden" onclick="addProduct()">＋ 品番追加</button><button class="btn-light admin-only hidden" onclick="copyPreviousMonth()">前月品番コピー</button></div>
 <div id="cards"></div>
 <div class="actions"><button class="btn-light admin-only hidden" onclick="resetCurrentMonth()">この月を初期化</button><button class="btn-light" onclick="loadAll()">再読み込み</button></div>
-<div class="note">v6.6 安定更新版。新バージョン確認と製品別項目テンプレートを強化しました。</div>
+<div class="note">v7.0 リビルド安定版。項目テンプレートを製品別に管理し、月別データの数値は保持します。</div>
 </div>
 <div class="bottom"><div class="bottom-inner"><button id="adminBtn" class="btn-blue" onclick="toggleAdmin()">管理者モード</button><button id="settingBtn" class="btn-light" onclick="openSettings()">設定</button><button id="saveBtn" class="save hidden" onclick="manualSave()">保存</button><div id="bottomText" class="bottom-text">準備中</div></div></div>
 
@@ -46,92 +70,100 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD=CONFIG.DEFAULT_ADMIN_PASSWORD||"0000";
-const APP_VERSION="6.6";
+const APP_VERSION="7.0";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
 const STANDARD_FIELDS=[{name:"工程2-1",value:0},{name:"工程1",value:0}];
-const DEFAULT_PRODUCTS=["KMX","KRF","KMG","KRA","#81"].map(n=>({product_name:n,order_qty:0,finished_qty:0,shipped_qty:0,process21_qty:0,process1_qty:0,custom_fields:JSON.parse(JSON.stringify(STANDARD_FIELDS))}));
 let currentYear=2026,currentMonth=6,data=[],dirty=false,loading=false,isAdmin=localStorage.getItem("tajima_admin_logged_in")==="yes";
 let selectedProduct="", calYear=2026, calMonth=6, schedules=[], allMonthSchedules=[];
 let autoSaveTimer=null, autoSaving=false;
-function getAdminPassword(){return localStorage.getItem("tajima_admin_password")||DEFAULT_ADMIN_PASSWORD}
-function monthStr(){return `${currentYear}-${String(currentMonth).padStart(2,"0")}`} function calMonthStr(){return `${calYear}-${String(calMonth).padStart(2,"0")}`}
+
+function monthStr(){return `${currentYear}-${String(currentMonth).padStart(2,"0")}`}
+function calMonthStr(){return `${calYear}-${String(calMonth).padStart(2,"0")}`}
 function num(v){const n=Number(v);return Number.isFinite(n)?n:0}
 function esc(s){return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
 function headers(){return {"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Content-Type":"application/json","Prefer":"return=representation"}}
 function checkConfig(){return SUPABASE_URL&&SUPABASE_KEY&&!SUPABASE_KEY.includes("ここに")}
-function setState(t,c="saved"){saveState.textContent=t;saveState.className=`state ${c}`} function setBottom(t){bottomText.textContent=t}
-function setDirty(){if(!isAdmin)return;dirty=true;setState("未保存・自動保存待ち","dirty");setBottom("変更があります。自動保存します");scheduleAutoSave()} function setSaved(){dirty=false;setState("保存済み","saved");setBottom(isAdmin?"管理者モード":"閲覧モード")}
+function setState(t,c="saved"){saveState.textContent=t;saveState.className=`state ${c}`}
+function setBottom(t){bottomText.textContent=t}
 function monthLabel(){monthTitle.textContent=`${currentYear}年${currentMonth}月`}
-function openSettings(){settingsModal.style.display="flex";oldPw.value="";newPw.value="";newPw2.value=""} function closeSettings(){settingsModal.style.display="none"}
+function clone(v){return JSON.parse(JSON.stringify(v))}
+function getAdminPassword(){return localStorage.getItem("tajima_admin_password")||DEFAULT_ADMIN_PASSWORD}
+function formatTime(v){if(!v)return "未保存";try{const d=new Date(v);return d.toLocaleString("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});}catch(e){return "未保存"}}
+
+function openSettings(){settingsModal.style.display="flex";oldPw.value="";newPw.value="";newPw2.value=""}
+function closeSettings(){settingsModal.style.display="none"}
 function changeAdminPassword(){if(oldPw.value!==getAdminPassword()){alert("現在のパスワードが違います");return}if(!newPw.value||newPw.value.length<4){alert("新しいパスワードは4文字以上");return}if(newPw.value!==newPw2.value){alert("確認用パスワードが一致しません");return}localStorage.setItem("tajima_admin_password",newPw.value);alert("変更しました");closeSettings()}
 function applyMode(){modeState.textContent=isAdmin?"管理者モード":"閲覧モード";modeState.className=isAdmin?"mode admin":"mode";adminBtn.textContent=isAdmin?"ログアウト":"管理者モード";saveBtn.classList.toggle("hidden",!isAdmin);document.querySelectorAll(".admin-only").forEach(e=>e.classList.toggle("hidden",!isAdmin));document.querySelectorAll(".edit-input").forEach(e=>e.disabled=!isAdmin);document.querySelectorAll(".delete-btn").forEach(e=>e.classList.toggle("hidden",!isAdmin));document.querySelectorAll(".custom-admin").forEach(e=>e.classList.toggle("hidden",!isAdmin));setBottom(isAdmin?"管理者モード":"閲覧モード")}
 function toggleAdmin(){if(isAdmin){isAdmin=false;localStorage.removeItem("tajima_admin_logged_in");applyMode();draw();return}const pw=prompt("管理者パスワードを入力してください");if(pw===getAdminPassword()){isAdmin=true;localStorage.setItem("tajima_admin_logged_in","yes");applyMode();draw()}else if(pw!==null){alert("パスワードが違います")}}
-async function templateGet(product){
-  const r=await fetch(`${TEMPLATE_API}?product_name=eq.${encodeURIComponent(product)}&select=*`,{headers:headers()});
-  if(!r.ok)return null;
-  const rows=await r.json();
-  return rows[0]||null;
-}
-async function templateUpsert(product, fields){
-  const body=[{product_name:product,custom_fields:fields||[],updated_at:new Date().toISOString()}];
-  const r=await fetch(`${TEMPLATE_API}?on_conflict=product_name`,{method:"POST",headers:{...headers(),"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify(body)});
-  if(!r.ok)throw new Error(await r.text());
-  return await r.json();
-}
-async function getDefaultFieldsForProduct(product){
-  try{
-    const tpl=await templateGet(product);
-    if(tpl && Array.isArray(tpl.custom_fields)) return JSON.parse(JSON.stringify(tpl.custom_fields));
-  }catch(e){}
-  return JSON.parse(JSON.stringify(STANDARD_FIELDS));
-}
-async function defaultProductRow(product){
-  return {product_name:product,order_qty:0,finished_qty:0,shipped_qty:0,process21_qty:0,process1_qty:0,custom_fields:await getDefaultFieldsForProduct(product)};
-}
-async function apiGet(m){const r=await fetch(`${API}?month=eq.${encodeURIComponent(m)}&select=*&order=id.asc`,{headers:headers()});if(!r.ok)throw new Error(await r.text());return await r.json()}
-async function apiInsert(rows){const r=await fetch(API,{method:"POST",headers:headers(),body:JSON.stringify(rows)});if(!r.ok)throw new Error(await r.text());return await r.json()}
-async function apiPatch(id,row){const r=await fetch(`${API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify(row)});if(!r.ok)throw new Error(await r.text());return await r.json()}
-async function apiDelete(id){const r=await fetch(`${API}?id=eq.${id}`,{method:"DELETE",headers:headers()});if(!r.ok)throw new Error(await r.text())}
-async function apiDeleteMonth(m){const r=await fetch(`${API}?month=eq.${encodeURIComponent(m)}`,{method:"DELETE",headers:headers()});if(!r.ok)throw new Error(await r.text())}
-async function seedMonth(){const rows=[];for(const name of ["KMX","KRF","KMG","KRA","#81"]){rows.push({...await defaultProductRow(name),month:monthStr()})}await apiInsert(rows);return await apiGet(monthStr())}
-function normalize(p){return {...p,shipped_qty:p.shipped_qty||0,custom_fields:Array.isArray(p.custom_fields)?p.custom_fields:JSON.parse(JSON.stringify(STANDARD_FIELDS))}}
-async function loadAll(){await loadMonth();await loadMonthSchedules()}
-async function loadMonth(){monthLabel();if(!checkConfig()){setState("APIキー未設定","error");setBottom("config.jsにPublishable keyを入れてください");draw();return}loading=true;setState("読み込み中...");try{let rows=await apiGet(monthStr());if(rows.length===0)rows=await seedMonth();data=[];for(const row of rows){data.push(await normalizeByTemplate(row))}dirty=false;draw();updateLastSavedTime();setSaved()}catch(e){console.error(e);setState("接続エラー","error");alert("Supabase接続エラー: "+e.message)}finally{loading=false}}
-function formatTime(v){if(!v)return "未保存";try{const d=new Date(v);return d.toLocaleString("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});}catch(e){return "未保存"}}
-function updateLastSavedTime(){let latest=null;data.forEach(p=>{if(p.updated_at){const t=new Date(p.updated_at);if(!latest||t>latest)latest=t}});lastSavedTime.textContent=latest?formatTime(latest):"未保存";}
-function scheduleAutoSave(){clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>{autoSaveNow()},2500)}
-async function autoSaveNow(){if(!isAdmin||!dirty||autoSaving)return;autoSaving=true;setState("自動保存中...","dirty");setBottom("自動保存中");try{await saveData(false);setBottom("自動保存しました")}catch(e){setState("自動保存エラー","error");setBottom("保存失敗");console.error(e)}finally{autoSaving=false}}
-async function saveData(showAlert){for(const p of data){const row={product_name:p.product_name,order_qty:num(p.order_qty),finished_qty:num(p.finished_qty),shipped_qty:num(p.shipped_qty),process21_qty:num(p.process21_qty),process1_qty:num(p.process1_qty),custom_fields:p.custom_fields||[],updated_at:new Date().toISOString()};if(p.id)await apiPatch(p.id,row);else{const ins=await apiInsert([{...row,month:monthStr()}]);p.id=ins[0].id}}await loadAll();if(showAlert)alert("保存しました")}
 
-async function manualSave(){if(!isAdmin){alert("管理者モードでのみ保存できます");return}clearTimeout(autoSaveTimer);setState("保存中...");setBottom("保存中");try{await saveData(false);setBottom("保存しました")}catch(e){setState("保存エラー","error");alert("保存エラー: "+e.message)}}
+async function restGet(url){const r=await fetch(url,{headers:headers()});if(!r.ok)throw new Error(await r.text());return await r.json()}
+async function apiGetMonth(m){return await restGet(`${API}?month=eq.${encodeURIComponent(m)}&select=*&order=id.asc`)}
+async function apiInsertProducts(rows){const r=await fetch(API,{method:"POST",headers:headers(),body:JSON.stringify(rows)});if(!r.ok)throw new Error(await r.text());return await r.json()}
+async function apiPatchProduct(id,row){const r=await fetch(`${API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify(row)});if(!r.ok)throw new Error(await r.text());return await r.json()}
+async function apiDeleteProduct(id){const r=await fetch(`${API}?id=eq.${id}`,{method:"DELETE",headers:headers()});if(!r.ok)throw new Error(await r.text())}
+async function apiDeleteMonth(m){const r=await fetch(`${API}?month=eq.${encodeURIComponent(m)}`,{method:"DELETE",headers:headers()});if(!r.ok)throw new Error(await r.text())}
+
+async function templateGet(product){const rows=await restGet(`${TEMPLATE_API}?product_name=eq.${encodeURIComponent(product)}&select=*`);return rows[0]||null}
+async function templateUpsert(product, fields){const body=[{product_name:product,custom_fields:fields||[],updated_at:new Date().toISOString()}];const r=await fetch(`${TEMPLATE_API}?on_conflict=product_name`,{method:"POST",headers:{...headers(),"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return await r.json()}
+async function getTemplateFields(product){try{const tpl=await templateGet(product);if(tpl&&Array.isArray(tpl.custom_fields))return clone(tpl.custom_fields)}catch(e){}return clone(STANDARD_FIELDS)}
+function mergeFields(templateFields, savedFields){const saved=Array.isArray(savedFields)?savedFields:[];return (templateFields||[]).map(f=>{const old=saved.find(x=>x.name===f.name);return {name:f.name,value:old?num(old.value):num(f.value)}})}
+async function applyTemplateToRow(row){const tpl=await getTemplateFields(row.product_name);return {...row,shipped_qty:row.shipped_qty||0,custom_fields:mergeFields(tpl,row.custom_fields)}}
+async function defaultProductRow(product){return {product_name:product,order_qty:0,finished_qty:0,shipped_qty:0,process21_qty:0,process1_qty:0,custom_fields:await getTemplateFields(product)}}
+async function seedMonth(){const rows=[];for(const name of ["KMX","KRF","KMG","KRA","#81"]){rows.push({...await defaultProductRow(name),month:monthStr()})}await apiInsertProducts(rows);return await apiGetMonth(monthStr())}
+async function getProductRowsFromCurrentMonth(product){return await restGet(`${API}?product_name=eq.${encodeURIComponent(product)}&month=gte.${encodeURIComponent(monthStr())}&select=*`)}
+async function applyFieldsToCurrentAndFuture(product, fields){const rows=await getProductRowsFromCurrentMonth(product);for(const row of rows){const next=mergeFields(fields,row.custom_fields);await apiPatchProduct(row.id,{custom_fields:next,updated_at:new Date().toISOString()})}}
+
+async function loadAll(){await loadMonth();await loadMonthSchedules()}
+async function loadMonth(){
+  monthLabel();
+  if(!checkConfig()){setState("APIキー未設定","error");setBottom("config.jsにPublishable keyを入れてください");draw();return}
+  loading=true;setState("読み込み中...");
+  try{
+    let rows=await apiGetMonth(monthStr());
+    if(rows.length===0)rows=await seedMonth();
+    data=[];
+    for(const row of rows){data.push(await applyTemplateToRow(row))}
+    dirty=false;draw();updateLastSavedTime();setState("保存済み","saved");setBottom(isAdmin?"管理者モード":"閲覧モード");
+  }catch(e){console.error(e);setState("接続エラー","error");alert("Supabase接続エラー: "+e.message)}
+  finally{loading=false}
+}
+
+function updateLastSavedTime(){let latest=null;data.forEach(p=>{if(p.updated_at){const t=new Date(p.updated_at);if(!latest||t>latest)latest=t}});lastSavedTime.textContent=latest?formatTime(latest):"未保存"}
+function setDirty(){if(!isAdmin)return;dirty=true;setState("未保存・自動保存待ち","dirty");setBottom("変更があります。自動保存します");scheduleAutoSave()}
+function scheduleAutoSave(){clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>autoSaveNow(),2500)}
+async function autoSaveNow(){if(!isAdmin||!dirty||autoSaving)return;autoSaving=true;setState("自動保存中...","dirty");setBottom("自動保存中");try{await saveData();setBottom("自動保存しました")}catch(e){setState("自動保存エラー","error");setBottom("保存失敗");console.error(e)}finally{autoSaving=false}}
+async function saveData(){
+  for(const p of data){
+    const row={product_name:p.product_name,order_qty:num(p.order_qty),finished_qty:num(p.finished_qty),shipped_qty:num(p.shipped_qty),process21_qty:num(p.process21_qty),process1_qty:num(p.process1_qty),custom_fields:p.custom_fields||[],updated_at:new Date().toISOString()};
+    if(p.id)await apiPatchProduct(p.id,row);
+    else{const ins=await apiInsertProducts([{...row,month:monthStr()}]);p.id=ins[0].id}
+  }
+  await loadAll();
+}
+async function manualSave(){if(!isAdmin){alert("管理者モードでのみ保存できます");return}clearTimeout(autoSaveTimer);setState("保存中...");setBottom("保存中");try{await saveData();setBottom("保存しました")}catch(e){setState("保存エラー","error");alert("保存エラー: "+e.message)}}
+
 function changeMonth(d){if(dirty&&!confirm("未保存の変更があります。保存せずに月を移動しますか？"))return;currentMonth+=d;if(currentMonth<=0){currentMonth=12;currentYear--}if(currentMonth>=13){currentMonth=1;currentYear++}loadAll()}
 function calcTotals(){let order=0,comp=0;data.forEach(p=>{order+=num(p.order_qty);comp+=num(p.finished_qty)+num(p.shipped_qty)});totalOrder.textContent=order;totalCompleted.textContent=comp;totalRemaining.textContent=order-comp}
-function updateName(i,v){data[i].product_name=v;setDirty()}function updateNum(i,k,v){data[i][k]=num(v);setDirty();calcTotals();updateCardRemain(i)}
-function updateCustomName(i,j,v){data[i].custom_fields[j].name=v;setDirty()}function updateCustomValue(i,j,v){data[i].custom_fields[j].value=num(v);setDirty()}
+function updateName(i,v){data[i].product_name=v;setDirty()}
+function updateNum(i,k,v){data[i][k]=num(v);setDirty();calcTotals();updateCardRemain(i)}
+function updateCustomName(i,j,v){data[i].custom_fields[j].name=v;setDirty()}
+function updateCustomValue(i,j,v){data[i].custom_fields[j].value=num(v);setDirty()}
+
 async function addCustomField(i){
   if(!isAdmin)return;
   const product=data[i].product_name;
-  const name=prompt("追加する項目名を入力してください", "新規項目");
+  const name=prompt("追加する項目名を入力してください","新規項目");
   if(!name)return;
-  const choice=prompt(`「${product}」に「${name}」を追加します。
-1 = この月だけ追加
-2 = この月以降すべての月に追加`, "1");
-  if(choice===null)return;
-  if(choice!=="1" && choice!=="2"){alert("1 または 2 を入力してください");return}
-  data[i].custom_fields=data[i].custom_fields||[];
   if(data[i].custom_fields.some(x=>x.name===name)){alert("同じ項目名がすでにあります");return}
+  const choice=prompt(`「${product}」に「${name}」を追加します。\n1 = この月だけ追加\n2 = この月以降すべての月に追加`,"1");
+  if(choice===null)return;
+  if(choice!=="1"&&choice!=="2"){alert("1 または 2 を入力してください");return}
   data[i].custom_fields.push({name:name,value:0});
   setDirty();
   if(choice==="2"){
-    try{
-      await templateUpsert(product, data[i].custom_fields);
-      await applyTemplateToFutureMonths(product, data[i].custom_fields);
-      alert("この月以降すべての月に反映しました");
-      await loadAll();
-      return;
-    }catch(e){alert("テンプレート保存エラー: "+e.message)}
+    try{await templateUpsert(product,data[i].custom_fields);await applyFieldsToCurrentAndFuture(product,data[i].custom_fields);alert("この月以降すべての月に反映しました");await loadAll();return}catch(e){alert("テンプレート保存エラー: "+e.message)}
   }
   draw();
 }
@@ -139,122 +171,70 @@ async function deleteCustomField(i,j){
   if(!isAdmin)return;
   const product=data[i].product_name;
   const fieldName=data[i].custom_fields[j].name;
-  const choice=prompt(`「${product}」から「${fieldName}」を削除します。
-1 = この月だけ削除
-2 = この月以降すべての月から削除`, "1");
+  const choice=prompt(`「${product}」から「${fieldName}」を削除します。\n1 = この月だけ削除\n2 = この月以降すべての月から削除`,"1");
   if(choice===null)return;
-  if(choice!=="1" && choice!=="2"){alert("1 または 2 を入力してください");return}
+  if(choice!=="1"&&choice!=="2"){alert("1 または 2 を入力してください");return}
   data[i].custom_fields.splice(j,1);
   setDirty();
   if(choice==="2"){
-    try{
-      await templateUpsert(product, data[i].custom_fields);
-      await applyTemplateToFutureMonths(product, data[i].custom_fields);
-      alert("この月以降すべての月に反映しました");
-      await loadAll();
-      return;
-    }catch(e){alert("テンプレート保存エラー: "+e.message)}
+    try{await templateUpsert(product,data[i].custom_fields);await applyFieldsToCurrentAndFuture(product,data[i].custom_fields);alert("この月以降すべての月に反映しました");await loadAll();return}catch(e){alert("テンプレート保存エラー: "+e.message)}
+  }
+  draw();
+}
+async function addStandardFields(i){
+  if(!isAdmin)return;
+  for(const f of STANDARD_FIELDS){if(!data[i].custom_fields.some(x=>x.name===f.name))data[i].custom_fields.push({...f})}
+  setDirty();
+  if(confirm("この月以降すべての月にも標準項目を反映しますか？")){
+    try{await templateUpsert(data[i].product_name,data[i].custom_fields);await applyFieldsToCurrentAndFuture(data[i].product_name,data[i].custom_fields);alert("この月以降すべての月に反映しました");await loadAll();return}catch(e){alert("テンプレート保存エラー: "+e.message)}
   }
   draw();
 }
 function updateCardRemain(i){const p=data[i],comp=num(p.finished_qty)+num(p.shipped_qty),r=num(p.order_qty)-comp;const rem=document.getElementById("rem-"+i),ce=document.getElementById("comp-"+i),bar=document.getElementById("bar-"+i),rate=document.getElementById("rate-"+i);if(rem){rem.textContent=r<0?`超過 ${Math.abs(r)}`:`残り ${r}`;rem.className="remain "+(r<0?"over":"")}if(ce)ce.textContent=`生産完了 ${comp}（完成品 ${num(p.finished_qty)} + 出荷量 ${num(p.shipped_qty)}）`;const pct=num(p.order_qty)>0?Math.min(100,Math.round(comp/num(p.order_qty)*100)):0;if(bar)bar.style.width=pct+"%";if(rate)rate.textContent=`進捗 ${pct}%`}
 async function addProduct(){if(!isAdmin)return;const name=prompt("品番名を入力してください","新規品番");if(!name)return;data.push({...await defaultProductRow(name),month:monthStr()});setDirty();draw()}
-async function deleteProduct(i){if(!isAdmin)return;if(!confirm(`${data[i].product_name} を削除しますか？`))return;const id=data[i].id;data.splice(i,1);setDirty();draw();if(id){try{await apiDelete(id);setSaved();await loadAll()}catch(e){alert("削除エラー: "+e.message)}}}
-async function resetCurrentMonth(){if(!isAdmin)return;if(!confirm(`${currentYear}年${currentMonth}月を初期化しますか？`))return;try{await apiDeleteMonth(monthStr());data=await seedMonth();draw();setSaved()}catch(e){alert("初期化エラー: "+e.message)}}
-async function copyPreviousMonth(){if(!isAdmin)return;let y=currentYear,m=currentMonth-1;if(m<=0){m=12;y--}const pm=`${y}-${String(m).padStart(2,"0")}`;try{const prev=await apiGet(pm);if(prev.length===0){alert("前月データがありません");return}await apiDeleteMonth(monthStr());const rows=[];for(const p of prev){rows.push({month:monthStr(),product_name:p.product_name,order_qty:0,finished_qty:0,shipped_qty:0,custom_fields:(Array.isArray(p.custom_fields)&&p.custom_fields.length?p.custom_fields:await getDefaultFieldsForProduct(p.product_name))})}await apiInsert(rows);await loadAll()}catch(e){alert("コピーエラー: "+e.message)}}
-function draw(){monthLabel();calcTotals();const q=(searchBox.value||"").toLowerCase();cards.innerHTML="";data.forEach((p,i)=>{if(q&&!String(p.product_name).toLowerCase().includes(q))return;const comp=num(p.finished_qty)+num(p.shipped_qty),r=num(p.order_qty)-comp,pct=num(p.order_qty)>0?Math.min(100,Math.round(comp/num(p.order_qty)*100)):0,dis=isAdmin?"":"disabled";const custom=(p.custom_fields||[]).map((f,j)=>`<div class="custom-row"><input class="field-name edit-input" value="${esc(f.name)}" oninput="updateCustomName(${i},${j},this.value)" ${dis}><input class="custom-num edit-input" inputmode="numeric" value="${num(f.value)}" oninput="updateCustomValue(${i},${j},this.value)" ${dis}><button class="btn-red btn-small custom-admin ${isAdmin?'':'hidden'}" onclick="deleteCustomField(${i},${j})">削除</button></div>`).join("");const c=document.createElement("div");c.className="card";c.innerHTML=`<div class="top"><input class="name edit-input" value="${esc(p.product_name)}" oninput="updateName(${i},this.value)" ${dis}><button class="btn-red delete-btn ${isAdmin?'':'hidden'}" onclick="deleteProduct(${i})">削除</button></div><div id="rem-${i}" class="remain ${r<0?'over':''}">${r<0?`超過 ${Math.abs(r)}`:`残り ${r}`}</div><div id="comp-${i}" class="completed">生産完了 ${comp}（完成品 ${num(p.finished_qty)} + 出荷量 ${num(p.shipped_qty)}）</div><div class="progress"><div id="bar-${i}" class="bar" style="width:${pct}%"></div></div><div id="rate-${i}" class="rate">進捗 ${pct}%</div><div class="grid"><div class="field"><div class="label">受注数</div><input class="num edit-input" inputmode="numeric" value="${p.order_qty}" oninput="updateNum(${i},'order_qty',this.value)" ${dis}></div><div class="field"><div class="label">完成品</div><input class="num edit-input" inputmode="numeric" value="${p.finished_qty}" oninput="updateNum(${i},'finished_qty',this.value)" ${dis}></div><div class="field"><div class="label">出荷量</div><input class="num edit-input" inputmode="numeric" value="${p.shipped_qty||0}" oninput="updateNum(${i},'shipped_qty',this.value)" ${dis}></div></div><div class="custom-title">標準・自由項目</div>${custom}<button class="btn-light custom-admin ${isAdmin?'':'hidden'}" onclick="addCustomField(${i})">＋ 項目追加</button><button class="btn-light custom-admin ${isAdmin?'':'hidden'}" style="margin-left:6px" onclick="addStandardFields(${i})">標準項目復元</button><button class="btn-purple" style="width:100%;margin-top:8px" onclick="openCalendar('${esc(p.product_name)}')">出荷予定</button>`;cards.appendChild(c)});applyMode()}
-// schedules
-async function shipGet(product,ym){const from=`${ym}-01`;let [y,m]=ym.split("-").map(Number);m++;if(m===13){m=1;y++}const to=`${y}-${String(m).padStart(2,"0")}-01`;const url=`${SHIP_API}?product_name=eq.${encodeURIComponent(product)}&ship_date=gte.${from}&ship_date=lt.${to}&select=*&order=ship_date.asc`;const r=await fetch(url,{headers:headers()});if(!r.ok)throw new Error(await r.text());return await r.json()}
-async function monthScheduleGet(){const ym=monthStr();const from=`${ym}-01`;let y=currentYear,m=currentMonth+1;if(m===13){m=1;y++}const to=`${y}-${String(m).padStart(2,"0")}-01`;const r=await fetch(`${SHIP_API}?ship_date=gte.${from}&ship_date=lt.${to}&select=*`,{headers:headers()});if(!r.ok)return [];return await r.json()}
+async function deleteProduct(i){if(!isAdmin)return;if(!confirm(`${data[i].product_name} を削除しますか？`))return;const id=data[i].id;data.splice(i,1);setDirty();draw();if(id){try{await apiDeleteProduct(id);dirty=false;await loadAll()}catch(e){alert("削除エラー: "+e.message)}}}
+async function resetCurrentMonth(){if(!isAdmin)return;if(!confirm(`${currentYear}年${currentMonth}月を初期化しますか？`))return;try{await apiDeleteMonth(monthStr());data=await seedMonth();draw();dirty=false;await loadAll()}catch(e){alert("初期化エラー: "+e.message)}}
+async function copyPreviousMonth(){if(!isAdmin)return;let y=currentYear,m=currentMonth-1;if(m<=0){m=12;y--}const pm=`${y}-${String(m).padStart(2,"0")}`;try{const prev=await apiGetMonth(pm);if(prev.length===0){alert("前月データがありません");return}await apiDeleteMonth(monthStr());const rows=[];for(const p of prev){rows.push({month:monthStr(),product_name:p.product_name,order_qty:0,finished_qty:0,shipped_qty:0,custom_fields:await getTemplateFields(p.product_name)})}await apiInsertProducts(rows);await loadAll()}catch(e){alert("コピーエラー: "+e.message)}}
+
+function draw(){
+  monthLabel();calcTotals();const q=(searchBox.value||"").toLowerCase();cards.innerHTML="";
+  data.forEach((p,i)=>{
+    if(q&&!String(p.product_name).toLowerCase().includes(q))return;
+    const comp=num(p.finished_qty)+num(p.shipped_qty),r=num(p.order_qty)-comp,pct=num(p.order_qty)>0?Math.min(100,Math.round(comp/num(p.order_qty)*100)):0,dis=isAdmin?"":"disabled";
+    const custom=(p.custom_fields||[]).map((f,j)=>`<div class="custom-row"><input class="field-name edit-input" value="${esc(f.name)}" oninput="updateCustomName(${i},${j},this.value)" ${dis}><input class="custom-num edit-input" inputmode="numeric" value="${num(f.value)}" oninput="updateCustomValue(${i},${j},this.value)" ${dis}><button class="btn-red btn-small custom-admin ${isAdmin?'':'hidden'}" onclick="deleteCustomField(${i},${j})">削除</button></div>`).join("");
+    const c=document.createElement("div");c.className="card";c.innerHTML=`<div class="top"><input class="name edit-input" value="${esc(p.product_name)}" oninput="updateName(${i},this.value)" ${dis}><button class="btn-red delete-btn ${isAdmin?'':'hidden'}" onclick="deleteProduct(${i})">削除</button></div><div id="rem-${i}" class="remain ${r<0?'over':''}">${r<0?`超過 ${Math.abs(r)}`:`残り ${r}`}</div><div id="comp-${i}" class="completed">生産完了 ${comp}（完成品 ${num(p.finished_qty)} + 出荷量 ${num(p.shipped_qty)}）</div><div class="progress"><div id="bar-${i}" class="bar" style="width:${pct}%"></div></div><div id="rate-${i}" class="rate">進捗 ${pct}%</div><div class="grid"><div class="field"><div class="label">受注数</div><input class="num edit-input" inputmode="numeric" value="${p.order_qty}" oninput="updateNum(${i},'order_qty',this.value)" ${dis}></div><div class="field"><div class="label">完成品</div><input class="num edit-input" inputmode="numeric" value="${p.finished_qty}" oninput="updateNum(${i},'finished_qty',this.value)" ${dis}></div><div class="field"><div class="label">出荷量</div><input class="num edit-input" inputmode="numeric" value="${p.shipped_qty||0}" oninput="updateNum(${i},'shipped_qty',this.value)" ${dis}></div></div><div class="custom-title">標準・自由項目</div>${custom}<button class="btn-light custom-admin ${isAdmin?'':'hidden'}" onclick="addCustomField(${i})">＋ 項目追加</button><button class="btn-light custom-admin ${isAdmin?'':'hidden'}" style="margin-left:6px" onclick="addStandardFields(${i})">標準項目復元</button><button class="btn-purple" style="width:100%;margin-top:8px" onclick="openCalendar('${esc(p.product_name)}')">出荷予定</button>`;
+    cards.appendChild(c);
+  });
+  applyMode();
+}
+
+// shipment schedules
+async function shipGet(product,ym){const from=`${ym}-01`;let [y,m]=ym.split("-").map(Number);m++;if(m===13){m=1;y++}const to=`${y}-${String(m).padStart(2,"0")}-01`;return await restGet(`${SHIP_API}?product_name=eq.${encodeURIComponent(product)}&ship_date=gte.${from}&ship_date=lt.${to}&select=*&order=ship_date.asc`)}
+async function monthScheduleGet(){const ym=monthStr();const from=`${ym}-01`;let y=currentYear,m=currentMonth+1;if(m===13){m=1;y++}const to=`${y}-${String(m).padStart(2,"0")}-01`;try{return await restGet(`${SHIP_API}?ship_date=gte.${from}&ship_date=lt.${to}&select=*`)}catch(e){return []}}
 async function loadMonthSchedules(){if(!checkConfig())return;allMonthSchedules=await monthScheduleGet()}
 async function openCalendar(product){selectedProduct=product;calYear=currentYear;calMonth=currentMonth;calendarModal.style.display="flex";calTitle.textContent=`${product} 出荷予定`;await loadSchedules()}
-function closeCalendar(){calendarModal.style.display="none"} async function loadSchedules(){if(!selectedProduct)return;try{schedules=await shipGet(selectedProduct,calMonthStr());drawCalendar()}catch(e){alert("出荷予定読み込みエラー: "+e.message)}}
+function closeCalendar(){calendarModal.style.display="none"}
+async function loadSchedules(){if(!selectedProduct)return;try{schedules=await shipGet(selectedProduct,calMonthStr());drawCalendar()}catch(e){alert("出荷予定読み込みエラー: "+e.message)}}
 function calendarMonth(d){calMonth+=d;if(calMonth<=0){calMonth=12;calYear--}if(calMonth>=13){calMonth=1;calYear++}loadSchedules()}
 function drawCalendar(){calMonthTitle.textContent=`${calYear}年${calMonth}月`;shipDateInput.value=`${calMonthStr()}-01`;const dows=["日","月","火","水","木","金","土"];calendarGrid.innerHTML=dows.map(d=>`<div class="dow">${d}</div>`).join("");const first=new Date(calYear,calMonth-1,1),last=new Date(calYear,calMonth,0).getDate();for(let i=0;i<first.getDay();i++)calendarGrid.innerHTML+=`<div class="day empty"></div>`;for(let d=1;d<=last;d++){const date=`${calMonthStr()}-${String(d).padStart(2,"0")}`;const has=schedules.some(s=>s.ship_date===date);calendarGrid.innerHTML+=`<button class="day ${has?'has':''}" onclick="showDay('${date}')">${d}${has?'○':''}</button>`}showDay(null)}
 function showDay(date){let list=date?schedules.filter(s=>s.ship_date===date):schedules;dayDetail.innerHTML=`<h3>${date||calMonthStr()+" 出荷予定"}</h3>`+(list.length?list.map(s=>`<div class="schedule-item"><div class="schedule-date">${s.ship_date}</div><div>数量: ${s.quantity}</div><div>${esc(s.memo||"")}</div><button class="btn-red btn-small admin-only ${isAdmin?'':'hidden'}" onclick="deleteSchedule(${s.id})">削除</button></div>`).join(""):"<div>予定なし</div>");applyMode()}
 async function addSchedule(){if(!isAdmin)return;const row={product_name:selectedProduct,ship_date:shipDateInput.value,quantity:num(shipQtyInput.value),memo:shipMemoInput.value||""};if(!row.ship_date){alert("日付を入力してください");return}const r=await fetch(SHIP_API,{method:"POST",headers:headers(),body:JSON.stringify([row])});if(!r.ok){alert("追加エラー: "+await r.text());return}shipQtyInput.value="";shipMemoInput.value="";await loadSchedules();await loadMonthSchedules()}
 async function deleteSchedule(id){if(!isAdmin)return;if(!confirm("削除しますか？"))return;const r=await fetch(`${SHIP_API}?id=eq.${id}`,{method:"DELETE",headers:headers()});if(!r.ok){alert("削除エラー: "+await r.text());return}await loadSchedules();await loadMonthSchedules()}
 
-// Pull to refresh for iPhone PWA
-let pullStartY=0;
-let pullDistance=0;
-let isPulling=false;
-let isRefreshingByPull=false;
-const PULL_LIMIT=85;
+// update check
+async function checkAppVersion(){try{const res=await fetch(`./version.json?ts=${Date.now()}`,{cache:"no-store"});if(!res.ok)return;const v=await res.json();if(v.version&&v.version!==APP_VERSION){updateText.textContent=`現在 v${APP_VERSION} → 最新 v${v.version}`;updateBanner.style.display="block"}}catch(e){}}
+async function applyAppUpdate(){updateText.textContent="更新中...";try{if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();for(const reg of regs){await reg.unregister()}}if(window.caches){const keys=await caches.keys();for(const key of keys){await caches.delete(key)}}}catch(e){}location.reload(true)}
 
-function setPullIndicator(text, show){
-  if(!window.pullIndicator)return;
-  pullIndicator.textContent=text;
-  pullIndicator.classList.toggle("show", !!show);
-}
-
-window.addEventListener("touchstart", e=>{
-  if(window.scrollY===0 && e.touches.length===1){
-    pullStartY=e.touches[0].clientY;
-    pullDistance=0;
-    isPulling=true;
-  }
-},{passive:true});
-
-window.addEventListener("touchmove", e=>{
-  if(!isPulling || isRefreshingByPull)return;
-  pullDistance=e.touches[0].clientY-pullStartY;
-  if(pullDistance>20 && window.scrollY===0){
-    setPullIndicator(pullDistance>PULL_LIMIT ? "離すと更新" : "↓ 更新", true);
-  }
-},{passive:true});
-
-window.addEventListener("touchend", async ()=>{
-  if(!isPulling)return;
-  const shouldRefresh=pullDistance>PULL_LIMIT && window.scrollY===0;
-  isPulling=false;
-  if(shouldRefresh){
-    isRefreshingByPull=true;
-    setPullIndicator("更新中...", true);
-    try{
-      await loadAll();
-      setPullIndicator("更新しました", true);
-      setTimeout(()=>setPullIndicator("", false), 700);
-    }catch(e){
-      setPullIndicator("更新失敗", true);
-      setTimeout(()=>setPullIndicator("", false), 1200);
-    }finally{
-      isRefreshingByPull=false;
-      pullDistance=0;
-    }
-  }else{
-    setPullIndicator("", false);
-  }
-},{passive:true});
-
-
-async function checkAppVersion(){
-  try{
-    const res=await fetch(`./version.json?ts=${Date.now()}`,{cache:"no-store"});
-    if(!res.ok)return;
-    const v=await res.json();
-    if(v.version && v.version!==APP_VERSION){
-      updateText.textContent=`現在 v${APP_VERSION} → 最新 v${v.version}`;
-      updateBanner.style.display="block";
-    }
-  }catch(e){}
-}
-async function applyAppUpdate(){
-  updateText.textContent="更新中...";
-  try{
-    if("serviceWorker" in navigator){
-      const regs=await navigator.serviceWorker.getRegistrations();
-      for(const reg of regs){await reg.unregister();}
-    }
-    if(window.caches){
-      const keys=await caches.keys();
-      for(const key of keys){await caches.delete(key);}
-    }
-  }catch(e){}
-  location.reload(true);
-}
+// pull to refresh
+let pullStartY=0,pullDistance=0,isPulling=false,isRefreshingByPull=false;const PULL_LIMIT=85;
+function setPullIndicator(text,show){pullIndicator.textContent=text;pullIndicator.classList.toggle("show",!!show)}
+window.addEventListener("touchstart",e=>{if(window.scrollY===0&&e.touches.length===1){pullStartY=e.touches[0].clientY;pullDistance=0;isPulling=true}},{passive:true});
+window.addEventListener("touchmove",e=>{if(!isPulling||isRefreshingByPull)return;pullDistance=e.touches[0].clientY-pullStartY;if(pullDistance>20&&window.scrollY===0){setPullIndicator(pullDistance>PULL_LIMIT?"離すと更新":"↓ 更新",true)}},{passive:true});
+window.addEventListener("touchend",async()=>{if(!isPulling)return;const ok=pullDistance>PULL_LIMIT&&window.scrollY===0;isPulling=false;if(ok){isRefreshingByPull=true;setPullIndicator("更新中...",true);try{await loadAll();setPullIndicator("更新しました",true);setTimeout(()=>setPullIndicator("",false),700)}catch(e){setPullIndicator("更新失敗",true);setTimeout(()=>setPullIndicator("",false),1200)}finally{isRefreshingByPull=false;pullDistance=0}}else setPullIndicator("",false)},{passive:true});
 
 window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 loadAll();checkAppVersion();setInterval(()=>{if(!dirty&&!loading&&checkConfig())loadAll()},15000);setInterval(checkAppVersion,60000);
-</script></body></html>
+</script>
+</body>
+</html>
