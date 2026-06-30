@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v7.0</title>
+<title>TAJIMA 生産管理 v7.1</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -24,7 +24,7 @@ h1{margin:0;text-align:center;color:var(--deep);font-size:25px}
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.sum{background:#fff;border:2px solid var(--line);border-radius:16px;padding:10px;text-align:center}.sum span{display:block;font-size:12px;color:#64748b}.sum b{font-size:21px;color:var(--deep)}
 .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.search{grid-column:1/3;background:#fff;border:2px solid var(--line);border-radius:14px;padding:12px;font-size:17px;outline:none}
 .card{background:#fff;border:2px solid var(--blue);border-radius:22px;padding:14px;margin-bottom:14px;box-shadow:0 8px 22px rgba(37,99,235,.13)}
-.top{display:flex;gap:10px;align-items:center;margin-bottom:12px}.name{flex:1;border:0;outline:0;background:var(--soft);border-radius:14px;padding:10px 12px;font-size:24px;font-weight:900;color:var(--deep)}
+.top{display:flex;gap:10px;align-items:center;margin-bottom:12px}.name{flex:1;border:0;outline:0;background:var(--soft);border-radius:14px;padding:10px 12px;font-size:24px;font-weight:900;color:var(--deep)}.toggle-btn{width:44px;height:44px;border-radius:14px;background:var(--blue);color:#fff;font-size:22px;padding:0;line-height:1}.card-summary{display:block}.card-details{display:none;margin-top:10px}.card.expanded .card-details{display:block}.card.expanded .toggle-btn{background:var(--deep)}
 .name:disabled,.num:disabled,.field-name:disabled{opacity:1;color:#334155}
 .remain{border-radius:16px;padding:14px;text-align:center;font-weight:900;font-size:26px;margin-bottom:8px;background:#fee2e2;color:#991b1b}.remain.over{background:#dcfce7;color:#166534}.completed{text-align:center;font-weight:900;color:var(--deep);margin-bottom:10px}
 .progress{height:14px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-bottom:12px}.bar{height:100%;background:var(--blue);border-radius:999px}.rate{text-align:right;font-size:12px;color:#64748b;margin-top:-8px;margin-bottom:10px}
@@ -56,11 +56,9 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 <div class="toolbar"><input id="searchBox" class="search" placeholder="品番検索" oninput="draw()"><button class="btn-blue admin-only hidden" onclick="addProduct()">＋ 品番追加</button><button class="btn-light admin-only hidden" onclick="copyPreviousMonth()">前月品番コピー</button></div>
 <div id="cards"></div>
 <div class="actions"><button class="btn-light admin-only hidden" onclick="resetCurrentMonth()">この月を初期化</button><button class="btn-light" onclick="loadAll()">再読み込み</button></div>
-<div class="note">v7.0 リビルド安定版。項目テンプレートを製品別に管理し、月別データの数値は保持します。</div>
+<div class="note">v7.1 実用UI版。カードを折りたたみ表示でき、管理者パスワードは固定です。</div>
 </div>
-<div class="bottom"><div class="bottom-inner"><button id="adminBtn" class="btn-blue" onclick="toggleAdmin()">管理者モード</button><button id="settingBtn" class="btn-light" onclick="openSettings()">設定</button><button id="saveBtn" class="save hidden" onclick="manualSave()">保存</button><div id="bottomText" class="bottom-text">準備中</div></div></div>
-
-<div id="settingsModal" class="modal-bg"><div class="modal"><h2>管理者設定</h2><div class="label">現在のパスワード</div><input id="oldPw" type="password"><div class="label">新しいパスワード</div><input id="newPw" type="password"><div class="label">新しいパスワード確認</div><input id="newPw2" type="password"><div class="row"><button class="btn-light" onclick="closeSettings()">閉じる</button><button class="btn-blue" onclick="changeAdminPassword()">変更</button></div></div></div>
+<div class="bottom"><div class="bottom-inner"><button id="adminBtn" class="btn-blue" onclick="toggleAdmin()">管理者モード</button><button id="saveBtn" class="save hidden" onclick="manualSave()">保存</button><div id="bottomText" class="bottom-text">準備中</div></div></div>
 
 <div id="calendarModal" class="modal-bg"><div class="modal"><h2 id="calTitle">出荷予定</h2><div class="month-row"><button class="btn-light" onclick="calendarMonth(-1)">◀</button><div id="calMonthTitle" class="month-title"></div><button class="btn-light" onclick="calendarMonth(1)">▶</button></div><div id="calendarGrid" class="calendar"></div><div id="dayDetail" class="schedule-list"></div><div class="admin-only hidden" style="margin-top:12px"><h3>出荷予定追加</h3><input id="shipDateInput" type="date"><input id="shipQtyInput" type="number" inputmode="numeric" placeholder="数量"><textarea id="shipMemoInput" placeholder="メモ"></textarea><button class="btn-blue" onclick="addSchedule()">追加</button></div><div class="row" style="margin-top:12px"><button class="btn-light" onclick="closeCalendar()">閉じる</button><button class="btn-light" onclick="loadSchedules()">再読み込み</button></div></div></div>
 
@@ -69,8 +67,8 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
-const DEFAULT_ADMIN_PASSWORD=CONFIG.DEFAULT_ADMIN_PASSWORD||"0000";
-const APP_VERSION="7.0";
+const DEFAULT_ADMIN_PASSWORD="2342";
+const APP_VERSION="7.1";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -89,12 +87,9 @@ function setState(t,c="saved"){saveState.textContent=t;saveState.className=`stat
 function setBottom(t){bottomText.textContent=t}
 function monthLabel(){monthTitle.textContent=`${currentYear}年${currentMonth}月`}
 function clone(v){return JSON.parse(JSON.stringify(v))}
-function getAdminPassword(){return localStorage.getItem("tajima_admin_password")||DEFAULT_ADMIN_PASSWORD}
+function getAdminPassword(){return "2342"}
 function formatTime(v){if(!v)return "未保存";try{const d=new Date(v);return d.toLocaleString("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});}catch(e){return "未保存"}}
 
-function openSettings(){settingsModal.style.display="flex";oldPw.value="";newPw.value="";newPw2.value=""}
-function closeSettings(){settingsModal.style.display="none"}
-function changeAdminPassword(){if(oldPw.value!==getAdminPassword()){alert("現在のパスワードが違います");return}if(!newPw.value||newPw.value.length<4){alert("新しいパスワードは4文字以上");return}if(newPw.value!==newPw2.value){alert("確認用パスワードが一致しません");return}localStorage.setItem("tajima_admin_password",newPw.value);alert("変更しました");closeSettings()}
 function applyMode(){modeState.textContent=isAdmin?"管理者モード":"閲覧モード";modeState.className=isAdmin?"mode admin":"mode";adminBtn.textContent=isAdmin?"ログアウト":"管理者モード";saveBtn.classList.toggle("hidden",!isAdmin);document.querySelectorAll(".admin-only").forEach(e=>e.classList.toggle("hidden",!isAdmin));document.querySelectorAll(".edit-input").forEach(e=>e.disabled=!isAdmin);document.querySelectorAll(".delete-btn").forEach(e=>e.classList.toggle("hidden",!isAdmin));document.querySelectorAll(".custom-admin").forEach(e=>e.classList.toggle("hidden",!isAdmin));setBottom(isAdmin?"管理者モード":"閲覧モード")}
 function toggleAdmin(){if(isAdmin){isAdmin=false;localStorage.removeItem("tajima_admin_logged_in");applyMode();draw();return}const pw=prompt("管理者パスワードを入力してください");if(pw===getAdminPassword()){isAdmin=true;localStorage.setItem("tajima_admin_logged_in","yes");applyMode();draw()}else if(pw!==null){alert("パスワードが違います")}}
 
@@ -131,9 +126,9 @@ async function loadMonth(){
 }
 
 function updateLastSavedTime(){let latest=null;data.forEach(p=>{if(p.updated_at){const t=new Date(p.updated_at);if(!latest||t>latest)latest=t}});lastSavedTime.textContent=latest?formatTime(latest):"未保存"}
-function setDirty(){if(!isAdmin)return;dirty=true;setState("未保存・自動保存待ち","dirty");setBottom("変更があります。自動保存します");scheduleAutoSave()}
-function scheduleAutoSave(){clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>autoSaveNow(),2500)}
-async function autoSaveNow(){if(!isAdmin||!dirty||autoSaving)return;autoSaving=true;setState("自動保存中...","dirty");setBottom("自動保存中");try{await saveData();setBottom("自動保存しました")}catch(e){setState("自動保存エラー","error");setBottom("保存失敗");console.error(e)}finally{autoSaving=false}}
+function setDirty(){if(!isAdmin)return;dirty=true;setState("未保存・自動保存待ち","dirty");setBottom("入力中... 8秒後に自動保存");scheduleAutoSave()}
+function scheduleAutoSave(){clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>autoSaveNow(),8000)}
+async function autoSaveNow(){if(!isAdmin||!dirty||autoSaving)return;autoSaving=true;setState("自動保存中...","dirty");setBottom("☁ 自動保存中...");try{await saveData();setBottom("✔ 自動保存しました "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit"}))}catch(e){setState("自動保存エラー","error");setBottom("保存失敗");console.error(e)}finally{autoSaving=false}}
 async function saveData(){
   for(const p of data){
     const row={product_name:p.product_name,order_qty:num(p.order_qty),finished_qty:num(p.finished_qty),shipped_qty:num(p.shipped_qty),process21_qty:num(p.process21_qty),process1_qty:num(p.process1_qty),custom_fields:p.custom_fields||[],updated_at:new Date().toISOString()};
@@ -142,7 +137,7 @@ async function saveData(){
   }
   await loadAll();
 }
-async function manualSave(){if(!isAdmin){alert("管理者モードでのみ保存できます");return}clearTimeout(autoSaveTimer);setState("保存中...");setBottom("保存中");try{await saveData();setBottom("保存しました")}catch(e){setState("保存エラー","error");alert("保存エラー: "+e.message)}}
+async function manualSave(){if(!isAdmin){alert("管理者モードでのみ保存できます");return}clearTimeout(autoSaveTimer);setState("保存中...");setBottom("保存中");try{await saveData();setBottom("✔ 保存しました "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit"}))}catch(e){setState("保存エラー","error");alert("保存エラー: "+e.message)}}
 
 function changeMonth(d){if(dirty&&!confirm("未保存の変更があります。保存せずに月を移動しますか？"))return;currentMonth+=d;if(currentMonth<=0){currentMonth=12;currentYear--}if(currentMonth>=13){currentMonth=1;currentYear++}loadAll()}
 function calcTotals(){let order=0,comp=0;data.forEach(p=>{order+=num(p.order_qty);comp+=num(p.finished_qty)+num(p.shipped_qty)});totalOrder.textContent=order;totalCompleted.textContent=comp;totalRemaining.textContent=order-comp}
@@ -196,14 +191,21 @@ async function deleteProduct(i){if(!isAdmin)return;if(!confirm(`${data[i].produc
 async function resetCurrentMonth(){if(!isAdmin)return;if(!confirm(`${currentYear}年${currentMonth}月を初期化しますか？`))return;try{await apiDeleteMonth(monthStr());data=await seedMonth();draw();dirty=false;await loadAll()}catch(e){alert("初期化エラー: "+e.message)}}
 async function copyPreviousMonth(){if(!isAdmin)return;let y=currentYear,m=currentMonth-1;if(m<=0){m=12;y--}const pm=`${y}-${String(m).padStart(2,"0")}`;try{const prev=await apiGetMonth(pm);if(prev.length===0){alert("前月データがありません");return}await apiDeleteMonth(monthStr());const rows=[];for(const p of prev){rows.push({month:monthStr(),product_name:p.product_name,order_qty:0,finished_qty:0,shipped_qty:0,custom_fields:await getTemplateFields(p.product_name)})}await apiInsertProducts(rows);await loadAll()}catch(e){alert("コピーエラー: "+e.message)}}
 
+function expandedKey(product){return "tajima_expanded_"+product}
+function isExpanded(product){return localStorage.getItem(expandedKey(product))==="yes"}
+function toggleCard(product){
+  const now=isExpanded(product);
+  if(now)localStorage.removeItem(expandedKey(product));
+  else localStorage.setItem(expandedKey(product),"yes");
+  draw();
+}
 function draw(){
   monthLabel();calcTotals();const q=(searchBox.value||"").toLowerCase();cards.innerHTML="";
   data.forEach((p,i)=>{
     if(q&&!String(p.product_name).toLowerCase().includes(q))return;
     const comp=num(p.finished_qty)+num(p.shipped_qty),r=num(p.order_qty)-comp,pct=num(p.order_qty)>0?Math.min(100,Math.round(comp/num(p.order_qty)*100)):0,dis=isAdmin?"":"disabled";
     const custom=(p.custom_fields||[]).map((f,j)=>`<div class="custom-row"><input class="field-name edit-input" value="${esc(f.name)}" oninput="updateCustomName(${i},${j},this.value)" ${dis}><input class="custom-num edit-input" inputmode="numeric" value="${num(f.value)}" oninput="updateCustomValue(${i},${j},this.value)" ${dis}><button class="btn-red btn-small custom-admin ${isAdmin?'':'hidden'}" onclick="deleteCustomField(${i},${j})">削除</button></div>`).join("");
-    const c=document.createElement("div");c.className="card";c.innerHTML=`<div class="top"><input class="name edit-input" value="${esc(p.product_name)}" oninput="updateName(${i},this.value)" ${dis}><button class="btn-red delete-btn ${isAdmin?'':'hidden'}" onclick="deleteProduct(${i})">削除</button></div><div id="rem-${i}" class="remain ${r<0?'over':''}">${r<0?`超過 ${Math.abs(r)}`:`残り ${r}`}</div><div id="comp-${i}" class="completed">生産完了 ${comp}（完成品 ${num(p.finished_qty)} + 出荷量 ${num(p.shipped_qty)}）</div><div class="progress"><div id="bar-${i}" class="bar" style="width:${pct}%"></div></div><div id="rate-${i}" class="rate">進捗 ${pct}%</div><div class="grid"><div class="field"><div class="label">受注数</div><input class="num edit-input" inputmode="numeric" value="${p.order_qty}" oninput="updateNum(${i},'order_qty',this.value)" ${dis}></div><div class="field"><div class="label">完成品</div><input class="num edit-input" inputmode="numeric" value="${p.finished_qty}" oninput="updateNum(${i},'finished_qty',this.value)" ${dis}></div><div class="field"><div class="label">出荷量</div><input class="num edit-input" inputmode="numeric" value="${p.shipped_qty||0}" oninput="updateNum(${i},'shipped_qty',this.value)" ${dis}></div></div><div class="custom-title">標準・自由項目</div>${custom}<button class="btn-light custom-admin ${isAdmin?'':'hidden'}" onclick="addCustomField(${i})">＋ 項目追加</button><button class="btn-light custom-admin ${isAdmin?'':'hidden'}" style="margin-left:6px" onclick="addStandardFields(${i})">標準項目復元</button><button class="btn-purple" style="width:100%;margin-top:8px" onclick="openCalendar('${esc(p.product_name)}')">出荷予定</button>`;
-    cards.appendChild(c);
+    const c=document.createElement("div");const expanded=isExpanded(p.product_name);c.className="card "+(expanded?"expanded":"");c.innerHTML=`<div class="top"><button class="toggle-btn" onclick="toggleCard('${esc(p.product_name)}')">${expanded?'▲':'▼'}</button><input class="name edit-input" value="${esc(p.product_name)}" oninput="updateName(${i},this.value)" ${dis}><button class="btn-red delete-btn ${isAdmin?'':'hidden'}" onclick="deleteProduct(${i})">削除</button></div><div class="card-summary"><div id="rem-${i}" class="remain ${r<0?'over':''}">${r<0?`超過 ${Math.abs(r)}`:`残り ${r}`}</div><div class="progress"><div id="bar-${i}" class="bar" style="width:${pct}%"></div></div><div id="rate-${i}" class="rate">進捗 ${pct}%</div></div><div class="card-details"><div id="comp-${i}" class="completed">生産完了 ${comp}（完成品 ${num(p.finished_qty)} + 出荷量 ${num(p.shipped_qty)}）</div><div class="grid"><div class="field"><div class="label">受注数</div><input class="num edit-input" inputmode="numeric" value="${p.order_qty}" oninput="updateNum(${i},'order_qty',this.value)" ${dis}></div><div class="field"><div class="label">完成品</div><input class="num edit-input" inputmode="numeric" value="${p.finished_qty}" oninput="updateNum(${i},'finished_qty',this.value)" ${dis}></div><div class="field"><div class="label">出荷量</div><input class="num edit-input" inputmode="numeric" value="${p.shipped_qty||0}" oninput="updateNum(${i},'shipped_qty',this.value)" ${dis}></div></div><div class="custom-title">標準・自由項目</div>${custom}<button class="btn-light custom-admin ${isAdmin?'':'hidden'}" onclick="addCustomField(${i})">＋ 項目追加</button><button class="btn-light custom-admin ${isAdmin?'':'hidden'}" style="margin-left:6px" onclick="addStandardFields(${i})">標準項目復元</button><button class="btn-purple" style="width:100%;margin-top:8px" onclick="openCalendar('${esc(p.product_name)}')">出荷予定</button></div>`;cards.appendChild(c);
   });
   applyMode();
 }
