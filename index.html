@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v8.2</title>
+<title>TAJIMA 生産管理 v8.3</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -62,7 +62,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .hq-day.done{background:#e5e7eb;border:2px solid #64748b;color:#334155}
 .hq-chip{display:block;margin-top:3px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hq-list{margin-top:10px}.hq-item{background:#f8fbff;border:1px solid var(--line);border-radius:14px;padding:10px;margin:8px 0}.hq-item b{color:var(--deep)}
-.hq-form{background:#fff;border:2px dashed var(--line);border-radius:16px;padding:10px;margin-top:12px}.hq-form input,.hq-form textarea{width:100%;padding:10px;border:2px solid var(--line);border-radius:12px;margin:5px 0 9px;font-size:16px}
+.hq-form{background:#fff;border:2px dashed var(--line);border-radius:16px;padding:10px;margin-top:12px}.hq-form input,.hq-form textarea{width:100%;padding:10px;border:2px solid var(--line);border-radius:12px;margin:5px 0 9px;font-size:16px}.date-short{font-weight:900;letter-spacing:.08em}
 
 .new-badge{display:inline-block;background:#ef4444;color:#fff;font-size:11px;font-weight:900;border-radius:999px;padding:3px 7px;margin-left:6px;vertical-align:middle}
 .hq-day.multi{background:#fef3c7;border:2px solid #f59e0b}
@@ -115,8 +115,8 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
   </div>
 <div class="hq-bulk hq-admin hidden">
     <h3>一括入力</h3>
-    <div class="label">形式: 機械,品名,材料入荷日,納期日,メモ</div>
-    <textarea id="hqBulkText" placeholder="MPH,ABC-123,2026-07-03,2026-07-10,急ぎ&#10;MPE,XYZ-001,2026-07-04,2026-07-15"></textarea>
+    <div class="label">形式: 機械/品名/材料入荷日/納期日/メモ　例: MPH/table/0701/0708/memo</div>
+    <textarea id="hqBulkText" placeholder="MPH/table/0701/0708/memo&#10;MPE/base/0710/0715"></textarea>
     <button class="btn-purple" onclick="bulkAddHqSchedules()">一括追加</button>
   </div>
   <div id="hqMachines"></div>
@@ -142,7 +142,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="8.2";
+const APP_VERSION="8.3";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -394,6 +394,27 @@ function showHeadOffice(){currentSection="hq";localStorage.setItem("tajima_secti
 
 // head office schedules
 function hqMonthStr(){return `${hqYear}-${String(hqMonth).padStart(2,"0")}`}
+
+function parseHqDate(v){
+  v=String(v||"").trim();
+  if(!v)return null;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(v))return v;
+  if(/^\d{4}$/.test(v)){
+    const mm=v.slice(0,2), dd=v.slice(2,4);
+    return `${hqYear}-${mm}-${dd}`;
+  }
+  if(/^\d{1,2}\/\d{1,2}$/.test(v)){
+    const [m,d]=v.split("/");
+    return `${hqYear}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  }
+  return v;
+}
+function displayShortDate(v){
+  if(!v)return "";
+  const m=String(v).match(/^\d{4}-(\d{2})-(\d{2})$/);
+  return m?`${m[1]}${m[2]}`:v;
+}
+
 function hqExpandedKey(m){return "tajima_hq_expanded_"+m}
 function isHqExpanded(m){return localStorage.getItem(hqExpandedKey(m))==="yes"}
 function toggleHqMachine(m){if(isHqExpanded(m))localStorage.removeItem(hqExpandedKey(m));else localStorage.setItem(hqExpandedKey(m),"yes");drawHq()}
@@ -465,7 +486,7 @@ function drawHqList(machine,schedules){
   return `<div class="hq-list">`+schedules.map(s=>`<div class="hq-item" onclick="editHqSchedule(${s.id})"><b>${esc(s.item_name)}</b><br>材料: ${s.material_date||"-"}<br>納期: ${s.due_date||s.end_date||"-"}<br>状態: ${s.status||"予定"}<br>${esc(s.memo||"")}<div class="hq-admin hidden" style="margin-top:8px"><button class="btn-green btn-small" onclick="event.stopPropagation();completeHqSchedule(${s.id})">完了</button> <button class="btn-red btn-small" onclick="event.stopPropagation();deleteHqSchedule(${s.id})">削除</button></div></div>`).join("")+`</div>`;
 }
 function drawHqForm(machine){
-  return `<div class="hq-form hq-admin hidden"><h3>予定追加</h3><input id="item-${machine}" placeholder="品名・単品名" oninput="markHqEditing()" onfocus="markHqEditing()"><div class="label">材料入荷日</div><input id="mat-${machine}" type="date" oninput="markHqEditing()" onfocus="markHqEditing()"><div class="label">納期日</div><input id="due-${machine}" type="date" value="${hqMonthStr()}-01" oninput="markHqEditing()" onfocus="markHqEditing()"><textarea id="memo-${machine}" placeholder="メモ" oninput="markHqEditing()" onfocus="markHqEditing()"></textarea><button class="btn-purple" onclick="addHqSchedule('${machine}')">追加</button><button class="btn-light" style="width:100%;margin-top:8px" onclick="clearHqEditing();loadHqSchedules(true)">入力をクリア</button></div>`;
+  return `<div class="hq-form hq-admin hidden"><h3>予定追加</h3><input id="item-${machine}" placeholder="品名・単品名" oninput="markHqEditing()" onfocus="markHqEditing()"><div class="label">材料入荷日（例 0701）</div><input id="mat-${machine}" class="date-short" inputmode="numeric" placeholder="0701" oninput="markHqEditing()" onfocus="markHqEditing()"><div class="label">納期日（例 0708）</div><input id="due-${machine}" class="date-short" inputmode="numeric" placeholder="0708" oninput="markHqEditing()" onfocus="markHqEditing()"><textarea id="memo-${machine}" placeholder="メモ" oninput="markHqEditing()" onfocus="markHqEditing()"></textarea><button class="btn-purple" onclick="addHqSchedule('${machine}')">追加</button><button class="btn-light" style="width:100%;margin-top:8px" onclick="clearHqEditing();loadHqSchedules(true)">入力をクリア</button></div>`;
 }
 function showHqDay(machine,date){
   const list=hqItemsForMachine(machine).filter(s=>scheduleTouchesDate(s,date));
@@ -475,8 +496,8 @@ function showHqDay(machine,date){
 async function addHqSchedule(machine){
   if(!hqAdmin)return;
   const item=document.getElementById(`item-${machine}`).value.trim();
-  const mat=document.getElementById(`mat-${machine}`).value||null;
-  const due=document.getElementById(`due-${machine}`).value;
+  const mat=parseHqDate(document.getElementById(`mat-${machine}`).value);
+  const due=parseHqDate(document.getElementById(`due-${machine}`).value);
   const memo=document.getElementById(`memo-${machine}`).value||"";
   if(!item||!due){alert("品名・納期日を入力してください");return}
   const row={machine_name:machine,item_name:item,material_date:mat,start_date:due,end_date:due,due_date:due,memo:memo,status:"予定",updated_at:new Date().toISOString()};
@@ -495,8 +516,9 @@ async function bulkAddHqSchedules(){
   text.split(/\n+/).forEach((line,idx)=>{
     const raw=line.trim();
     if(!raw)return;
-    const parts=raw.split(",").map(x=>x.trim());
-    const machine=parts[0], item=parts[1], mat=parts[2]||null, due=parts[3], memo=parts.slice(4).join(",");
+    const sep=raw.includes("/")?"/":",";
+    const parts=raw.split(sep).map(x=>x.trim());
+    const machine=parts[0], item=parts[1], mat=parseHqDate(parts[2]||""), due=parseHqDate(parts[3]||""), memo=parts.slice(4).join(sep);
     if(!validMachines.includes(machine)){errors.push(`${idx+1}行目: 機械名が違います`);return}
     if(!item||!due){errors.push(`${idx+1}行目: 品名または納期日がありません`);return}
     rows.push({machine_name:machine,item_name:item,material_date:mat||null,start_date:due,end_date:due,due_date:due,memo:memo||"",status:"予定",updated_at:new Date().toISOString()});
@@ -514,15 +536,21 @@ function editHqSchedule(id){
   if(!hqAdmin)return;
   const s=hqSchedules.find(x=>x.id===id);
   if(!s)return;
+  const machine=prompt(`機械名 (${HQ_MACHINES.join("/")})`,s.machine_name||"");
+  if(machine===null)return;
+  if(!HQ_MACHINES.includes(machine)){alert("機械名が違います");return}
   const item=prompt("品名・単品名",s.item_name||"");
   if(item===null)return;
-  const mat=prompt("材料入荷日 YYYY-MM-DD",s.material_date||"");
-  if(mat===null)return;
-  const due=prompt("納期日 YYYY-MM-DD",s.due_date||s.end_date||"");
-  if(due===null)return;
+  const matRaw=prompt("材料入荷日 例 0701",displayShortDate(s.material_date)||"");
+  if(matRaw===null)return;
+  const dueRaw=prompt("納期日 例 0708",displayShortDate(s.due_date||s.end_date)||"");
+  if(dueRaw===null)return;
   const memo=prompt("メモ",s.memo||"");
   if(memo===null)return;
-  updateHqSchedule(id,{item_name:item,material_date:mat||null,due_date:due,start_date:due,end_date:due,memo:memo,updated_at:new Date().toISOString()});
+  const status=prompt("状態: 予定 または 完了",s.status||"予定");
+  if(status===null)return;
+  const due=parseHqDate(dueRaw);
+  updateHqSchedule(id,{machine_name:machine,item_name:item,material_date:parseHqDate(matRaw)||null,due_date:due,start_date:due,end_date:due,memo:memo,status:status||"予定",updated_at:new Date().toISOString()});
 }
 async function updateHqSchedule(id,row){
   const r=await fetch(`${HQ_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify(row)});
