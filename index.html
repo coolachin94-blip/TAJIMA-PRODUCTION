@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v7.2</title>
+<title>TAJIMA 生産管理 v8.0</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -35,12 +35,35 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;z-index:20;padding:14px}.modal{background:#fff;border-radius:22px;border:2px solid var(--blue);max-width:560px;width:100%;padding:16px;box-shadow:0 16px 40px rgba(15,23,42,.25);max-height:90vh;overflow:auto}.modal h2{margin:0 0 12px;color:var(--deep)}.modal input,.modal textarea{width:100%;padding:12px;border:2px solid var(--line);border-radius:14px;font-size:18px;margin:6px 0 10px}.modal .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}.day,.dow{padding:9px 0;text-align:center;border-radius:12px}.dow{font-size:12px;color:#64748b;font-weight:900}.day{background:var(--soft);border:1px solid var(--line);font-weight:900}.day.has{background:var(--yellow);border:3px solid #f59e0b}.day.selected{background:#dbeafe;border:3px solid var(--blue);color:var(--deep)}.day.empty{background:transparent;border:0}.schedule-list{margin-top:12px}.schedule-item{border:1px solid var(--line);background:#f8fbff;border-radius:14px;padding:10px;margin:8px 0}.schedule-date{font-weight:900;color:var(--deep)}
 @media(max-width:430px){body{padding:9px}h1{font-size:22px}.summary{grid-template-columns:repeat(2,1fr)}.sum{padding:8px 4px}.sum b{font-size:17px}.name{font-size:22px}.num{font-size:23px}.bottom-inner{grid-template-columns:1fr}.bottom-text{grid-column:1}.save,#adminBtn,#settingBtn{width:100%}.custom-row{grid-template-columns:1fr 82px auto}}
+
+.home-screen{max-width:620px;margin:42px auto;padding:20px}
+.home-title{text-align:center;color:var(--deep);font-size:34px;font-weight:900;margin-bottom:22px}
+.home-card{background:#fff;border:2px solid var(--blue);border-radius:24px;padding:24px;margin:16px 0;text-align:center;box-shadow:0 10px 26px rgba(37,99,235,.14)}
+.home-card button{width:100%;font-size:22px;padding:20px}
+.section-switch{display:flex;gap:8px;margin-bottom:12px}.section-switch button{flex:1}
+.hq-machine{background:#fff;border:2px solid var(--purple);border-radius:22px;padding:14px;margin-bottom:14px;box-shadow:0 8px 22px rgba(124,58,237,.12)}
+.hq-top{display:flex;gap:10px;align-items:center}.hq-name{flex:1;font-size:24px;font-weight:900;color:var(--deep);background:var(--soft);border-radius:14px;padding:11px}
+.hq-details{display:none;margin-top:12px}.hq-machine.expanded .hq-details{display:block}
+.hq-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px}
+.hq-day,.hq-dow{min-height:52px;border-radius:12px;text-align:center;padding:5px 2px;font-weight:900;position:relative}
+.hq-dow{min-height:auto;color:#64748b;font-size:12px}
+.hq-day{background:var(--soft);border:1px solid var(--line);font-size:13px;overflow:hidden}
+.hq-empty{background:transparent;border:0}
+.hq-day.work{background:#dcfce7;border:2px solid #22c55e}
+.hq-day.material{box-shadow:inset 0 0 0 3px #60a5fa}
+.hq-day.done{background:#e5e7eb;border:2px solid #64748b;color:#334155}
+.hq-chip{display:block;margin-top:3px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hq-list{margin-top:10px}.hq-item{background:#f8fbff;border:1px solid var(--line);border-radius:14px;padding:10px;margin:8px 0}.hq-item b{color:var(--deep)}
+.hq-form{background:#fff;border:2px dashed var(--line);border-radius:16px;padding:10px;margin-top:12px}.hq-form input,.hq-form textarea{width:100%;padding:10px;border:2px solid var(--line);border-radius:12px;margin:5px 0 9px;font-size:16px}
+@media(max-width:430px){.home-title{font-size:28px}.hq-day{min-height:46px;font-size:12px}.hq-chip{font-size:8px}.section-switch{display:grid;grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
+<div id="homeScreen" class="home-screen"><div class="home-title">TAJIMA</div><div class="home-card"><button class="btn-purple" onclick="showHeadOffice()">本社</button></div><div class="home-card"><button class="btn-blue" onclick="showFactory2()">第二工場</button></div></div>
 <div id="updateBanner" class="update-banner"><b>新しいバージョンがあります</b><br><span id="updateText">更新できます</span><button class="btn-green" onclick="applyAppUpdate()">更新する</button></div>
 <div id="pullIndicator" class="pull-indicator">↓ 更新</div>
-<div class="app">
+<div id="factoryApp" class="app" style="display:none">
 <div class="header">
   <h1>TAJIMA 生産管理</h1>
   <div class="month-row">
@@ -56,9 +79,29 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 <div class="toolbar"><input id="searchBox" class="search" placeholder="品番検索" oninput="draw()"><button class="btn-blue admin-only hidden" onclick="addProduct()">＋ 品番追加</button><button class="btn-light admin-only hidden" onclick="copyPreviousMonth()">前月品番コピー</button></div>
 <div id="cards"></div>
 <div class="actions"><button class="btn-light admin-only hidden" onclick="resetCurrentMonth()">この月を初期化</button><button class="btn-light" onclick="loadAll()">再読み込み</button></div>
-<div class="note">v7.2 出荷予定入力改善版。起動時は現在月を表示し、出荷予定は複数日をまとめて登録できます。</div>
+<div class="note">v8.0 本社・第二工場分離版。本社は5台の機械別スケジュールを管理できます。</div>
 </div>
-<div class="bottom"><div class="bottom-inner"><button id="adminBtn" class="btn-blue" onclick="toggleAdmin()">管理者モード</button><button id="saveBtn" class="save hidden" onclick="manualSave()">保存</button><div id="bottomText" class="bottom-text">準備中</div></div></div>
+
+<div id="hqApp" class="app" style="display:none">
+  <div class="header">
+    <h1>本社 機械別予定</h1>
+    <div class="month-row">
+      <button class="btn-light" onclick="changeHqMonth(-1)">◀ 前月</button>
+      <div id="hqMonthTitle" class="month-title"></div>
+      <button class="btn-light" onclick="changeHqMonth(1)">翌月 ▶</button>
+    </div>
+    <div id="hqModeState" class="mode">閲覧モード</div>
+  </div>
+  <div class="section-switch">
+    <button class="btn-light" onclick="showHome()">ホーム</button>
+    <button id="hqAdminBtn" class="btn-purple" onclick="toggleHqAdmin()">本社管理者モード</button>
+    <button class="btn-light" onclick="loadHqSchedules()">再読み込み</button>
+  </div>
+  <div id="hqMachines"></div>
+  <div class="note">本社管理者パスワード: 4564。材料入荷日は青枠、加工期間は緑、完了はグレーで表示します。</div>
+</div>
+
+<div class="bottom"><div class="bottom-inner"><button class="btn-light" onclick="showHome()">ホーム</button><button id="adminBtn" class="btn-blue" onclick="toggleAdmin()">管理者モード</button><button id="saveBtn" class="save hidden" onclick="manualSave()">保存</button><div id="bottomText" class="bottom-text">準備中</div></div></div>
 
 <div id="calendarModal" class="modal-bg"><div class="modal"><h2 id="calTitle">出荷予定</h2><div class="month-row"><button class="btn-light" onclick="calendarMonth(-1)">◀</button><div id="calMonthTitle" class="month-title"></div><button class="btn-light" onclick="calendarMonth(1)">▶</button></div><div id="calendarGrid" class="calendar"></div><div id="dayDetail" class="schedule-list"></div><div class="admin-only hidden" style="margin-top:12px">
   <h3>出荷予定追加</h3>
@@ -77,15 +120,19 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="7.2";
+const APP_VERSION="8.0";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
+const HQ_API=`${SUPABASE_URL}/rest/v1/hq_machine_schedules`;
 const STANDARD_FIELDS=[{name:"工程2-1",value:0},{name:"工程1",value:0}];
 const TODAY=new Date();
 let currentYear=TODAY.getFullYear(),currentMonth=TODAY.getMonth()+1,data=[],dirty=false,loading=false,isAdmin=localStorage.getItem("tajima_admin_logged_in")==="yes";
 let selectedProduct="", calYear=2026, calMonth=6, schedules=[], allMonthSchedules=[], selectedShipDates=[];
 let autoSaveTimer=null, autoSaving=false;
+const HQ_MACHINES=["MPH","MPE","MVR40","MVR25","KNC"];
+let currentSection=localStorage.getItem("tajima_section")||"home";
+let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqAdmin=false;
 
 function monthStr(){return `${currentYear}-${String(currentMonth).padStart(2,"0")}`}
 function calMonthStr(){return `${calYear}-${String(calMonth).padStart(2,"0")}`}
@@ -285,6 +332,104 @@ async function addSchedule(){
 }
 async function deleteSchedule(id){if(!isAdmin)return;if(!confirm("削除しますか？"))return;const r=await fetch(`${SHIP_API}?id=eq.${id}`,{method:"DELETE",headers:headers()});if(!r.ok){alert("削除エラー: "+await r.text());return}await loadSchedules();await loadMonthSchedules()}
 
+
+// section navigation
+function showHome(){currentSection="home";localStorage.setItem("tajima_section","home");homeScreen.style.display="block";factoryApp.style.display="none";hqApp.style.display="none";document.querySelector(".bottom").style.display="none"}
+function showFactory2(){currentSection="factory2";localStorage.setItem("tajima_section","factory2");homeScreen.style.display="none";factoryApp.style.display="block";hqApp.style.display="none";document.querySelector(".bottom").style.display="block";loadAll()}
+function showHeadOffice(){currentSection="hq";localStorage.setItem("tajima_section","hq");homeScreen.style.display="none";factoryApp.style.display="none";hqApp.style.display="block";document.querySelector(".bottom").style.display="none";loadHqSchedules()}
+
+// head office schedules
+function hqMonthStr(){return `${hqYear}-${String(hqMonth).padStart(2,"0")}`}
+function hqExpandedKey(m){return "tajima_hq_expanded_"+m}
+function isHqExpanded(m){return localStorage.getItem(hqExpandedKey(m))==="yes"}
+function toggleHqMachine(m){if(isHqExpanded(m))localStorage.removeItem(hqExpandedKey(m));else localStorage.setItem(hqExpandedKey(m),"yes");drawHq()}
+function hqModeApply(){hqModeState.textContent=hqAdmin?"本社管理者モード":"閲覧モード";hqModeState.className=hqAdmin?"mode admin":"mode";hqAdminBtn.textContent=hqAdmin?"本社ログアウト":"本社管理者モード";document.querySelectorAll(".hq-admin").forEach(e=>e.classList.toggle("hidden",!hqAdmin))}
+function toggleHqAdmin(){if(hqAdmin){hqAdmin=false;hqModeApply();drawHq();return}const pw=prompt("本社管理者パスワードを入力してください");if(pw==="4564"){hqAdmin=true;hqModeApply();drawHq()}else if(pw!==null){alert("パスワードが違います")}}
+function changeHqMonth(d){hqMonth+=d;if(hqMonth<=0){hqMonth=12;hqYear--}if(hqMonth>=13){hqMonth=1;hqYear++}loadHqSchedules()}
+async function loadHqSchedules(){
+  hqMonthTitle.textContent=`${hqYear}年${hqMonth}月`;
+  if(!checkConfig()){alert("config.jsにPublishable keyを入れてください");return}
+  const from=`${hqMonthStr()}-01`;
+  let y=hqYear,m=hqMonth+1;if(m===13){m=1;y++}
+  const to=`${y}-${String(m).padStart(2,"0")}-01`;
+  const url=`${HQ_API}?start_date=lt.${to}&end_date=gte.${from}&select=*&order=start_date.asc`;
+  try{hqSchedules=await restGet(url);drawHq()}catch(e){alert("本社予定読み込みエラー: "+e.message)}
+}
+function scheduleTouchesDate(s,date){return (!s.start_date||s.start_date<=date)&&(!s.end_date||s.end_date>=date)}
+function materialOnDate(s,date){return s.material_date===date}
+function hqItemsForMachine(machine){return hqSchedules.filter(s=>s.machine_name===machine)}
+function drawHq(){
+  hqMonthTitle.textContent=`${hqYear}年${hqMonth}月`;
+  hqMachines.innerHTML="";
+  for(const machine of HQ_MACHINES){
+    const expanded=isHqExpanded(machine);
+    const schedules=hqItemsForMachine(machine);
+    const card=document.createElement("div");
+    card.className="hq-machine "+(expanded?"expanded":"");
+    const active=schedules.filter(s=>s.status!=="完了").length;
+    card.innerHTML=`<div class="hq-top"><button class="toggle-btn" onclick="toggleHqMachine('${machine}')">${expanded?'▲':'▼'}</button><div class="hq-name">${machine}</div><div style="font-weight:900;color:#64748b">${active}件</div></div><div class="hq-details">${drawHqCalendar(machine,schedules)}${drawHqList(machine,schedules)}${drawHqForm(machine)}</div>`;
+    hqMachines.appendChild(card);
+  }
+  hqModeApply();
+}
+function drawHqCalendar(machine,schedules){
+  const dows=["日","月","火","水","木","金","土"];
+  let html=`<div class="hq-calendar">${dows.map(d=>`<div class="hq-dow">${d}</div>`).join("")}`;
+  const first=new Date(hqYear,hqMonth-1,1),last=new Date(hqYear,hqMonth,0).getDate();
+  for(let i=0;i<first.getDay();i++)html+=`<div class="hq-day hq-empty"></div>`;
+  for(let d=1;d<=last;d++){
+    const date=`${hqMonthStr()}-${String(d).padStart(2,"0")}`;
+    const work=schedules.find(s=>scheduleTouchesDate(s,date));
+    const mat=schedules.find(s=>materialOnDate(s,date));
+    let cls="hq-day";
+    if(work)cls+=" work";
+    if(mat)cls+=" material";
+    if(work&&work.status==="完了")cls+=" done";
+    const label=work?`<span class="hq-chip">${work.status==="完了"?"✓ ":""}${esc(work.item_name)}</span>`:(mat?`<span class="hq-chip">材料</span>`:"");
+    html+=`<div class="${cls}" onclick="showHqDay('${machine}','${date}')">${d}${label}</div>`;
+  }
+  return html+"</div>";
+}
+function drawHqList(machine,schedules){
+  if(!schedules.length)return `<div class="hq-list"><div class="hq-item">予定なし</div></div>`;
+  return `<div class="hq-list">`+schedules.map(s=>`<div class="hq-item"><b>${esc(s.item_name)}</b><br>材料: ${s.material_date||"-"}<br>加工: ${s.start_date} 〜 ${s.end_date}<br>状態: ${s.status||"予定"}<br>${esc(s.memo||"")}<div class="hq-admin hidden" style="margin-top:8px"><button class="btn-green btn-small" onclick="completeHqSchedule(${s.id})">完了</button> <button class="btn-red btn-small" onclick="deleteHqSchedule(${s.id})">削除</button></div></div>`).join("")+`</div>`;
+}
+function drawHqForm(machine){
+  return `<div class="hq-form hq-admin hidden"><h3>予定追加</h3><input id="item-${machine}" placeholder="品名・単品名"><div class="label">材料入荷日</div><input id="mat-${machine}" type="date"><div class="label">加工開始日</div><input id="start-${machine}" type="date" value="${hqMonthStr()}-01"><div class="label">加工終了日</div><input id="end-${machine}" type="date" value="${hqMonthStr()}-01"><textarea id="memo-${machine}" placeholder="メモ"></textarea><button class="btn-purple" onclick="addHqSchedule('${machine}')">追加</button></div>`;
+}
+function showHqDay(machine,date){
+  const list=hqItemsForMachine(machine).filter(s=>scheduleTouchesDate(s,date)||materialOnDate(s,date));
+  if(!list.length){alert(`${machine} ${date}\n予定なし`);return}
+  alert(`${machine} ${date}\n\n`+list.map(s=>`${s.item_name}\n材料: ${s.material_date||"-"}\n加工: ${s.start_date}〜${s.end_date}\n状態: ${s.status||"予定"}\n${s.memo||""}`).join("\n\n"));
+}
+async function addHqSchedule(machine){
+  if(!hqAdmin)return;
+  const item=document.getElementById(`item-${machine}`).value.trim();
+  const mat=document.getElementById(`mat-${machine}`).value||null;
+  const start=document.getElementById(`start-${machine}`).value;
+  const end=document.getElementById(`end-${machine}`).value;
+  const memo=document.getElementById(`memo-${machine}`).value||"";
+  if(!item||!start||!end){alert("品名・開始日・終了日を入力してください");return}
+  if(end<start){alert("終了日は開始日以降にしてください");return}
+  const row={machine_name:machine,item_name:item,material_date:mat,start_date:start,end_date:end,memo:memo,status:"予定",updated_at:new Date().toISOString()};
+  const r=await fetch(HQ_API,{method:"POST",headers:headers(),body:JSON.stringify([row])});
+  if(!r.ok){alert("追加エラー: "+await r.text());return}
+  await loadHqSchedules();
+}
+async function completeHqSchedule(id){
+  if(!hqAdmin)return;
+  const r=await fetch(`${HQ_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({status:"完了",updated_at:new Date().toISOString()})});
+  if(!r.ok){alert("完了エラー: "+await r.text());return}
+  await loadHqSchedules();
+}
+async function deleteHqSchedule(id){
+  if(!hqAdmin)return;
+  if(!confirm("削除しますか？"))return;
+  const r=await fetch(`${HQ_API}?id=eq.${id}`,{method:"DELETE",headers:headers()});
+  if(!r.ok){alert("削除エラー: "+await r.text());return}
+  await loadHqSchedules();
+}
+
 // update check
 async function checkAppVersion(){try{const res=await fetch(`./version.json?ts=${Date.now()}`,{cache:"no-store"});if(!res.ok)return;const v=await res.json();if(v.version&&v.version!==APP_VERSION){updateText.textContent=`現在 v${APP_VERSION} → 最新 v${v.version}`;updateBanner.style.display="block"}}catch(e){}}
 async function applyAppUpdate(){updateText.textContent="更新中...";try{if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();for(const reg of regs){await reg.unregister()}}if(window.caches){const keys=await caches.keys();for(const key of keys){await caches.delete(key)}}}catch(e){}location.reload(true)}
@@ -298,7 +443,7 @@ window.addEventListener("touchend",async()=>{if(!isPulling)return;const ok=pullD
 
 window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
-loadAll();checkAppVersion();setInterval(()=>{if(!dirty&&!loading&&checkConfig())loadAll()},15000);setInterval(checkAppVersion,60000);
+if(currentSection==="factory2")showFactory2();else if(currentSection==="hq")showHeadOffice();else showHome();checkAppVersion();setInterval(()=>{if(currentSection==="factory2"&&!dirty&&!loading&&checkConfig())loadAll(); if(currentSection==="hq"&&checkConfig())loadHqSchedules();},15000);setInterval(checkAppVersion,60000);
 </script>
 </body>
 </html>
