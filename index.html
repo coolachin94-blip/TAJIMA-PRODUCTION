@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v8.0</title>
+<title>TAJIMA 生産管理 v8.1</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -79,7 +79,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 <div class="toolbar"><input id="searchBox" class="search" placeholder="品番検索" oninput="draw()"><button class="btn-blue admin-only hidden" onclick="addProduct()">＋ 品番追加</button><button class="btn-light admin-only hidden" onclick="copyPreviousMonth()">前月品番コピー</button></div>
 <div id="cards"></div>
 <div class="actions"><button class="btn-light admin-only hidden" onclick="resetCurrentMonth()">この月を初期化</button><button class="btn-light" onclick="loadAll()">再読み込み</button></div>
-<div class="note">v8.0 本社・第二工場分離版。本社は5台の機械別スケジュールを管理できます。</div>
+<div class="note">v8.1 本社入力安定版。入力中は自動更新せず、日付入力が戻らないようにしました。</div>
 </div>
 
 <div id="hqApp" class="app" style="display:none">
@@ -95,7 +95,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
   <div class="section-switch">
     <button class="btn-light" onclick="showHome()">ホーム</button>
     <button id="hqAdminBtn" class="btn-purple" onclick="toggleHqAdmin()">本社管理者モード</button>
-    <button class="btn-light" onclick="loadHqSchedules()">再読み込み</button>
+    <button class="btn-light" onclick="hqEditing=false;loadHqSchedules(true)">再読み込み</button>
   </div>
   <div id="hqMachines"></div>
   <div class="note">本社管理者パスワード: 4564。材料入荷日は青枠、加工期間は緑、完了はグレーで表示します。</div>
@@ -120,7 +120,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="8.0";
+const APP_VERSION="8.1";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -132,7 +132,7 @@ let selectedProduct="", calYear=2026, calMonth=6, schedules=[], allMonthSchedule
 let autoSaveTimer=null, autoSaving=false;
 const HQ_MACHINES=["MPH","MPE","MVR40","MVR25","KNC"];
 let currentSection=localStorage.getItem("tajima_section")||"home";
-let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqAdmin=false;
+let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqAdmin=false, hqEditing=false;
 
 function monthStr(){return `${currentYear}-${String(currentMonth).padStart(2,"0")}`}
 function calMonthStr(){return `${calYear}-${String(calMonth).padStart(2,"0")}`}
@@ -344,9 +344,18 @@ function hqExpandedKey(m){return "tajima_hq_expanded_"+m}
 function isHqExpanded(m){return localStorage.getItem(hqExpandedKey(m))==="yes"}
 function toggleHqMachine(m){if(isHqExpanded(m))localStorage.removeItem(hqExpandedKey(m));else localStorage.setItem(hqExpandedKey(m),"yes");drawHq()}
 function hqModeApply(){hqModeState.textContent=hqAdmin?"本社管理者モード":"閲覧モード";hqModeState.className=hqAdmin?"mode admin":"mode";hqAdminBtn.textContent=hqAdmin?"本社ログアウト":"本社管理者モード";document.querySelectorAll(".hq-admin").forEach(e=>e.classList.toggle("hidden",!hqAdmin))}
+function markHqEditing(){hqEditing=true}
+function clearHqEditing(){hqEditing=false}
+function canHqAutoRefresh(){
+  if(hqEditing)return false;
+  const a=document.activeElement;
+  if(!a)return true;
+  return !(a.closest && a.closest("#hqApp") && ["INPUT","TEXTAREA","SELECT"].includes(a.tagName));
+}
 function toggleHqAdmin(){if(hqAdmin){hqAdmin=false;hqModeApply();drawHq();return}const pw=prompt("本社管理者パスワードを入力してください");if(pw==="4564"){hqAdmin=true;hqModeApply();drawHq()}else if(pw!==null){alert("パスワードが違います")}}
-function changeHqMonth(d){hqMonth+=d;if(hqMonth<=0){hqMonth=12;hqYear--}if(hqMonth>=13){hqMonth=1;hqYear++}loadHqSchedules()}
-async function loadHqSchedules(){
+function changeHqMonth(d){if(hqEditing&&!confirm("入力中の内容があります。月を移動しますか？"))return;hqEditing=false;hqMonth+=d;if(hqMonth<=0){hqMonth=12;hqYear--}if(hqMonth>=13){hqMonth=1;hqYear++}loadHqSchedules()}
+async function loadHqSchedules(force=false){
+  if(!force && hqEditing)return;
   hqMonthTitle.textContent=`${hqYear}年${hqMonth}月`;
   if(!checkConfig()){alert("config.jsにPublishable keyを入れてください");return}
   const from=`${hqMonthStr()}-01`;
@@ -395,7 +404,7 @@ function drawHqList(machine,schedules){
   return `<div class="hq-list">`+schedules.map(s=>`<div class="hq-item"><b>${esc(s.item_name)}</b><br>材料: ${s.material_date||"-"}<br>加工: ${s.start_date} 〜 ${s.end_date}<br>状態: ${s.status||"予定"}<br>${esc(s.memo||"")}<div class="hq-admin hidden" style="margin-top:8px"><button class="btn-green btn-small" onclick="completeHqSchedule(${s.id})">完了</button> <button class="btn-red btn-small" onclick="deleteHqSchedule(${s.id})">削除</button></div></div>`).join("")+`</div>`;
 }
 function drawHqForm(machine){
-  return `<div class="hq-form hq-admin hidden"><h3>予定追加</h3><input id="item-${machine}" placeholder="品名・単品名"><div class="label">材料入荷日</div><input id="mat-${machine}" type="date"><div class="label">加工開始日</div><input id="start-${machine}" type="date" value="${hqMonthStr()}-01"><div class="label">加工終了日</div><input id="end-${machine}" type="date" value="${hqMonthStr()}-01"><textarea id="memo-${machine}" placeholder="メモ"></textarea><button class="btn-purple" onclick="addHqSchedule('${machine}')">追加</button></div>`;
+  return `<div class="hq-form hq-admin hidden"><h3>予定追加</h3><input id="item-${machine}" placeholder="品名・単品名" oninput="markHqEditing()" onfocus="markHqEditing()"><div class="label">材料入荷日</div><input id="mat-${machine}" type="date" oninput="markHqEditing()" onfocus="markHqEditing()"><div class="label">加工開始日</div><input id="start-${machine}" type="date" value="${hqMonthStr()}-01" oninput="markHqEditing(); if(!document.getElementById('end-${machine}').value || document.getElementById('end-${machine}').value < this.value) document.getElementById('end-${machine}').value=this.value" onfocus="markHqEditing()"><div class="label">加工終了日</div><input id="end-${machine}" type="date" value="${hqMonthStr()}-01" oninput="markHqEditing()" onfocus="markHqEditing()"><textarea id="memo-${machine}" placeholder="メモ" oninput="markHqEditing()" onfocus="markHqEditing()"></textarea><button class="btn-purple" onclick="addHqSchedule('${machine}')">追加</button><button class="btn-light" style="width:100%;margin-top:8px" onclick="clearHqEditing();loadHqSchedules(true)">入力をクリア</button></div>`;
 }
 function showHqDay(machine,date){
   const list=hqItemsForMachine(machine).filter(s=>scheduleTouchesDate(s,date)||materialOnDate(s,date));
@@ -414,20 +423,21 @@ async function addHqSchedule(machine){
   const row={machine_name:machine,item_name:item,material_date:mat,start_date:start,end_date:end,memo:memo,status:"予定",updated_at:new Date().toISOString()};
   const r=await fetch(HQ_API,{method:"POST",headers:headers(),body:JSON.stringify([row])});
   if(!r.ok){alert("追加エラー: "+await r.text());return}
-  await loadHqSchedules();
+  hqEditing=false;
+  await loadHqSchedules(true);
 }
 async function completeHqSchedule(id){
   if(!hqAdmin)return;
   const r=await fetch(`${HQ_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({status:"完了",updated_at:new Date().toISOString()})});
   if(!r.ok){alert("完了エラー: "+await r.text());return}
-  await loadHqSchedules();
+  await loadHqSchedules(true);
 }
 async function deleteHqSchedule(id){
   if(!hqAdmin)return;
   if(!confirm("削除しますか？"))return;
   const r=await fetch(`${HQ_API}?id=eq.${id}`,{method:"DELETE",headers:headers()});
   if(!r.ok){alert("削除エラー: "+await r.text());return}
-  await loadHqSchedules();
+  await loadHqSchedules(true);
 }
 
 // update check
@@ -443,7 +453,7 @@ window.addEventListener("touchend",async()=>{if(!isPulling)return;const ok=pullD
 
 window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
-if(currentSection==="factory2")showFactory2();else if(currentSection==="hq")showHeadOffice();else showHome();checkAppVersion();setInterval(()=>{if(currentSection==="factory2"&&!dirty&&!loading&&checkConfig())loadAll(); if(currentSection==="hq"&&checkConfig())loadHqSchedules();},15000);setInterval(checkAppVersion,60000);
+if(currentSection==="factory2")showFactory2();else if(currentSection==="hq")showHeadOffice();else showHome();checkAppVersion();setInterval(()=>{if(currentSection==="factory2"&&!dirty&&!loading&&checkConfig())loadAll(); if(currentSection==="hq"&&checkConfig()&&canHqAutoRefresh())loadHqSchedules();},15000);setInterval(checkAppVersion,60000);
 </script>
 </body>
 </html>
