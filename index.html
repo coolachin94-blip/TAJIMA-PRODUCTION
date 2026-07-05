@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v8.4</title>
+<title>TAJIMA 生産管理 v8.5</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -42,6 +42,17 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .hq-bulk textarea{width:100%;min-height:130px;padding:10px;border:2px solid var(--line);border-radius:12px;font-size:14px}
 .hq-count{display:block;margin-top:3px;font-size:10px;color:#b45309}
 
+
+.setup-panel{background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px;margin:12px 0;box-shadow:0 4px 14px rgba(37,99,235,.08)}
+.setup-title{font-weight:900;color:var(--deep);font-size:15px;margin-bottom:8px;text-align:center}
+.setup-row{display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:start;background:#f8fbff;border:1px solid var(--line);border-radius:14px;padding:9px;margin:7px 0}
+.setup-machine{font-weight:900;color:var(--deep)}
+.setup-text{font-weight:900;white-space:pre-wrap}
+.setup-time{font-size:11px;color:#64748b;margin-top:3px}
+.setup-empty{color:#94a3b8;font-weight:800}
+.setup-edit{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
+.setup-edit input{width:100%;padding:9px;border:2px solid var(--line);border-radius:12px;margin:4px 0 8px;font-size:15px}
+
 @media(max-width:430px){body{padding:9px}h1{font-size:22px}.summary{grid-template-columns:repeat(2,1fr)}.sum{padding:8px 4px}.sum b{font-size:17px}.name{font-size:22px}.num{font-size:23px}.bottom-inner{grid-template-columns:1fr}.bottom-text{grid-column:1}.save,#adminBtn,#settingBtn{width:100%}.custom-row{grid-template-columns:1fr 82px auto}}
 
 .home-screen{max-width:620px;margin:42px auto;padding:20px}
@@ -71,6 +82,17 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .hq-bulk textarea{width:100%;min-height:130px;padding:10px;border:2px solid var(--line);border-radius:12px;font-size:14px}
 .hq-count{display:block;margin-top:3px;font-size:10px;color:#b45309}
 
+
+.setup-panel{background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px;margin:12px 0;box-shadow:0 4px 14px rgba(37,99,235,.08)}
+.setup-title{font-weight:900;color:var(--deep);font-size:15px;margin-bottom:8px;text-align:center}
+.setup-row{display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:start;background:#f8fbff;border:1px solid var(--line);border-radius:14px;padding:9px;margin:7px 0}
+.setup-machine{font-weight:900;color:var(--deep)}
+.setup-text{font-weight:900;white-space:pre-wrap}
+.setup-time{font-size:11px;color:#64748b;margin-top:3px}
+.setup-empty{color:#94a3b8;font-weight:800}
+.setup-edit{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
+.setup-edit input{width:100%;padding:9px;border:2px solid var(--line);border-radius:12px;margin:4px 0 8px;font-size:15px}
+
 @media(max-width:430px){.home-title{font-size:28px}.hq-day{min-height:46px;font-size:12px}.hq-chip{font-size:8px}.section-switch{display:grid;grid-template-columns:1fr}}
 
 </style>
@@ -92,6 +114,19 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 </div>
 <div class="dashboard"><div class="dash"><span>最後に保存された時間</span><b id="lastSavedTime">未保存</b></div></div>
 <div class="summary"><div class="sum"><span>総受注数</span><b id="totalOrder">0</b></div><div class="sum"><span>総生産完了</span><b id="totalCompleted">0</b></div><div class="sum"><span>総残り</span><b id="totalRemaining">0</b></div></div>
+
+<div id="setupPanel" class="setup-panel">
+  <div class="setup-title">設備セット状況</div>
+  <div id="setupRows"></div>
+  <div id="setupEditArea" class="setup-edit admin-only hidden">
+    <div class="label">管理者のみ編集できます</div>
+    <div class="label">1号機</div><input id="setup-1号機" placeholder="例: KMX #1 / #2" oninput="markSetupDirty()">
+    <div class="label">2号機</div><input id="setup-2号機" placeholder="例: MSH #1" oninput="markSetupDirty()">
+    <div class="label">3号機</div><input id="setup-3号機" placeholder="例: TCM #2 / #3" oninput="markSetupDirty()">
+    <button class="btn-blue" style="width:100%;margin-top:6px" onclick="saveMachineSetups()">設備セット状況を保存</button>
+  </div>
+</div>
+
 <div class="toolbar"><input id="searchBox" class="search" placeholder="品番検索" oninput="draw()"><button class="btn-blue admin-only hidden" onclick="addProduct()">＋ 品番追加</button><button class="btn-light admin-only hidden" onclick="copyPreviousMonth()">前月品番コピー</button></div>
 <div id="cards"></div>
 <div class="actions"><button class="btn-light admin-only hidden" onclick="resetCurrentMonth()">この月を初期化</button><button class="btn-light" onclick="loadAll()">再読み込み</button></div>
@@ -142,18 +177,20 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="8.4";
+const APP_VERSION="8.5";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
 const HQ_API=`${SUPABASE_URL}/rest/v1/hq_machine_schedules`;
 const SHIP_UPDATE_API=`${SUPABASE_URL}/rest/v1/shipment_schedule_updates`;
+const SETUP_API=`${SUPABASE_URL}/rest/v1/factory_machine_setups`;
 const STANDARD_FIELDS=[{name:"工程2-1",value:0},{name:"工程1",value:0}];
 const TODAY=new Date();
 let currentYear=TODAY.getFullYear(),currentMonth=TODAY.getMonth()+1,data=[],dirty=false,loading=false,isAdmin=localStorage.getItem("tajima_admin_logged_in")==="yes";
 let selectedProduct="", calYear=2026, calMonth=6, schedules=[], allMonthSchedules=[], selectedShipDates=[];
 let autoSaveTimer=null, autoSaving=false;
 let shipmentUpdateMap={};
+let machineSetups=[]; let setupDirty=false;
 const HQ_MACHINES=["MPH","MPE","MVR40","MVR25","KNC"];
 let currentSection=localStorage.getItem("tajima_section")||"home";
 let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqAdmin=false, hqEditing=false;
@@ -191,7 +228,55 @@ async function seedMonth(){const rows=[];for(const name of ["KMX","KRF","KMG","K
 async function getProductRowsFromCurrentMonth(product){return await restGet(`${API}?product_name=eq.${encodeURIComponent(product)}&month=gte.${encodeURIComponent(monthStr())}&select=*`)}
 async function applyFieldsToCurrentAndFuture(product, fields){const rows=await getProductRowsFromCurrentMonth(product);for(const row of rows){const next=mergeFields(fields,row.custom_fields);await apiPatchProduct(row.id,{custom_fields:next,updated_at:new Date().toISOString()})}}
 
-async function loadAll(){shipmentUpdateMap=await getShipmentUpdateMap();await loadMonth();await loadMonthSchedules()}
+
+function formatSetupTime(v){
+  if(!v)return "-";
+  try{
+    const d=new Date(v);
+    return d.toLocaleString("ja-JP",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+  }catch(e){return "-"}
+}
+async function loadMachineSetups(){
+  if(!checkConfig())return;
+  try{
+    machineSetups=await restGet(`${SETUP_API}?select=*&order=machine_name.asc`);
+    const names=["1号機","2号機","3号機"];
+    for(const name of names){
+      if(!machineSetups.some(x=>x.machine_name===name)){
+        await fetch(SETUP_API,{method:"POST",headers:headers(),body:JSON.stringify([{machine_name:name,setup_text:""}])});
+      }
+    }
+    machineSetups=await restGet(`${SETUP_API}?select=*&order=machine_name.asc`);
+    drawMachineSetups();
+  }catch(e){console.error(e)}
+}
+function drawMachineSetups(){
+  if(!window.setupRows)return;
+  const names=["1号機","2号機","3号機"];
+  setupRows.innerHTML=names.map(name=>{
+    const row=machineSetups.find(x=>x.machine_name===name)||{setup_text:"",updated_at:null};
+    const text=row.setup_text?esc(row.setup_text):'<span class="setup-empty">未設定</span>';
+    return `<div class="setup-row"><div class="setup-machine">${name}</div><div><div class="setup-text">${text}</div><div class="setup-time">更新: ${formatSetupTime(row.updated_at)}</div></div></div>`;
+  }).join("");
+  for(const name of names){
+    const inp=document.getElementById(`setup-${name}`);
+    const row=machineSetups.find(x=>x.machine_name===name);
+    if(inp && !setupDirty)inp.value=row?row.setup_text||"":"";
+  }
+}
+function markSetupDirty(){setupDirty=true}
+async function saveMachineSetups(){
+  if(!isAdmin)return;
+  const names=["1号機","2号機","3号機"];
+  const rows=names.map(name=>({machine_name:name,setup_text:(document.getElementById(`setup-${name}`).value||""),updated_at:new Date().toISOString()}));
+  const r=await fetch(`${SETUP_API}?on_conflict=machine_name`,{method:"POST",headers:{...headers(),"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify(rows)});
+  if(!r.ok){alert("設備セット状況の保存エラー: "+await r.text());return}
+  setupDirty=false;
+  await loadMachineSetups();
+  alert("設備セット状況を保存しました");
+}
+
+async function loadAll(){shipmentUpdateMap=await getShipmentUpdateMap();await loadMachineSetups();await loadMonth();await loadMonthSchedules()}
 async function loadMonth(){
   monthLabel();
   if(!checkConfig()){setState("APIキー未設定","error");setBottom("config.jsにPublishable keyを入れてください");draw();return}
