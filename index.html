@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v9.5</title>
+<title>TAJIMA 生産管理 v9.6</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -171,6 +171,11 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .material-delete-toggle.active{background:#b91c1c;color:#fff;border-color:#b91c1c}
 .material-remove-btn.hidden-delete{display:none}
 
+
+.material-order-date-badge{display:inline-flex;align-items:center;justify-content:center;min-width:72px;background:#1d4ed8;color:#fff;border-radius:11px;padding:7px 9px;font-size:14px;font-weight:900;line-height:1;letter-spacing:.2px;margin-right:9px;flex-shrink:0}
+.material-order-heading{display:flex;align-items:center;gap:2px;min-width:0}
+.material-order-heading b{min-width:0;overflow-wrap:anywhere}
+
 </style>
 </head>
 <body>
@@ -303,7 +308,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="9.5";
+const APP_VERSION="9.6";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -1057,6 +1062,11 @@ function materialOrderVisible(o){
   if(materialFilter==="polishing")return c.polishing>0;
   return !c.done;
 }
+function formatOrderDateOnly(v){
+  if(!v)return "--/--";
+  const d=new Date(v),p=n=>String(n).padStart(2,"0");
+  return `${p(d.getMonth()+1)}/${p(d.getDate())}`;
+}
 function drawMaterialOrders(){
   if(!window.materialOrders)return;
   const list=materialOrdersData.filter(materialOrderVisible);
@@ -1067,7 +1077,7 @@ function drawMaterialOrders(){
     const history=ev.slice(0,5).map(e=>`${formatTime(e.event_at)}　${e.event_type==="received"?"入荷":e.event_type==="polish_sent"?"研磨発送":"研磨戻り"} ${e.qty}`).join("<br>");
     return `<div class="material-order-card">
       <div class="material-order-top">
-        <div class="material-order-title"><b>${esc(m.material_name||"不明")}</b> × ${c.ordered}<div class="material-order-no">発注No. ${esc(o.order_no)} / ${formatTime(o.ordered_at)}</div></div>
+        <div class="material-order-title"><div class="material-order-heading"><span class="material-order-date-badge">${formatOrderDateOnly(o.ordered_at)}</span><b>${esc(m.material_name||"不明")}</b>&nbsp;× ${c.ordered}</div><div class="material-order-no">発注No. ${esc(o.order_no)} / ${formatTime(o.ordered_at)}</div></div>
         <div class="material-status ${c.done?"done":""}">${st}</div>
       </div>
       <div style="font-size:12px;color:#64748b;margin-top:5px">${esc(m.spec||"")}${o.memo?` / ${esc(o.memo)}`:""}</div>
