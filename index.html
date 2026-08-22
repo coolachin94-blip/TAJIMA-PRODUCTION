@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v9.1</title>
+<title>TAJIMA 生産管理 v9.2</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -135,6 +135,19 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .step-done .stamp-inline{color:#dc2626;font-weight:900}
 .material-complete-note{margin-top:8px;padding:8px;border-radius:12px;background:#dcfce7;color:#166534;font-weight:900;text-align:center}
 
+
+.order-entry-grid{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(300px,1.2fr);gap:16px;align-items:start;margin-top:12px}
+.order-field-label{font-size:13px;font-weight:900;color:var(--deep);margin-bottom:7px}
+.qty-stepper{display:grid;grid-template-columns:58px 1fr 58px;height:58px;border:2px solid #60a5fa;border-radius:14px;overflow:hidden;background:#fff}
+.qty-stepper button{border:0;background:#f8fbff;color:#1d4ed8;font-size:28px;font-weight:900;cursor:pointer}
+.qty-stepper button:first-child{border-right:1px solid #bfdbfe}.qty-stepper button:last-child{border-left:1px solid #bfdbfe}
+.qty-stepper input{width:100%;border:0!important;margin:0!important;text-align:center;font-size:22px!important;font-weight:900;color:#0f3d91;outline:none;background:#fff;-moz-appearance:textfield}
+.qty-stepper input::-webkit-outer-spin-button,.qty-stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.qty-hint{font-size:11px;color:#60a5fa;margin:6px 0 0 8px}
+.order-memo{width:100%;height:92px;resize:vertical;padding:12px!important;border:2px solid var(--line)!important;border-radius:14px!important;margin:0!important;font-size:15px!important}
+.quick-order-button{width:100%;margin-top:14px;height:48px;border-radius:13px;font-size:16px}
+@media(max-width:650px){.order-entry-grid{grid-template-columns:1fr}.order-memo{height:72px}}
+
 </style>
 </head>
 <body>
@@ -261,7 +274,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="9.1";
+const APP_VERSION="9.2";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -891,7 +904,7 @@ function drawSelectedMaterial(){
   if(!window.selectedMaterialInfo)return;
   const m=materialById(selectedMaterialId);
   if(!m){selectedMaterialInfo.innerHTML="材料を検索して選択してください";return}
-  selectedMaterialInfo.innerHTML=`<b>${esc(m.material_name)}</b><br><span style="font-size:12px;color:#64748b">${esc(m.spec||"")} ${m.supplier?"/ "+esc(m.supplier):""}</span>${materialAdmin?`<div style="margin-top:8px"><div class="label">発注数量</div><input id="quickOrderQty" type="number" inputmode="numeric" min="1" placeholder="数量"><textarea id="quickOrderMemo" placeholder="発注メモ"></textarea><button class="btn-green" style="width:100%" onclick="createMaterialOrder()">発注する</button></div>`:""}`;
+  selectedMaterialInfo.innerHTML=`<b>${esc(m.material_name)}</b><br><span style="font-size:12px;color:#64748b">${esc(m.spec||"")} ${m.supplier?"/ "+esc(m.supplier):""}</span>${materialAdmin?`<div class="order-entry-grid"><div><div class="order-field-label">発注数量</div><div class="qty-stepper"><button type="button" onclick="changeQuickQty(-1)">−</button><input id="quickOrderQty" type="number" inputmode="numeric" min="0" value="0" aria-label="発注数量"><button type="button" onclick="changeQuickQty(1)">＋</button></div><div class="qty-hint">※ 数字を直接入力することもできます</div></div><div><div class="order-field-label">発注メモ（任意）</div><textarea id="quickOrderMemo" class="order-memo" placeholder="メモを入力（任意）"></textarea></div></div><button class="btn-green quick-order-button" onclick="createMaterialOrder()">発注する</button>`:""}`;
 }
 async function createMaterialMaster(){
   if(!materialAdmin)return;
@@ -903,6 +916,10 @@ async function createMaterialMaster(){
   newMaterialName.value="";newMaterialSpec.value="";newMaterialSupplier.value="";newMaterialNote.value="";
   await loadMaterialPage();
   const found=materialMasters.find(x=>x.material_name===name);if(found){selectedMaterialId=Number(found.id);materialSearch.value=found.material_name;drawSelectedMaterial()}
+}
+function changeQuickQty(delta){
+  const el=document.getElementById("quickOrderQty"); if(!el)return;
+  el.value=Math.max(0,num(el.value)+delta);
 }
 async function createMaterialOrder(){
   if(!materialAdmin)return;
