@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v9.7</title>
+<title>TAJIMA 生産管理 v9.8</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -188,6 +188,11 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .order-date-body{padding:0 12px 12px}
 @media(max-width:650px){.material-bulk-row{grid-template-columns:1fr}}
 
+
+.order-date-actions{display:flex;align-items:center;gap:8px}
+.order-print-btn{border:1px solid #93c5fd;background:#fff;color:#1d4ed8;border-radius:9px;padding:7px 10px;font-weight:900;font-size:12px;min-height:36px}
+.order-print-btn:hover{background:#eff6ff}
+
 </style>
 </head>
 <body>
@@ -328,7 +333,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="9.7";
+const APP_VERSION="9.8";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -1023,7 +1028,16 @@ function focusNewMaterialFromSearch(){
   newMaterialName.focus();
 }
 function selectMaterial(id){
-  selectedMaterialId=Number(id);
+  id=Number(id);
+  if(Number(selectedMaterialId)===id){
+    selectedMaterialId=null;
+    materialSearch.value="";
+    materialSuggestions.style.display="none";
+    drawSelectedMaterial();
+    drawMaterialButtons();
+    return;
+  }
+  selectedMaterialId=id;
   const m=materialById(id);
   materialSearch.value=m?m.material_name:"";
   materialSuggestions.style.display="none";
@@ -1115,6 +1129,83 @@ function formatOrderDateOnly(v){
   const d=new Date(v),p=n=>String(n).padStart(2,"0");
   return `${p(d.getMonth()+1)}/${p(d.getDate())}`;
 }
+function printableEsc(v){
+  return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function printOrdersForDate(dateKey,event){
+  if(event){event.preventDefault();event.stopPropagation()}
+  const orders=materialOrdersData.filter(o=>orderDateKey(o.ordered_at)===dateKey);
+  if(!orders.length){alert("この日の発注データがありません");return}
+
+  const bySupplier={};
+  orders.forEach(o=>{
+    const m=materialById(o.material_id)||{};
+    const supplier=(m.supplier||"").trim()||"仕入先未設定";
+    if(!bySupplier[supplier])bySupplier[supplier]=[];
+    bySupplier[supplier].push({o,m});
+  });
+
+  const [yy,mm,dd]=dateKey.split("-");
+  const dateLabel=`${yy}年${Number(mm)}月${Number(dd)}日`;
+  const pages=Object.entries(bySupplier).map(([supplier,items])=>{
+    const rows=items.map(({o,m},i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td>${printableEsc(m.material_name||"")}</td>
+        <td>${printableEsc(m.spec||"")}</td>
+        <td class="qty">${num(o.ordered_qty)}</td>
+        <td>${printableEsc(o.memo||"")}</td>
+      </tr>`).join("");
+    return `
+      <section class="sheet">
+        <div class="title">材 料 発 注 書</div>
+        <div class="meta">
+          <div><b>発注日：</b>${dateLabel}</div>
+          <div><b>仕入先：</b>${printableEsc(supplier==="仕入先未設定"?"":supplier)}</div>
+        </div>
+        <div class="to">${printableEsc(supplier==="仕入先未設定"?"____________________________":supplier)}　御中</div>
+        <p class="intro">下記の通り発注いたします。</p>
+        <table>
+          <thead><tr><th>No.</th><th>品名・品番</th><th>規格・サイズ</th><th>数量</th><th>備考</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="footer">
+          <div>発注者：____________________</div>
+          <div>確認：____________________</div>
+        </div>
+      </section>`;
+  }).join("");
+
+  const w=window.open("","_blank");
+  if(!w){alert("印刷画面を開けませんでした。ポップアップを許可してください。");return}
+  w.document.open();
+  w.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${dateLabel} 材料発注書</title>
+    <style>
+      @page{size:A4 portrait;margin:12mm}
+      *{box-sizing:border-box}
+      body{font-family:-apple-system,BlinkMacSystemFont,"Yu Gothic","Meiryo",sans-serif;color:#111;margin:0;background:#eee}
+      .controls{position:sticky;top:0;background:#fff;padding:10px;text-align:center;border-bottom:1px solid #ccc}
+      .controls button{font-size:16px;padding:10px 22px;border:0;border-radius:8px;background:#1d4ed8;color:#fff;font-weight:700}
+      .sheet{width:210mm;min-height:273mm;margin:12px auto;background:#fff;padding:12mm;page-break-after:always}
+      .sheet:last-of-type{page-break-after:auto}
+      .title{text-align:center;font-size:26px;font-weight:800;letter-spacing:.3em;margin:5mm 0 8mm}
+      .meta{display:flex;justify-content:space-between;gap:20px;font-size:14px;margin-bottom:8mm}
+      .to{font-size:19px;font-weight:700;border-bottom:1px solid #222;padding-bottom:4mm;margin-bottom:5mm}
+      .intro{font-size:14px}
+      table{width:100%;border-collapse:collapse;margin-top:5mm}
+      th,td{border:1px solid #222;padding:7px 6px;font-size:13px;height:11mm}
+      th{background:#f2f2f2;text-align:center}
+      td:first-child{width:9%;text-align:center}.qty{width:12%;text-align:center;font-weight:700}
+      .footer{display:flex;justify-content:flex-end;gap:25mm;margin-top:12mm;font-size:13px}
+      @media print{
+        body{background:#fff}.controls{display:none}.sheet{margin:0;width:auto;min-height:auto;padding:0}
+      }
+    </style></head><body>
+    <div class="controls"><button onclick="window.print()">印刷する</button></div>
+    ${pages}
+  </body></html>`);
+  w.document.close();
+}
 function drawMaterialOrders(){
   if(!window.materialOrders)return;
   const list=materialOrdersData.filter(materialOrderVisible);
@@ -1156,7 +1247,7 @@ function drawMaterialOrders(){
       <button class="btn-red btn-small material-admin-only ${materialAdmin?"":"hidden"}" style="margin-top:8px" onclick="deleteMaterialOrder(${o.id})">発注削除</button>
     </div>`;
   }).join("");
-    return `<div class="order-date-group"><button class="order-date-header" onclick="toggleOrderDateGroup('${k}')"><span>${opened?"▼":"▶"} ${displayOrderDateGroup(k)}</span><span>${list.length}件</span></button>${opened?`<div class="order-date-body">${cards}</div>`:""}</div>`;
+    return `<div class="order-date-group"><button class="order-date-header" onclick="toggleOrderDateGroup('${k}')"><span>${opened?"▼":"▶"} ${displayOrderDateGroup(k)}</span><span class="order-date-actions"><span>${list.length}件</span><span role="button" tabindex="0" class="order-print-btn" onclick="printOrdersForDate('${k}',event)" onkeydown="if(event.key==='Enter'||event.key===' '){printOrdersForDate('${k}',event)}">印刷</span></span></button>${opened?`<div class="order-date-body">${cards}</div>`:""}</div>`;
   }).join("");
   materialModeApply();
 }
