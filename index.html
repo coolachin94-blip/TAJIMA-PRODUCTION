@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v9.3</title>
+<title>TAJIMA 生産管理 v9.4</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -159,6 +159,13 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 @media(max-width:800px){.order-entry-grid-v93{grid-template-columns:1fr 1fr}.order-entry-grid-v93 .memo-col{grid-column:1/-1}}
 @media(max-width:520px){.order-entry-grid-v93{grid-template-columns:1fr}.order-entry-grid-v93 .memo-col{grid-column:auto}}
 
+
+.material-btn-wrap{display:inline-flex;align-items:stretch;border-radius:13px;overflow:hidden;border:2px solid #bfdbfe;background:#eff6ff}
+.material-btn-wrap .material-select-btn{border:0;border-radius:0}
+.material-remove-btn{border:0;border-left:1px solid #fecaca;background:#fff1f2;color:#b91c1c;font-weight:900;padding:0 11px;cursor:pointer;min-width:44px}
+.material-btn-wrap.selected{border-color:var(--blue)}
+.material-btn-wrap.selected .material-select-btn{background:var(--blue);color:#fff}
+
 </style>
 </head>
 <body>
@@ -290,7 +297,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="9.3";
+const APP_VERSION="9.4";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -874,14 +881,31 @@ function drawMaterialButtons(){
   if(!materialAdmin){materialButtonList.innerHTML="";return}
   const recentIds=[];
   materialOrdersData.forEach(o=>{if(!recentIds.includes(Number(o.material_id)))recentIds.push(Number(o.material_id))});
-  const list=[...materialMasters].sort((a,b)=>{
+  const list=[...materialMasters].filter(m=>m.is_active!==false).sort((a,b)=>{
     const ai=recentIds.indexOf(Number(a.id)),bi=recentIds.indexOf(Number(b.id));
     if(ai===-1&&bi===-1)return String(a.material_name).localeCompare(String(b.material_name));
     if(ai===-1)return 1;if(bi===-1)return -1;return ai-bi;
   });
   materialButtonList.innerHTML=list.length
-    ?list.map(m=>`<button type="button" class="material-select-btn ${Number(selectedMaterialId)===Number(m.id)?"selected":""}" onclick="selectMaterial(${m.id})">${esc(m.material_name)}</button>`).join("")
+    ?list.map(m=>`<span class="material-btn-wrap ${Number(selectedMaterialId)===Number(m.id)?"selected":""}"><button type="button" class="material-select-btn" onclick="selectMaterial(${m.id})">${esc(m.material_name)}</button><button type="button" class="material-remove-btn" title="登録一覧から削除" onclick="removeMaterialMaster(${m.id},event)">×</button></span>`).join("")
     :'<span class="setup-empty">登録材料なし</span>';
+}
+async function removeMaterialMaster(id,event){
+  if(event){event.preventDefault();event.stopPropagation()}
+  if(!materialAdmin)return;
+  const m=materialById(id);if(!m)return;
+  if(!confirm(`「${m.material_name}」を登録材料一覧から削除しますか？\n過去の発注履歴は残ります。`))return;
+  const r=await fetch(`${MATERIAL_MASTER_API}?id=eq.${id}`,{
+    method:"PATCH",
+    headers:headers(),
+    body:JSON.stringify({is_active:false,updated_at:new Date().toISOString()})
+  });
+  if(!r.ok){alert("登録材料の削除エラー: "+await r.text());return}
+  if(Number(selectedMaterialId)===Number(id)){
+    selectedMaterialId=null;
+    materialSearch.value="";
+  }
+  await loadMaterialPage();
 }
 function clearMaterialSearch(){
   materialSearch.value="";
@@ -901,6 +925,7 @@ function drawMaterialSuggestions(){
   const recentIds=[];
   materialOrdersData.forEach(o=>{if(!recentIds.includes(Number(o.material_id)))recentIds.push(Number(o.material_id))});
   const list=[...materialMasters]
+    .filter(m=>m.is_active!==false)
     .filter(m=>`${m.material_name} ${m.spec||""} ${m.supplier||""}`.toLowerCase().includes(q))
     .sort((a,b)=>{
       const an=String(a.material_name).toLowerCase(),bn=String(b.material_name).toLowerCase();
@@ -947,7 +972,7 @@ async function createMaterialMaster(){
   if(!materialAdmin)return;
   const name=(newMaterialName.value||"").trim();
   if(!name){alert("材料名を入力してください");return}
-  const row={material_name:name,spec:newMaterialSpec.value||"",supplier:newMaterialSupplier.value||"",note:newMaterialNote.value||"",updated_at:new Date().toISOString()};
+  const row={material_name:name,spec:newMaterialSpec.value||"",supplier:newMaterialSupplier.value||"",note:newMaterialNote.value||"",is_active:true,updated_at:new Date().toISOString()};
   const r=await fetch(MATERIAL_MASTER_API,{method:"POST",headers:headers(),body:JSON.stringify([row])});
   if(!r.ok){alert("材料登録エラー: "+await r.text());return}
   newMaterialName.value="";newMaterialSpec.value="";newMaterialSupplier.value="";newMaterialNote.value="";
