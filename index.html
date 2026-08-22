@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v9.2</title>
+<title>TAJIMA 生産管理 v9.3</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -148,6 +148,17 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .quick-order-button{width:100%;margin-top:14px;height:48px;border-radius:13px;font-size:16px}
 @media(max-width:650px){.order-entry-grid{grid-template-columns:1fr}.order-memo{height:72px}}
 
+
+.material-button-panel{background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px;margin:12px 0}
+.material-button-title{font-size:13px;font-weight:900;color:var(--deep);margin-bottom:9px}
+.material-button-list{display:flex;flex-wrap:wrap;gap:8px}
+.material-select-btn{min-height:44px;border:2px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:13px;padding:8px 15px;font-weight:900;font-size:15px;cursor:pointer}
+.material-select-btn.selected{background:var(--blue);border-color:var(--blue);color:#fff}
+.order-date-input{width:100%;height:58px;border:2px solid #60a5fa;border-radius:14px;padding:0 12px;font-size:18px;font-weight:900;color:#0f3d91;background:#fff}
+.order-entry-grid-v93{display:grid;grid-template-columns:minmax(180px,.7fr) minmax(240px,.8fr) minmax(280px,1.2fr);gap:14px;align-items:start;margin-top:12px}
+@media(max-width:800px){.order-entry-grid-v93{grid-template-columns:1fr 1fr}.order-entry-grid-v93 .memo-col{grid-column:1/-1}}
+@media(max-width:520px){.order-entry-grid-v93{grid-template-columns:1fr}.order-entry-grid-v93 .memo-col{grid-column:auto}}
+
 </style>
 </head>
 <body>
@@ -226,13 +237,18 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 
   <div class="material-toolbar">
     <div class="material-autocomplete">
-      <input id="materialSearch" class="material-search" placeholder="材料名・規格を検索" autocomplete="off" oninput="drawMaterialSuggestions();drawMaterialOrders()" onfocus="drawMaterialSuggestions()">
+      <input id="materialSearch" class="material-search" placeholder="材料名・規格を検索（検索も可能）" autocomplete="off" oninput="drawMaterialSuggestions();drawMaterialOrders()" onfocus="drawMaterialSuggestions()">
       <div id="materialSuggestions" class="material-suggestions" style="display:none"></div>
     </div>
     <button class="btn-light" onclick="clearMaterialSearch()">クリア</button>
   </div>
 
-  <div id="selectedMaterialInfo" class="material-selected-box">材料を検索して選択してください</div>
+  <div id="materialButtonPanel" class="material-button-panel hidden">
+    <div class="material-button-title">登録済み材料</div>
+    <div id="materialButtonList" class="material-button-list"></div>
+  </div>
+
+  <div id="selectedMaterialInfo" class="material-selected-box">材料を選択してください</div>
 
   <div id="materialAdminPanel" class="material-admin-panel hidden">
     <div class="setup-title">新規材料登録</div>
@@ -274,7 +290,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="9.2";
+const APP_VERSION="9.3";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -800,7 +816,9 @@ function materialModeApply(){
   materialModeState.className=materialAdmin?"mode admin":"mode";
   materialAdminBtn.textContent=materialAdmin?"材料管理ログアウト":"材料管理者モード";
   materialAdminPanel.classList.toggle("hidden",!materialAdmin);
+  if(window.materialButtonPanel)materialButtonPanel.classList.toggle("hidden",!materialAdmin);
   document.querySelectorAll(".material-admin-only").forEach(e=>e.classList.toggle("hidden",!materialAdmin));
+  drawMaterialButtons();
 }
 function toggleMaterialAdmin(){
   if(materialAdmin){materialAdmin=false;materialModeApply();drawSelectedMaterial();drawMaterialSuggestions();drawMaterialOrders();return}
@@ -848,8 +866,22 @@ async function loadMaterialPage(){
       restGet(`${MATERIAL_ORDER_API}?select=*&order=ordered_at.desc`),
       restGet(`${MATERIAL_EVENT_API}?select=*&order=event_at.desc`)
     ]);
-    drawMaterialSuggestions();drawSelectedMaterial();drawMaterialOrders();materialModeApply();
+    drawMaterialSuggestions();drawSelectedMaterial();drawMaterialButtons();drawMaterialOrders();materialModeApply();
   }catch(e){alert("材料発注データ読み込みエラー: "+e.message)}
+}
+function drawMaterialButtons(){
+  if(!window.materialButtonList)return;
+  if(!materialAdmin){materialButtonList.innerHTML="";return}
+  const recentIds=[];
+  materialOrdersData.forEach(o=>{if(!recentIds.includes(Number(o.material_id)))recentIds.push(Number(o.material_id))});
+  const list=[...materialMasters].sort((a,b)=>{
+    const ai=recentIds.indexOf(Number(a.id)),bi=recentIds.indexOf(Number(b.id));
+    if(ai===-1&&bi===-1)return String(a.material_name).localeCompare(String(b.material_name));
+    if(ai===-1)return 1;if(bi===-1)return -1;return ai-bi;
+  });
+  materialButtonList.innerHTML=list.length
+    ?list.map(m=>`<button type="button" class="material-select-btn ${Number(selectedMaterialId)===Number(m.id)?"selected":""}" onclick="selectMaterial(${m.id})">${esc(m.material_name)}</button>`).join("")
+    :'<span class="setup-empty">登録材料なし</span>';
 }
 function clearMaterialSearch(){
   materialSearch.value="";
@@ -899,12 +931,17 @@ function selectMaterial(id){
   materialSearch.value=m?m.material_name:"";
   materialSuggestions.style.display="none";
   drawSelectedMaterial();
+  drawMaterialButtons();
+}
+function todayDateValue(){
+  const d=new Date(),p=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
 }
 function drawSelectedMaterial(){
   if(!window.selectedMaterialInfo)return;
   const m=materialById(selectedMaterialId);
-  if(!m){selectedMaterialInfo.innerHTML="材料を検索して選択してください";return}
-  selectedMaterialInfo.innerHTML=`<b>${esc(m.material_name)}</b><br><span style="font-size:12px;color:#64748b">${esc(m.spec||"")} ${m.supplier?"/ "+esc(m.supplier):""}</span>${materialAdmin?`<div class="order-entry-grid"><div><div class="order-field-label">発注数量</div><div class="qty-stepper"><button type="button" onclick="changeQuickQty(-1)">−</button><input id="quickOrderQty" type="number" inputmode="numeric" min="0" value="0" aria-label="発注数量"><button type="button" onclick="changeQuickQty(1)">＋</button></div><div class="qty-hint">※ 数字を直接入力することもできます</div></div><div><div class="order-field-label">発注メモ（任意）</div><textarea id="quickOrderMemo" class="order-memo" placeholder="メモを入力（任意）"></textarea></div></div><button class="btn-green quick-order-button" onclick="createMaterialOrder()">発注する</button>`:""}`;
+  if(!m){selectedMaterialInfo.innerHTML="材料を選択してください";return}
+  selectedMaterialInfo.innerHTML=`<b style="font-size:19px;color:var(--deep)">${esc(m.material_name)}</b><br><span style="font-size:12px;color:#64748b">${esc(m.spec||"")} ${m.supplier?"/ "+esc(m.supplier):""}</span>${materialAdmin?`<div class="order-entry-grid-v93"><div><div class="order-field-label">発注日</div><input id="quickOrderDate" class="order-date-input" type="date" value="${todayDateValue()}"></div><div><div class="order-field-label">発注数量</div><div class="qty-stepper"><button type="button" onclick="changeQuickQty(-1)">−</button><input id="quickOrderQty" type="number" inputmode="numeric" min="0" value="0" aria-label="発注数量"><button type="button" onclick="changeQuickQty(1)">＋</button></div><div class="qty-hint">※ 数字を直接入力することもできます</div></div><div class="memo-col"><div class="order-field-label">発注メモ（任意）</div><textarea id="quickOrderMemo" class="order-memo" placeholder="メモを入力（任意）"></textarea></div></div><button class="btn-green quick-order-button" onclick="createMaterialOrder()">発注する</button>`:""}`;
 }
 async function createMaterialMaster(){
   if(!materialAdmin)return;
@@ -926,7 +963,11 @@ async function createMaterialOrder(){
   const m=materialById(selectedMaterialId);if(!m)return;
   const qty=num(document.getElementById("quickOrderQty")?.value);
   if(qty<=0){alert("発注数量を入力してください");return}
-  const row={order_no:makeOrderNo(),material_id:m.id,ordered_qty:qty,ordered_at:new Date().toISOString(),memo:document.getElementById("quickOrderMemo")?.value||"",updated_at:new Date().toISOString()};
+  const dateValue=document.getElementById("quickOrderDate")?.value||todayDateValue();
+  const now=new Date();
+  const [yy,mm,dd]=dateValue.split("-").map(Number);
+  const orderedAt=new Date(yy,mm-1,dd,now.getHours(),now.getMinutes(),now.getSeconds()).toISOString();
+  const row={order_no:makeOrderNo(),material_id:m.id,ordered_qty:qty,ordered_at:orderedAt,memo:document.getElementById("quickOrderMemo")?.value||"",updated_at:new Date().toISOString()};
   const r=await fetch(MATERIAL_ORDER_API,{method:"POST",headers:headers(),body:JSON.stringify([row])});
   if(!r.ok){alert("発注登録エラー: "+await r.text());return}
   await loadMaterialPage();
