@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v9.4</title>
+<title>TAJIMA 生産管理 v9.5</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -166,6 +166,11 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .material-btn-wrap.selected{border-color:var(--blue)}
 .material-btn-wrap.selected .material-select-btn{background:var(--blue);color:#fff}
 
+
+.material-delete-toggle{margin-bottom:10px;width:100%;background:#fff1f2;color:#b91c1c;border:2px solid #fecaca;border-radius:12px;padding:10px 12px;font-weight:900}
+.material-delete-toggle.active{background:#b91c1c;color:#fff;border-color:#b91c1c}
+.material-remove-btn.hidden-delete{display:none}
+
 </style>
 </head>
 <body>
@@ -251,6 +256,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
   </div>
 
   <div id="materialButtonPanel" class="material-button-panel hidden">
+    <button id="materialDeleteToggle" type="button" class="material-delete-toggle" onclick="toggleMaterialDeleteMode()">品目削除</button>
     <div class="material-button-title">登録済み材料</div>
     <div id="materialButtonList" class="material-button-list"></div>
   </div>
@@ -297,7 +303,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="9.4";
+const APP_VERSION="9.5";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -314,7 +320,7 @@ let selectedProduct="", calYear=2026, calMonth=6, schedules=[], allMonthSchedule
 let autoSaveTimer=null, autoSaving=false;
 let shipmentUpdateMap={};
 let machineSetups=[]; let setupDirty=false;
-let materialAdmin=false, materialMasters=[], materialOrdersData=[], materialEvents=[], selectedMaterialId=null, materialFilter="active";
+let materialAdmin=false, materialMasters=[], materialOrdersData=[], materialEvents=[], selectedMaterialId=null, materialFilter="active", materialDeleteMode=false;
 const HQ_MACHINES=["MPH","MPE","MVR40","MVR25","KNC"];
 let currentSection=localStorage.getItem("tajima_section")||"home";
 let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqAdmin=false, hqEditing=false;
@@ -824,11 +830,15 @@ function materialModeApply(){
   materialAdminBtn.textContent=materialAdmin?"材料管理ログアウト":"材料管理者モード";
   materialAdminPanel.classList.toggle("hidden",!materialAdmin);
   if(window.materialButtonPanel)materialButtonPanel.classList.toggle("hidden",!materialAdmin);
+  if(window.materialDeleteToggle){
+    materialDeleteToggle.textContent=materialDeleteMode?"削除モード終了":"品目削除";
+    materialDeleteToggle.classList.toggle("active",materialDeleteMode);
+  }
   document.querySelectorAll(".material-admin-only").forEach(e=>e.classList.toggle("hidden",!materialAdmin));
   drawMaterialButtons();
 }
 function toggleMaterialAdmin(){
-  if(materialAdmin){materialAdmin=false;materialModeApply();drawSelectedMaterial();drawMaterialSuggestions();drawMaterialOrders();return}
+  if(materialAdmin){materialAdmin=false;materialDeleteMode=false;materialModeApply();drawSelectedMaterial();drawMaterialSuggestions();drawMaterialOrders();return}
   const pw=prompt("材料管理者パスワードを入力してください");
   if(pw==="2342"){materialAdmin=true;materialModeApply();drawSelectedMaterial();drawMaterialSuggestions();drawMaterialOrders()}
   else if(pw!==null)alert("パスワードが違います");
@@ -876,6 +886,15 @@ async function loadMaterialPage(){
     drawMaterialSuggestions();drawSelectedMaterial();drawMaterialButtons();drawMaterialOrders();materialModeApply();
   }catch(e){alert("材料発注データ読み込みエラー: "+e.message)}
 }
+function toggleMaterialDeleteMode(){
+  if(!materialAdmin)return;
+  materialDeleteMode=!materialDeleteMode;
+  if(window.materialDeleteToggle){
+    materialDeleteToggle.textContent=materialDeleteMode?"削除モード終了":"品目削除";
+    materialDeleteToggle.classList.toggle("active",materialDeleteMode);
+  }
+  drawMaterialButtons();
+}
 function drawMaterialButtons(){
   if(!window.materialButtonList)return;
   if(!materialAdmin){materialButtonList.innerHTML="";return}
@@ -887,7 +906,7 @@ function drawMaterialButtons(){
     if(ai===-1)return 1;if(bi===-1)return -1;return ai-bi;
   });
   materialButtonList.innerHTML=list.length
-    ?list.map(m=>`<span class="material-btn-wrap ${Number(selectedMaterialId)===Number(m.id)?"selected":""}"><button type="button" class="material-select-btn" onclick="selectMaterial(${m.id})">${esc(m.material_name)}</button><button type="button" class="material-remove-btn" title="登録一覧から削除" onclick="removeMaterialMaster(${m.id},event)">×</button></span>`).join("")
+    ?list.map(m=>`<span class="material-btn-wrap ${Number(selectedMaterialId)===Number(m.id)?"selected":""}"><button type="button" class="material-select-btn" onclick="selectMaterial(${m.id})">${esc(m.material_name)}</button><button type="button" class="material-remove-btn ${materialDeleteMode?"":"hidden-delete"}" title="登録一覧から削除" onclick="removeMaterialMaster(${m.id},event)">×</button></span>`).join("")
     :'<span class="setup-empty">登録材料なし</span>';
 }
 async function removeMaterialMaster(id,event){
