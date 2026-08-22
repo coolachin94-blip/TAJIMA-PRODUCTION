@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v9.6</title>
+<title>TAJIMA 生産管理 v9.7</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -176,6 +176,18 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .material-order-heading{display:flex;align-items:center;gap:2px;min-width:0}
 .material-order-heading b{min-width:0;overflow-wrap:anywhere}
 
+
+.material-bulk-panel{background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px;margin:12px 0}
+.material-pick-list{display:flex;flex-wrap:wrap;gap:8px}
+.material-pick-btn{min-height:44px;border:2px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:13px;padding:8px 14px;font-weight:900}
+.material-pick-btn.selected{background:var(--blue);border-color:var(--blue);color:#fff}
+.material-bulk-row{display:grid;grid-template-columns:minmax(130px,1fr) 140px minmax(170px,1fr);gap:8px;align-items:center;background:#f8fbff;border:1px solid var(--line);border-radius:14px;padding:9px;margin-top:8px}
+.material-bulk-row input{width:100%;height:42px;border:2px solid var(--line);border-radius:10px;padding:0 9px;font-size:15px}
+.order-date-group{background:#fff;border:2px solid var(--line);border-radius:18px;margin:12px 0;overflow:hidden}
+.order-date-header{width:100%;border:0;background:#f8fbff;color:var(--deep);padding:13px 14px;display:flex;justify-content:space-between;font-weight:900;font-size:16px}
+.order-date-body{padding:0 12px 12px}
+@media(max-width:650px){.material-bulk-row{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -266,7 +278,15 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
     <div id="materialButtonList" class="material-button-list"></div>
   </div>
 
-  <div id="selectedMaterialInfo" class="material-selected-box">材料を選択してください</div>
+  <div id="materialBulkPanel" class="material-bulk-panel hidden">
+    <div class="order-field-label">発注日</div>
+    <input id="bulkOrderDate" class="order-date-input" type="date">
+    <div style="margin:10px 0 6px;font-weight:900;color:var(--deep)">発注品目を選択</div>
+    <div id="materialPickList" class="material-pick-list"></div>
+    <div id="materialBulkSelected"></div>
+    <button class="btn-green" style="width:100%;margin-top:10px" onclick="createBulkMaterialOrders()">一括発注</button>
+  </div>
+  <div id="selectedMaterialInfo" class="material-selected-box" style="display:none"></div>
 
   <div id="materialAdminPanel" class="material-admin-panel hidden">
     <div class="setup-title">新規材料登録</div>
@@ -308,7 +328,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="9.6";
+const APP_VERSION="9.7";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -325,7 +345,7 @@ let selectedProduct="", calYear=2026, calMonth=6, schedules=[], allMonthSchedule
 let autoSaveTimer=null, autoSaving=false;
 let shipmentUpdateMap={};
 let machineSetups=[]; let setupDirty=false;
-let materialAdmin=false, materialMasters=[], materialOrdersData=[], materialEvents=[], selectedMaterialId=null, materialFilter="active", materialDeleteMode=false;
+let materialAdmin=false, materialMasters=[], materialOrdersData=[], materialEvents=[], selectedMaterialId=null, materialFilter="active", materialDeleteMode=false, bulkSelectedMaterialIds=[], openOrderDateGroups={};
 const HQ_MACHINES=["MPH","MPE","MVR40","MVR25","KNC"];
 let currentSection=localStorage.getItem("tajima_section")||"home";
 let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqAdmin=false, hqEditing=false;
@@ -834,7 +854,7 @@ function materialModeApply(){
   materialModeState.className=materialAdmin?"mode admin":"mode";
   materialAdminBtn.textContent=materialAdmin?"材料管理ログアウト":"材料管理者モード";
   materialAdminPanel.classList.toggle("hidden",!materialAdmin);
-  if(window.materialButtonPanel)materialButtonPanel.classList.toggle("hidden",!materialAdmin);
+  if(window.materialButtonPanel)materialButtonPanel.classList.toggle("hidden",!materialAdmin);if(window.materialBulkPanel)materialBulkPanel.classList.toggle("hidden",!materialAdmin);if(window.bulkOrderDate&&!bulkOrderDate.value)bulkOrderDate.value=todayDateValue();
   if(window.materialDeleteToggle){
     materialDeleteToggle.textContent=materialDeleteMode?"削除モード終了":"品目削除";
     materialDeleteToggle.classList.toggle("active",materialDeleteMode);
@@ -888,7 +908,7 @@ async function loadMaterialPage(){
       restGet(`${MATERIAL_ORDER_API}?select=*&order=ordered_at.desc`),
       restGet(`${MATERIAL_EVENT_API}?select=*&order=event_at.desc`)
     ]);
-    drawMaterialSuggestions();drawSelectedMaterial();drawMaterialButtons();drawMaterialOrders();materialModeApply();
+    drawMaterialSuggestions();drawSelectedMaterial();drawMaterialButtons();drawBulkOrderArea();drawMaterialOrders();materialModeApply();
   }catch(e){alert("材料発注データ読み込みエラー: "+e.message)}
 }
 function toggleMaterialDeleteMode(){
@@ -900,6 +920,34 @@ function toggleMaterialDeleteMode(){
   }
   drawMaterialButtons();
 }
+function toggleBulkMaterial(id){
+  id=Number(id);
+  const i=bulkSelectedMaterialIds.indexOf(id);
+  if(i>=0)bulkSelectedMaterialIds.splice(i,1);else bulkSelectedMaterialIds.push(id);
+  drawBulkOrderArea();
+}
+function drawBulkOrderArea(){
+  if(!window.materialPickList||!window.materialBulkSelected)return;
+  const list=materialMasters.filter(m=>m.is_active!==false);
+  materialPickList.innerHTML=list.map(m=>`<button type="button" class="material-pick-btn ${bulkSelectedMaterialIds.includes(Number(m.id))?"selected":""}" onclick="toggleBulkMaterial(${m.id})">${esc(m.material_name)}</button>`).join("");
+  const sel=bulkSelectedMaterialIds.map(materialById).filter(Boolean);
+  materialBulkSelected.innerHTML=sel.length?sel.map(m=>`<div class="material-bulk-row"><div style="font-weight:900">${esc(m.material_name)}</div><input id="bulkQty-${m.id}" type="number" inputmode="numeric" min="1" value="0" placeholder="数量"><input id="bulkMemo-${m.id}" placeholder="メモ（任意）"></div>`).join(""):'<div class="note">品目を選択してください。</div>';
+}
+async function createBulkMaterialOrders(){
+  if(!materialAdmin||!bulkSelectedMaterialIds.length){alert("発注する品目を選択してください");return}
+  const dateValue=bulkOrderDate.value||todayDateValue(),now=new Date(),[y,m,d]=dateValue.split("-").map(Number),rows=[];
+  for(const id of bulkSelectedMaterialIds){
+    const mat=materialById(id),qty=num(document.getElementById(`bulkQty-${id}`)?.value);
+    if(qty<=0){alert(`「${mat.material_name}」の数量を入力してください`);return}
+    rows.push({order_no:makeOrderNo()+"-"+id,material_id:id,ordered_qty:qty,ordered_at:new Date(y,m-1,d,now.getHours(),now.getMinutes(),now.getSeconds()).toISOString(),memo:document.getElementById(`bulkMemo-${id}`)?.value||"",updated_at:new Date().toISOString()});
+  }
+  const r=await fetch(MATERIAL_ORDER_API,{method:"POST",headers:headers(),body:JSON.stringify(rows)});
+  if(!r.ok){alert("一括発注エラー: "+await r.text());return}
+  bulkSelectedMaterialIds=[];await loadMaterialPage();alert(`${rows.length}件を一括発注しました`);
+}
+function orderDateKey(v){const d=new Date(v),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`}
+function displayOrderDateGroup(k){const [y,m,d]=k.split("-");return `${Number(m)}月${Number(d)}日 発注分`}
+function toggleOrderDateGroup(k){openOrderDateGroups[k]=!openOrderDateGroups[k];drawMaterialOrders()}
 function drawMaterialButtons(){
   if(!window.materialButtonList)return;
   if(!materialAdmin){materialButtonList.innerHTML="";return}
@@ -1070,7 +1118,13 @@ function formatOrderDateOnly(v){
 function drawMaterialOrders(){
   if(!window.materialOrders)return;
   const list=materialOrdersData.filter(materialOrderVisible);
-  materialOrders.innerHTML=list.length?list.map(o=>{
+  if(!list.length){materialOrders.innerHTML='<div class="note">該当する発注はありません。</div>';materialModeApply();return}
+  const groups={};list.forEach(o=>{const k=orderDateKey(o.ordered_at);(groups[k]||(groups[k]=[])).push(o)});
+  materialOrders.innerHTML=Object.keys(groups).sort((a,b)=>b.localeCompare(a)).map(k=>{
+    if(openOrderDateGroups[k]===undefined)openOrderDateGroups[k]=(k===todayDateValue());
+    const opened=openOrderDateGroups[k];
+    const list=groups[k];
+    const cards=list.map(o=>{
     const m=materialById(o.material_id)||{};
     const c=orderCalc(o),st=orderStatus(o);
     const ev=orderEvents(o.id).slice().sort((a,b)=>new Date(b.event_at)-new Date(a.event_at));
@@ -1101,7 +1155,9 @@ function drawMaterialOrders(){
       ${history?`<div class="material-history">${history}</div>`:""}
       <button class="btn-red btn-small material-admin-only ${materialAdmin?"":"hidden"}" style="margin-top:8px" onclick="deleteMaterialOrder(${o.id})">発注削除</button>
     </div>`;
-  }).join(""):'<div class="note">該当する発注はありません。</div>';
+  }).join("");
+    return `<div class="order-date-group"><button class="order-date-header" onclick="toggleOrderDateGroup('${k}')"><span>${opened?"▼":"▶"} ${displayOrderDateGroup(k)}</span><span>${list.length}件</span></button>${opened?`<div class="order-date-body">${cards}</div>`:""}</div>`;
+  }).join("");
   materialModeApply();
 }
 
