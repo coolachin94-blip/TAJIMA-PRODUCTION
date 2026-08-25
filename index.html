@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v11.5</title>
+<title>TAJIMA 生産管理 v11.6</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -226,6 +226,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .att-punch-row input{width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px}
 @media(max-width:650px){.att-punch-row{grid-template-columns:1fr 1fr}.att-punch-row .wide{grid-column:1/-1}}
 
+.factory-order-controls{display:flex;gap:6px;margin-left:auto}.factory-order-btn{border:1px solid #93c5fd;background:#fff;color:#1d4ed8;border-radius:8px;padding:6px 9px;font-weight:900;font-size:12px;white-space:nowrap}.factory-order-btn:disabled{opacity:.35}
 </style>
 </head>
 <body>
@@ -426,7 +427,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.5";
+const APP_VERSION="11.6";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -542,6 +543,7 @@ async function loadMonth(){
     if(rows.length===0)rows=await seedMonth();
     data=[];
     for(const row of rows){data.push(await applyTemplateToRow(row))}
+    data.sort((a,b)=>Number(a.sort_order??a.id)-Number(b.sort_order??b.id));
     dirty=false;draw();updateLastSavedTime();setState("保存済み","saved");setBottom(isAdmin?"管理者モード":"閲覧モード");
   }catch(e){console.error(e);setState("接続エラー","error");alert("Supabase接続エラー: "+e.message)}
   finally{loading=false}
@@ -553,7 +555,7 @@ function scheduleAutoSave(){clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout
 async function autoSaveNow(){if(!isAdmin||!dirty||autoSaving)return;autoSaving=true;setState("自動保存中...","dirty");setBottom("☁ 自動保存中...");try{await saveData();setBottom("✔ 自動保存しました "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit"}))}catch(e){setState("自動保存エラー","error");setBottom("保存失敗");console.error(e)}finally{autoSaving=false}}
 async function saveData(){
   for(const p of data){
-    const row={product_name:p.product_name,order_qty:num(p.order_qty),finished_qty:num(p.finished_qty),shipped_qty:num(p.shipped_qty),process21_qty:num(p.process21_qty),process1_qty:num(p.process1_qty),custom_fields:p.custom_fields||[],updated_at:new Date().toISOString()};
+    const row={product_name:p.product_name,order_qty:num(p.order_qty),finished_qty:num(p.finished_qty),shipped_qty:num(p.shipped_qty),process21_qty:num(p.process21_qty),process1_qty:num(p.process1_qty),sort_order:Number(p.sort_order??p.id??i+1),custom_fields:p.custom_fields||[],updated_at:new Date().toISOString()};
     if(p.id)await apiPatchProduct(p.id,row);
     else{const ins=await apiInsertProducts([{...row,month:monthStr()}]);p.id=ins[0].id}
   }
@@ -563,6 +565,18 @@ async function manualSave(){if(!isAdmin){alert("管理者モードでのみ保�
 
 function changeMonth(d){if(dirty&&!confirm("未保存の変更があります。保存せずに月を移動しますか？"))return;currentMonth+=d;if(currentMonth<=0){currentMonth=12;currentYear--}if(currentMonth>=13){currentMonth=1;currentYear++}loadAll()}
 function calcTotals(){let order=0,comp=0;data.forEach(p=>{order+=num(p.order_qty);comp+=num(p.finished_qty)+num(p.shipped_qty)});totalOrder.textContent=order;totalCompleted.textContent=comp;totalRemaining.textContent=order-comp}
+async function moveFactoryProduct(i,dir){
+  if(!isAdmin)return;
+  const j=i+dir;if(j<0||j>=data.length)return;
+  const a=data[i],b=data[j];
+  const ao=Number(a.sort_order??i+1),bo=Number(b.sort_order??j+1);
+  a.sort_order=bo;b.sort_order=ao;[data[i],data[j]]=[data[j],data[i]];draw();
+  try{
+    if(a.id)await apiPatchProduct(a.id,{sort_order:a.sort_order,updated_at:new Date().toISOString()});
+    if(b.id)await apiPatchProduct(b.id,{sort_order:b.sort_order,updated_at:new Date().toISOString()});
+    setState("保存済み","saved");
+  }catch(e){alert("並び替え保存エラー: "+e.message);await loadAll()}
+}
 function updateName(i,v){data[i].product_name=v;setDirty()}
 function updateNum(i,k,v){data[i][k]=num(v);setDirty();calcTotals();updateCardRemain(i)}
 function moveFinishedToShipped(i){
@@ -662,7 +676,7 @@ function draw(){
     if(q&&!String(p.product_name).toLowerCase().includes(q))return;
     const comp=num(p.finished_qty)+num(p.shipped_qty),r=num(p.order_qty)-comp,pct=num(p.order_qty)>0?Math.min(100,Math.round(comp/num(p.order_qty)*100)):0,dis=isAdmin?"":"disabled";
     const custom=(p.custom_fields||[]).map((f,j)=>`<div class="custom-row"><input class="field-name edit-input" value="${esc(f.name)}" oninput="updateCustomName(${i},${j},this.value)" ${dis}><input class="custom-num edit-input" inputmode="numeric" value="${num(f.value)}" oninput="updateCustomValue(${i},${j},this.value)" ${dis}><button class="btn-red btn-small custom-admin ${isAdmin?'':'hidden'}" onclick="deleteCustomField(${i},${j})">削除</button></div>`).join("");
-    const c=document.createElement("div");const expanded=isExpanded(p.product_name);const isComplete=r<=0;c.className="card "+(expanded?"expanded ":"")+(isComplete?"completed-card":"");c.innerHTML=`${isComplete?'<div class="complete-stamp"><span class="seal">㊞</span><span class="stamp-text">今月完了</span></div>':''}<div class="top"><button class="toggle-btn" onclick="toggleCard('${esc(p.product_name)}')">${expanded?'▲':'▼'}</button><input class="name edit-input" value="${esc(p.product_name)}" oninput="updateName(${i},this.value)" ${dis}><button class="btn-red delete-btn ${isAdmin?'':'hidden'}" onclick="deleteProduct(${i})">削除</button></div><div class="card-summary"><div id="rem-${i}" class="remain ${r<0?'over':''}">${r<0?`超過 ${Math.abs(r)}`:`残り ${r}`}</div><div class="progress"><div id="bar-${i}" class="bar" style="width:${pct}%"></div></div><div id="rate-${i}" class="rate">進捗 ${pct}%</div></div><div class="card-details"><div id="comp-${i}" class="completed">生産完了 ${comp}（完成品 ${num(p.finished_qty)} + 出荷量 ${num(p.shipped_qty)}）</div><div class="grid"><div class="field"><div class="label">受注数</div><input class="num edit-input" inputmode="numeric" value="${p.order_qty}" oninput="updateNum(${i},'order_qty',this.value)" ${dis}></div><div class="field" draggable="${isAdmin?'true':'false'}" ondragstart="startFinishedDrag(${i})"><div class="label">完成品</div><input class="num edit-input" inputmode="numeric" value="${p.finished_qty}" oninput="updateNum(${i},'finished_qty',this.value)" ${dis}><button class="btn-green move-btn admin-only ${isAdmin?'':'hidden'}" onclick="moveFinishedToShipped(${i})">出荷へ移動</button></div><div class="field" ondragover="allowShipDrop(event)" ondragleave="leaveShipDrop(event)" ondrop="dropToShipped(event,${i})"><div class="label">出荷量</div><input class="num edit-input" inputmode="numeric" value="${p.shipped_qty||0}" oninput="updateNum(${i},'shipped_qty',this.value)" ${dis}></div></div><div class="custom-title">標準・自由項目</div>${custom}<button class="btn-light custom-admin ${isAdmin?'':'hidden'}" onclick="addCustomField(${i})">＋ 項目追加</button><button class="btn-light custom-admin ${isAdmin?'':'hidden'}" style="margin-left:6px" onclick="addStandardFields(${i})">標準項目復元</button><button class="btn-purple" style="width:100%;margin-top:8px" onclick="openCalendar('${esc(p.product_name)}')">出荷予定 ${hasNewShipment(p.product_name)?'<span class="new-badge">NEW</span>':''}</button></div>`;cards.appendChild(c);
+    const c=document.createElement("div");const expanded=isExpanded(p.product_name);const isComplete=r<=0;c.className="card "+(expanded?"expanded ":"")+(isComplete?"completed-card":"");c.innerHTML=`${isComplete?'<div class="complete-stamp"><span class="seal">㊞</span><span class="stamp-text">今月完了</span></div>':''}<div class="top"><button class="toggle-btn" onclick="toggleCard('${esc(p.product_name)}')">${expanded?'▲':'▼'}</button><input class="name edit-input" value="${esc(p.product_name)}" oninput="updateName(${i},this.value)" ${dis}><div class="factory-order-controls ${isAdmin?'':'hidden'}"><button class="factory-order-btn" onclick="moveFactoryProduct(${i},-1)" ${i===0?'disabled':''}>↑ 上へ</button><button class="factory-order-btn" onclick="moveFactoryProduct(${i},1)" ${i===data.length-1?'disabled':''}>↓ 下へ</button></div><button class="btn-red delete-btn ${isAdmin?'':'hidden'}" onclick="deleteProduct(${i})">削除</button></div><div class="card-summary"><div id="rem-${i}" class="remain ${r<0?'over':''}">${r<0?`超過 ${Math.abs(r)}`:`残り ${r}`}</div><div class="progress"><div id="bar-${i}" class="bar" style="width:${pct}%"></div></div><div id="rate-${i}" class="rate">進捗 ${pct}%</div></div><div class="card-details"><div id="comp-${i}" class="completed">生産完了 ${comp}（完成品 ${num(p.finished_qty)} + 出荷量 ${num(p.shipped_qty)}）</div><div class="grid"><div class="field"><div class="label">受注数</div><input class="num edit-input" inputmode="numeric" value="${p.order_qty}" oninput="updateNum(${i},'order_qty',this.value)" ${dis}></div><div class="field" draggable="${isAdmin?'true':'false'}" ondragstart="startFinishedDrag(${i})"><div class="label">完成品</div><input class="num edit-input" inputmode="numeric" value="${p.finished_qty}" oninput="updateNum(${i},'finished_qty',this.value)" ${dis}><button class="btn-green move-btn admin-only ${isAdmin?'':'hidden'}" onclick="moveFinishedToShipped(${i})">出荷へ移動</button></div><div class="field" ondragover="allowShipDrop(event)" ondragleave="leaveShipDrop(event)" ondrop="dropToShipped(event,${i})"><div class="label">出荷量</div><input class="num edit-input" inputmode="numeric" value="${p.shipped_qty||0}" oninput="updateNum(${i},'shipped_qty',this.value)" ${dis}></div></div><div class="custom-title">標準・自由項目</div>${custom}<button class="btn-light custom-admin ${isAdmin?'':'hidden'}" onclick="addCustomField(${i})">＋ 項目追加</button><button class="btn-light custom-admin ${isAdmin?'':'hidden'}" style="margin-left:6px" onclick="addStandardFields(${i})">標準項目復元</button><button class="btn-purple" style="width:100%;margin-top:8px" onclick="openCalendar('${esc(p.product_name)}')">出荷予定 ${hasNewShipment(p.product_name)?'<span class="new-badge">NEW</span>':''}</button></div>`;cards.appendChild(c);
   });
   applyMode();
 }
