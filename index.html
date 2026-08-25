@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v11.0</title>
+<title>TAJIMA 生産管理 v11.1</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -200,11 +200,27 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .material-master-main.selected{background:#1d4ed8;color:#fff;border-radius:9px}
 .move-top-btn,.order-move-top{min-height:40px;border:1px solid #93c5fd;background:#fff;color:#1d4ed8;border-radius:9px;padding:7px 10px;font-weight:900;white-space:nowrap}
 
-.att-secret{width:34px;height:24px;background:#16a34a;border:0;border-radius:5px;display:block;margin:20px auto 10px;opacity:.72}.att-overlay{position:fixed;inset:0;background:#0008;z-index:99999;display:none;align-items:center;justify-content:center;padding:16px}.att-box{width:min(390px,100%);background:#fff;border-radius:20px;padding:18px}.att-pin{height:48px;border:2px solid #bbf7d0;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;letter-spacing:.2em;margin:10px 0}.att-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.att-pad button{min-height:56px;border:0;border-radius:12px;font-size:22px;font-weight:900;background:#f1f5f9}.att-page{display:none;max-width:1100px;margin:auto;padding:14px}.att-card{background:#fff;border:2px solid var(--line);border-radius:17px;padding:13px;margin:12px 0}.att-cols,.att-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.att-input{width:100%;padding:10px;border:2px solid var(--line);border-radius:11px;font-size:16px}.att-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.att-day{min-height:58px;border:1px solid var(--line);border-radius:9px;background:#fff}.att-day.holiday{background:#fee2e2;color:#991b1b;border-color:#fca5a5}.att-emp-row,.att-log-row{display:grid;gap:8px;align-items:center;padding:8px;border-bottom:1px solid #e5e7eb}.att-emp-row{grid-template-columns:70px 1fr auto}.att-log-row{grid-template-columns:100px 1fr 110px 110px}.att-stat{background:#f8fbff;border:1px solid var(--line);border-radius:12px;padding:10px}.att-stat b{font-size:20px}@media(max-width:700px){.att-cols,.att-stats{grid-template-columns:1fr}.att-log-row{grid-template-columns:1fr 1fr}}
+/* v11.1 勤怠補助 */
+.att-secret{width:34px;height:22px;border:0;border-radius:5px;background:#16a34a;opacity:.72;margin:42px auto 0;display:block;cursor:pointer}
+.att-secret:hover{opacity:1}
+.att-overlay{position:fixed;inset:0;background:rgba(15,23,42,.62);z-index:99999;display:none;align-items:center;justify-content:center;padding:16px}
+.att-box{width:min(390px,100%);background:#fff;border-radius:22px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.28)}
+.att-pin{height:52px;border:2px solid #bbf7d0;border-radius:14px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;font-size:24px;letter-spacing:.25em;font-weight:900;margin:10px 0 14px}
+.att-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.att-pad button{min-height:58px;border:0;border-radius:14px;background:#f1f5f9;color:#0f172a;font-size:22px;font-weight:900}
+.att-page{display:none;max-width:1000px;margin:0 auto;padding:14px 14px 80px}
+.att-card{background:#fff;border:2px solid var(--line);border-radius:18px;padding:13px;margin:12px 0}
+.att-cols,.att-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.att-input{width:100%;padding:11px;border:2px solid var(--line);border-radius:12px;font-size:16px}
+.att-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.att-cal-head{text-align:center;font-weight:900;font-size:12px;color:#64748b;padding:4px}
+.att-day{min-height:58px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#0f172a;padding:5px}.att-day.holiday{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
+.att-emp-row,.att-log-row{display:grid;gap:8px;align-items:center;padding:8px;border-bottom:1px solid #e5e7eb}.att-emp-row{grid-template-columns:70px 1fr auto}.att-log-row{grid-template-columns:100px minmax(180px,1fr) 110px 110px}
+.att-stat{background:#f8fbff;border:1px solid var(--line);border-radius:14px;padding:10px}.att-stat span{display:block;font-size:11px;color:#64748b}.att-stat b{font-size:21px;color:var(--deep)}.att-warning{color:#b45309;font-weight:900}
+@media(max-width:700px){.att-cols,.att-stats{grid-template-columns:1fr}.att-log-row{grid-template-columns:1fr 1fr}.att-day{min-height:52px;font-size:12px}}
+
 </style>
 </head>
 <body>
-<div id="homeScreen" class="home-screen"><div class="home-title">TAJIMA</div><div class="home-card"><button class="btn-purple" onclick="showHeadOffice()">本社</button></div><div class="home-card"><button class="btn-blue" onclick="showFactory2()">第二工場</button></div><div class="home-card"><button class="btn-green" onclick="showMaterialOrders()">材料発注管理</button></div></div>
+<div id="homeScreen" class="home-screen"><div class="home-title">TAJIMA</div><div class="home-card"><button class="btn-purple" onclick="showHeadOffice()">本社</button></div><div class="home-card"><button class="btn-blue" onclick="showFactory2()">第二工場</button></div><div class="home-card"><button class="btn-green" onclick="showMaterialOrders()">材料発注管理</button></div><button class="att-secret" onclick="attOpenPin()" aria-label=" "></button></div>
 <div id="updateBanner" class="update-banner"><b>新しいバージョンがあります</b><br><span id="updateText">更新できます</span><button class="btn-green" onclick="applyAppUpdate()">更新する</button></div>
 <div id="pullIndicator" class="pull-indicator">↓ 更新</div>
 <div id="factoryApp" class="app" style="display:none">
@@ -322,6 +338,36 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
   <div class="note">同じ材料を何度発注しても、発注No.ごとに別管理されます。分割入荷・分割研磨にも対応します。</div>
 </div>
 
+
+<div id="attOverlay" class="att-overlay">
+  <div class="att-box">
+    <div style="text-align:center;font-weight:900;color:#166534">管理者認証</div>
+    <div id="attPinView" class="att-pin">○○○○○○</div>
+    <div class="att-pad">
+      <button onclick="attKey('1')">1</button><button onclick="attKey('2')">2</button><button onclick="attKey('3')">3</button>
+      <button onclick="attKey('4')">4</button><button onclick="attKey('5')">5</button><button onclick="attKey('6')">6</button>
+      <button onclick="attKey('7')">7</button><button onclick="attKey('8')">8</button><button onclick="attKey('9')">9</button>
+      <button onclick="attClear()">C</button><button onclick="attKey('0')">0</button><button onclick="attClosePin()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div id="attPage" class="att-page">
+  <div class="header"><h1>勤怠管理</h1><div class="note">タイムカード集計補助 ｜ 締め期間：毎月26日〜翌月25日</div></div>
+  <div class="section-switch"><button class="btn-light" onclick="attCloseAdmin()">TAJIMAへ戻る</button><button class="btn-blue" onclick="attLoad()">再読み込み</button></div>
+  <div class="att-card">
+    <h3>社員登録</h3>
+    <div class="att-cols"><input id="attCode" class="att-input" inputmode="numeric" placeholder="社員番号 例：1"><input id="attName" class="att-input" placeholder="氏名"><button class="btn-green" onclick="attAddEmployee()">登録</button></div>
+    <div id="attEmpList" style="margin-top:10px"></div>
+  </div>
+  <div class="att-card">
+    <div class="month-row"><button class="btn-light" onclick="attChangePeriod(-1)">◀ 前期間</button><div id="attPeriodTitle" class="month-title"></div><button class="btn-light" onclick="attChangePeriod(1)">次期間 ▶</button></div>
+    <div class="note">土曜日は通常勤務。日曜日は自動で休日。会社全体の休みは日付を押して休日に切り替えます。</div>
+    <div id="attCalendar" class="att-cal"></div>
+  </div>
+  <div class="att-card"><h3>期間集計</h3><select id="attEmpSelect" class="att-input" onchange="attDrawSummary()"></select><div id="attSummary"></div></div>
+</div>
+
 <div class="bottom"><div class="bottom-inner"><button class="btn-light" onclick="showHome()">ホーム</button><button id="adminBtn" class="btn-blue" onclick="toggleAdmin()">管理者モード</button><button id="saveBtn" class="save hidden" onclick="manualSave()">保存</button><div id="bottomText" class="bottom-text">準備中</div></div></div>
 
 <div id="calendarModal" class="modal-bg"><div class="modal"><h2 id="calTitle">出荷予定</h2><div class="month-row"><button class="btn-light" onclick="calendarMonth(-1)">◀</button><div id="calMonthTitle" class="month-title"></div><button class="btn-light" onclick="calendarMonth(1)">▶</button></div><div id="calendarGrid" class="calendar"></div><div id="dayDetail" class="schedule-list"></div><div class="admin-only hidden" style="margin-top:12px">
@@ -341,7 +387,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.0";
+const APP_VERSION="11.1";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -351,7 +397,6 @@ const SETUP_API=`${SUPABASE_URL}/rest/v1/factory_machine_setups`;
 const MATERIAL_MASTER_API=`${SUPABASE_URL}/rest/v1/material_master`;
 const MATERIAL_ORDER_API=`${SUPABASE_URL}/rest/v1/material_orders`;
 const MATERIAL_EVENT_API=`${SUPABASE_URL}/rest/v1/material_order_events`;
-
 const ATT_EMP_API=`${SUPABASE_URL}/rest/v1/attendance_employees`;
 const ATT_CAL_API=`${SUPABASE_URL}/rest/v1/attendance_company_calendar`;
 const ATT_PUNCH_API=`${SUPABASE_URL}/rest/v1/attendance_punches`;
@@ -1241,11 +1286,7 @@ function printOrdersForDate(dateKey,event){
 </style></head><body>
     <div class="controls"><button onclick="window.print()">印刷する</button></div>
     ${pages}
-  
-<button class="att-secret" onclick="attOpenPin()" aria-label=" "></button>
-<div id="attOverlay" class="att-overlay"><div class="att-box"><b style="display:block;text-align:center">管理者認証</b><div id="attPinView" class="att-pin">○○○○○○</div><div class="att-pad"><button onclick="attKey('1')">1</button><button onclick="attKey('2')">2</button><button onclick="attKey('3')">3</button><button onclick="attKey('4')">4</button><button onclick="attKey('5')">5</button><button onclick="attKey('6')">6</button><button onclick="attKey('7')">7</button><button onclick="attKey('8')">8</button><button onclick="attKey('9')">9</button><button onclick="attClear()">C</button><button onclick="attKey('0')">0</button><button onclick="attClosePin()">閉じる</button></div></div></div>
-<div id="attPage" class="att-page"><div class="header"><h1>勤怠管理</h1><div class="note">タイムカード集計補助 / 締め期間：毎月26日〜翌月25日</div></div><button class="btn-light" onclick="attCloseAdmin()">TAJIMAへ戻る</button><div class="att-card"><h3>社員登録</h3><div class="att-cols"><input id="attCode" class="att-input" inputmode="numeric" placeholder="社員番号"><input id="attName" class="att-input" placeholder="氏名"><button class="btn-green" onclick="attAddEmployee()">登録</button></div><div id="attEmpList"></div></div><div class="att-card"><div class="month-row"><button class="btn-light" onclick="attChangePeriod(-1)">◀</button><div id="attPeriodTitle" class="month-title"></div><button class="btn-light" onclick="attChangePeriod(1)">▶</button></div><div class="note">土曜日は通常勤務。日曜日は初期状態で休日。会社休日は日付を押して切替。</div><div id="attCalendar" class="att-cal"></div></div><div class="att-card"><h3>期間集計</h3><select id="attEmpSelect" class="att-input" onchange="attDrawSummary()"></select><div id="attSummary"></div></div></div>
-</body></html>`);
+  </body></html>`);
   w.document.close();
 }
 function drawMaterialOrders(){
@@ -1294,6 +1335,35 @@ function drawMaterialOrders(){
   materialModeApply();
 }
 
+
+// ===== v11.1 勤怠集計補助 =====
+let attPin="",attEmployees=[],attCalRows=[],attPunches=[];
+let attPeriodYear=(new Date()).getFullYear(),attPeriodMonth=(new Date()).getMonth()+1;
+
+function attOpenPin(){attPin="";attPinView.textContent="○○○○○○";attOverlay.style.display="flex"}
+function attClosePin(){attOverlay.style.display="none";attPin=""}
+function attClear(){attPin="";attPinView.textContent="○○○○○○"}
+function attKey(n){if(attPin.length>=6)return;attPin+=n;attPinView.textContent="●".repeat(attPin.length)+"○".repeat(6-attPin.length);if(attPin.length===6){if(attPin==="234223"){attClosePin();attOpenAdmin()}else{alert("パスワードが違います");attClear()}}}
+function attOpenAdmin(){homeScreen.style.display="none";factoryApp.style.display="none";hqApp.style.display="none";materialApp.style.display="none";const b=document.querySelector(".bottom");if(b)b.style.display="none";attPage.style.display="block";attLoad()}
+function attCloseAdmin(){attPage.style.display="none";showHome()}
+function attRange(){return{start:new Date(attPeriodYear,attPeriodMonth-2,26,0,0,0,0),end:new Date(attPeriodYear,attPeriodMonth-1,25,23,59,59,999)}}
+function attDK(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function attHM(m){m=Math.max(0,Math.round(Number(m)||0));return `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`}
+function attDayType(k){const saved=attCalRows.find(x=>x.work_date===k);if(saved)return saved.day_type;return new Date(k+"T00:00:00").getDay()===0?"holiday":"normal"}
+function attRoundStart(d){const x=new Date(d),m=x.getMinutes();if(m<=15)x.setMinutes(0,0,0);else if(m>=45)x.setHours(x.getHours()+1,0,0,0);else x.setSeconds(0,0);return x}
+function attOT(firstIn,lastOut){const start=attRoundStart(firstIn),regularEnd=new Date(start.getTime()+9*60*60*1000),overtimeStart=new Date(regularEnd.getTime()-30*60*1000),raw=(lastOut-overtimeStart)/60000;if(raw<25)return 0;return Math.floor((raw+5)/30)*30}
+function attSessions(ps){ps=[...ps].sort((a,b)=>new Date(a.punched_at)-new Date(b.punched_at));let open=null,missing=false,s=[];for(const p of ps){if(p.punch_type==="in"){if(open)missing=true;open=new Date(p.punched_at)}else{if(!open){missing=true;continue}const out=new Date(p.punched_at);if(out>open)s.push([open,out]);open=null}}if(open)missing=true;return{s,missing}}
+async function attLoad(){if(!checkConfig()){alert("config.jsを確認してください");return}const{start,end}=attRange(),sk=attDK(start),ek=attDK(end);try{[attEmployees,attCalRows,attPunches]=await Promise.all([restGet(`${ATT_EMP_API}?select=*&is_active=eq.true&order=sort_order.asc.nullslast,id.asc`),restGet(`${ATT_CAL_API}?select=*&work_date=gte.${sk}&work_date=lte.${ek}`),restGet(`${ATT_PUNCH_API}?select=*&punched_at=gte.${encodeURIComponent(start.toISOString())}&punched_at=lte.${encodeURIComponent(end.toISOString())}&order=punched_at.asc`)]);attDrawEmployees();attDrawCalendar();attDrawSelect();attDrawSummary()}catch(e){alert("勤怠読込エラー: "+e.message)}}
+async function attAddEmployee(){const c=(attCode.value||"").trim(),n=(attName.value||"").trim();if(!c||!n){alert("社員番号と氏名を入力してください");return}const r=await fetch(ATT_EMP_API,{method:"POST",headers:headers(),body:JSON.stringify([{employee_code:c,employee_name:n,is_active:true,sort_order:Date.now(),updated_at:new Date().toISOString()}])});if(!r.ok){alert("社員登録エラー: "+await r.text());return}attCode.value="";attName.value="";await attLoad()}
+async function attHide(id){if(!confirm("この社員を一覧から非表示にしますか？"))return;const r=await fetch(`${ATT_EMP_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({is_active:false,updated_at:new Date().toISOString()})});if(!r.ok){alert("更新エラー: "+await r.text());return}await attLoad()}
+function attDrawEmployees(){attEmpList.innerHTML=attEmployees.length?attEmployees.map(e=>`<div class="att-emp-row"><b>${esc(e.employee_code)}</b><span>${esc(e.employee_name)}</span><button class="btn-red btn-small" onclick="attHide(${e.id})">非表示</button></div>`).join(""):'<div class="note">社員未登録</div>'}
+function attDrawSelect(){const old=attEmpSelect.value;attEmpSelect.innerHTML=attEmployees.map(e=>`<option value="${e.id}">${esc(e.employee_code)} - ${esc(e.employee_name)}</option>`).join("");if(old&&[...attEmpSelect.options].some(o=>o.value===old))attEmpSelect.value=old}
+function attChangePeriod(n){attPeriodMonth+=n;if(attPeriodMonth<1){attPeriodMonth=12;attPeriodYear--}if(attPeriodMonth>12){attPeriodMonth=1;attPeriodYear++}attLoad()}
+function attDrawCalendar(){const{start,end}=attRange();attPeriodTitle.textContent=`${attPeriodYear}年${attPeriodMonth}月分　${start.getMonth()+1}/26〜${end.getMonth()+1}/25`;let out=["日","月","火","水","木","金","土"].map(x=>`<div class="att-cal-head">${x}</div>`).join("");for(let i=0;i<start.getDay();i++)out+="<div></div>";for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){const k=attDK(d),t=attDayType(k);out+=`<button class="att-day ${t==="holiday"?"holiday":""}" onclick="attToggleHoliday('${k}')"><b>${d.getMonth()+1}/${d.getDate()}</b><br><small>${t==="holiday"?"休日":"通常"}</small></button>`}attCalendar.innerHTML=out}
+async function attToggleHoliday(k){const next=attDayType(k)==="holiday"?"normal":"holiday";const r=await fetch(`${ATT_CAL_API}?on_conflict=work_date`,{method:"POST",headers:{...headers(),"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify([{work_date:k,day_type:next,updated_at:new Date().toISOString()}])});if(!r.ok){alert("休日設定エラー: "+await r.text());return}await attLoad()}
+function attDrawSummary(){const id=Number(attEmpSelect.value);if(!id){attSummary.innerHTML='<div class="note">社員を登録してください</div>';return}const ps=attPunches.filter(x=>Number(x.employee_id)===id),days={};ps.forEach(p=>{const k=attDK(new Date(p.punched_at));(days[k]||(days[k]=[])).push(p)});let ot=0,holiday=0,missing=0,rows=[];Object.keys(days).sort().forEach(k=>{const x=attSessions(days[k]),type=attDayType(k);let o=0,h=0;if(type==="holiday"){h=x.s.reduce((sum,[a,b])=>sum+(b-a)/60000,0);h=Math.floor((h+5)/30)*30;holiday+=h}else if(x.s.length){o=attOT(x.s[0][0],x.s[x.s.length-1][1]);ot+=o}if(x.missing)missing++;const det=x.s.map(([a,b])=>`${String(a.getHours()).padStart(2,"0")}:${String(a.getMinutes()).padStart(2,"0")}→${String(b.getHours()).padStart(2,"0")}:${String(b.getMinutes()).padStart(2,"0")}`).join(" / ")||"記録不足";rows.push(`<div class="att-log-row"><b>${k.slice(5).replace("-","/")} ${type==="holiday"?"休日":""}</b><span>${det}${x.missing?' <span class="att-warning">⚠</span>':""}</span><span>残業 ${attHM(o)}</span><span>休日 ${attHM(h)}</span></div>`)});attSummary.innerHTML=`<div class="att-stats"><div class="att-stat"><span>残業</span><b>${attHM(ot)}</b></div><div class="att-stat"><span>休日勤務</span><b>${attHM(holiday)}</b></div><div class="att-stat"><span>記録不足</span><b>${missing}日</b></div></div>${rows.join("")||'<div class="note">この期間の打刻はありません</div>'}`}
+
+
 // update check
 async function checkAppVersion(){try{const res=await fetch(`./version.json?ts=${Date.now()}`,{cache:"no-store"});if(!res.ok)return;const v=await res.json();if(v.version&&v.version!==APP_VERSION){updateText.textContent=`現在 v${APP_VERSION} → 最新 v${v.version}`;updateBanner.style.display="block"}}catch(e){}}
 async function applyAppUpdate(){updateText.textContent="更新中...";try{if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();for(const reg of regs){await reg.unregister()}}if(window.caches){const keys=await caches.keys();for(const key of keys){await caches.delete(key)}}}catch(e){}location.reload(true)}
@@ -1308,17 +1378,6 @@ window.addEventListener("touchend",async()=>{if(!isPulling)return;const ok=pullD
 window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 if(currentSection==="factory2")showFactory2();else if(currentSection==="hq")showHeadOffice();else if(currentSection==="materials")showMaterialOrders();else showHome();checkAppVersion();setInterval(()=>{if(currentSection==="factory2"&&!dirty&&!loading&&checkConfig())loadAll(); if(currentSection==="hq"&&checkConfig()&&canHqAutoRefresh())loadHqSchedules(); if(currentSection==="materials"&&checkConfig())loadMaterialPage();},15000);setInterval(checkAppVersion,60000);
-\nlet attPin="",attEmployees=[],attCalRows=[],attPunches=[];let attPeriodYear=(new Date()).getFullYear(),attPeriodMonth=(new Date()).getMonth()+1;
-function attOpenPin(){attPin="";attPinView.textContent="○○○○○○";attOverlay.style.display="flex"}function attClosePin(){attOverlay.style.display="none";attPin=""}function attClear(){attPin="";attPinView.textContent="○○○○○○"}function attKey(n){if(attPin.length>=6)return;attPin+=n;attPinView.textContent="●".repeat(attPin.length)+"○".repeat(6-attPin.length);if(attPin.length===6){if(attPin==="234223"){attClosePin();attOpenAdmin()}else{alert("パスワードが違います");attClear()}}}
-function attOpenAdmin(){homeScreen.style.display="none";factoryApp.style.display="none";hqApp.style.display="none";if(window.materialApp)materialApp.style.display="none";document.querySelector(".bottom").style.display="none";attPage.style.display="block";attLoad()}function attCloseAdmin(){attPage.style.display="none";showHome()}
-function attRange(){return {start:new Date(attPeriodYear,attPeriodMonth-2,26,0,0,0),end:new Date(attPeriodYear,attPeriodMonth-1,25,23,59,59)}}function attDK(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}function attHM(m){m=Math.max(0,Math.round(m||0));return `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`}function attDayType(k){let r=attCalRows.find(x=>x.work_date===k);return r?r.day_type:(new Date(k+"T00:00:00").getDay()===0?"holiday":"normal")}
-function attRoundStart(d){let x=new Date(d),m=x.getMinutes();if(m<=15)x.setMinutes(0,0,0);else if(m>=45)x.setHours(x.getHours()+1,0,0,0);else x.setSeconds(0,0);return x}function attOT(a,b){let s=attRoundStart(a),regular=new Date(s.getTime()+9*3600000),otStart=new Date(regular.getTime()-30*60000),raw=(b-otStart)/60000;if(raw<25)return 0;return Math.floor((raw+5)/30)*30}
-function attSessions(ps){ps=[...ps].sort((a,b)=>new Date(a.punched_at)-new Date(b.punched_at));let open=null,missing=false,s=[];for(let p of ps){if(p.punch_type==="in"){if(open)missing=true;open=new Date(p.punched_at)}else{if(!open){missing=true;continue}let o=new Date(p.punched_at);if(o>open)s.push([open,o]);open=null}}if(open)missing=true;return{s,missing}}
-async function attLoad(){let {start,end}=attRange(),sk=attDK(start),ek=attDK(end);try{[attEmployees,attCalRows,attPunches]=await Promise.all([restGet(`${ATT_EMP_API}?select=*&is_active=eq.true&order=sort_order.asc.nullslast,id.asc`),restGet(`${ATT_CAL_API}?select=*&work_date=gte.${sk}&work_date=lte.${ek}`),restGet(`${ATT_PUNCH_API}?select=*&punched_at=gte.${encodeURIComponent(start.toISOString())}&punched_at=lte.${encodeURIComponent(end.toISOString())}&order=punched_at.asc`)]);attDrawEmployees();attDrawCalendar();attDrawSelect();attDrawSummary()}catch(e){alert("勤怠読込エラー: "+e.message)}}
-async function attAddEmployee(){let c=attCode.value.trim(),n=attName.value.trim();if(!c||!n){alert("社員番号と氏名を入力してください");return}let r=await fetch(ATT_EMP_API,{method:"POST",headers:headers(),body:JSON.stringify([{employee_code:c,employee_name:n,is_active:true,sort_order:Date.now()}])});if(!r.ok){alert("社員登録エラー: "+await r.text());return}attCode.value="";attName.value="";attLoad()}function attDrawEmployees(){attEmpList.innerHTML=attEmployees.map(e=>`<div class="att-emp-row"><b>${esc(e.employee_code)}</b><span>${esc(e.employee_name)}</span><button class="btn-red btn-small" onclick="attHide(${e.id})">非表示</button></div>`).join("")}async function attHide(id){if(!confirm("非表示にしますか？"))return;await fetch(`${ATT_EMP_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({is_active:false})});attLoad()}
-function attDrawSelect(){let old=attEmpSelect.value;attEmpSelect.innerHTML=attEmployees.map(e=>`<option value="${e.id}">${esc(e.employee_code)} - ${esc(e.employee_name)}</option>`).join("");if(old&&[...attEmpSelect.options].some(o=>o.value===old))attEmpSelect.value=old}function attChangePeriod(n){attPeriodMonth+=n;if(attPeriodMonth<1){attPeriodMonth=12;attPeriodYear--}if(attPeriodMonth>12){attPeriodMonth=1;attPeriodYear++}attLoad()}
-function attDrawCalendar(){let {start,end}=attRange();attPeriodTitle.textContent=`${attPeriodYear}年${attPeriodMonth}月分　${start.getMonth()+1}/26〜${end.getMonth()+1}/25`;let out=["日","月","火","水","木","金","土"].map(x=>`<div style="text-align:center;font-weight:900;font-size:12px">${x}</div>`).join("");for(let i=0;i<start.getDay();i++)out+="<div></div>";for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){let k=attDK(d),t=attDayType(k);out+=`<button class="att-day ${t==="holiday"?"holiday":""}" onclick="attToggleHoliday('${k}')"><b>${d.getMonth()+1}/${d.getDate()}</b><br><small>${t==="holiday"?"休日":"通常"}</small></button>`}attCalendar.innerHTML=out}async function attToggleHoliday(k){let next=attDayType(k)==="holiday"?"normal":"holiday",r=await fetch(`${ATT_CAL_API}?on_conflict=work_date`,{method:"POST",headers:{...headers(),Prefer:"resolution=merge-duplicates"},body:JSON.stringify([{work_date:k,day_type:next}])});if(!r.ok){alert("休日設定エラー: "+await r.text());return}attLoad()}
-function attDrawSummary(){let id=Number(attEmpSelect.value);if(!id){attSummary.innerHTML='<div class="note">社員を登録してください</div>';return}let ps=attPunches.filter(x=>Number(x.employee_id)===id),days={};ps.forEach(p=>{let k=attDK(new Date(p.punched_at));(days[k]||(days[k]=[])).push(p)});let ot=0,hol=0,miss=0,rows=[];Object.keys(days).sort().forEach(k=>{let x=attSessions(days[k]),type=attDayType(k),o=0,hh=0;if(type==="holiday"){hh=x.s.reduce((z,[a,b])=>z+(b-a)/60000,0);hh=Math.floor((hh+5)/30)*30;hol+=hh}else if(x.s.length){o=attOT(x.s[0][0],x.s[x.s.length-1][1]);ot+=o}if(x.missing)miss++;let det=x.s.map(([a,b])=>`${String(a.getHours()).padStart(2,"0")}:${String(a.getMinutes()).padStart(2,"0")}→${String(b.getHours()).padStart(2,"0")}:${String(b.getMinutes()).padStart(2,"0")}`).join(" / ")||"記録不足";rows.push(`<div class="att-log-row"><b>${k.slice(5).replace("-","/")} ${type==="holiday"?"休日":""}</b><span>${det}${x.missing?" ⚠":""}</span><span>残業 ${attHM(o)}</span><span>休日 ${attHM(hh)}</span></div>`)});attSummary.innerHTML=`<div class="att-stats"><div class="att-stat">残業<br><b>${attHM(ot)}</b></div><div class="att-stat">休日勤務<br><b>${attHM(hol)}</b></div><div class="att-stat">記録不足<br><b>${miss}日</b></div></div>${rows.join("")||'<div class="note">この期間の打刻なし</div>'}`}
 </script>
 </body>
 </html>
