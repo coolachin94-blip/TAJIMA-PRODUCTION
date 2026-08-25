@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v11.7</title>
+<title>TAJIMA 生産管理 v11.8</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -485,7 +485,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.7";
+const APP_VERSION="11.8";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -1449,13 +1449,20 @@ function drawMaterialOrders(){
 
 // ===== v11.1 勤怠集計補助 =====
 let attPin="",attEmployees=[],attCalRows=[],attPunches=[];
-let attPeriodYear=(new Date()).getFullYear(),attPeriodMonth=(new Date()).getMonth()+1;
+function attCurrentPayrollPeriod(){
+  const now=new Date();
+  let y=now.getFullYear(),m=now.getMonth()+1;
+  if(now.getDate()>=26){m++;if(m>12){m=1;y++}}
+  return {year:y,month:m};
+}
+const attInitialPeriod=attCurrentPayrollPeriod();
+let attPeriodYear=attInitialPeriod.year,attPeriodMonth=attInitialPeriod.month;
 
 function attOpenPin(){attPin="";attPinView.textContent="○○○○○○";attOverlay.style.display="flex"}
 function attClosePin(){attOverlay.style.display="none";attPin=""}
 function attClear(){attPin="";attPinView.textContent="○○○○○○"}
 function attKey(n){if(attPin.length>=6)return;attPin+=n;attPinView.textContent="●".repeat(attPin.length)+"○".repeat(6-attPin.length);if(attPin.length===6){if(attPin==="234223"){attClosePin();attOpenAdmin()}else{alert("パスワードが違います");attClear()}}}
-function attOpenAdmin(){homeScreen.style.display="none";factoryApp.style.display="none";hqApp.style.display="none";materialApp.style.display="none";const b=document.querySelector(".bottom");if(b)b.style.display="none";attPage.style.display="block";attLoad()}
+function attOpenAdmin(){homeScreen.style.display="none";factoryApp.style.display="none";hqApp.style.display="none";materialApp.style.display="none";const b=document.querySelector(".bottom");if(b)b.style.display="none";attPage.style.display="block";const cur=attCurrentPayrollPeriod();attPeriodYear=cur.year;attPeriodMonth=cur.month;attLoad()}
 function attCloseAdmin(){attPage.style.display="none";showHome()}
 function attRange(){return{start:new Date(attPeriodYear,attPeriodMonth-2,26,0,0,0,0),end:new Date(attPeriodYear,attPeriodMonth-1,25,23,59,59,999)}}
 function attDK(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
@@ -1582,13 +1589,14 @@ function attDrawSummary(){
   if(!id){attSummary.innerHTML='<div class="note">社員を登録してください</div>';return}
   const ps=attPunches.filter(x=>Number(x.employee_id)===id),days={};
   ps.forEach(p=>{const k=attDK(new Date(p.punched_at));(days[k]||(days[k]=[])).push(p)});
-  let ot=0,holiday=0,missing=0,rows=[];
+  let ot=0,holiday=0,holidayDays=0,missing=0,rows=[];
   Object.keys(days).sort().forEach(k=>{
     const x=attSessions(days[k]),type=attDayType(k);
     let o=0,h=0;
     if(type==="holiday"){
       h=x.s.reduce((sum,[a,b])=>sum+(b-a)/60000,0);
       h=Math.floor((h+5)/30)*30;
+      if(h>0)holidayDays++;
       holiday+=h;
     }else if(x.s.length){
       o=attOT(x.s[0][0],x.s[x.s.length-1][1]);
@@ -1610,7 +1618,7 @@ function attDrawSummary(){
     const adminMark=attDayHasAdminEdit(k,id)?'<span class="att-admin-mark">管理者修正</span>':"";
     rows.push(`<div class="att-log-row"><b>${k.slice(5).replace("-","/")} ${type==="holiday"?"休日":""}${adminMark}</b><span>${parts.join("<br>")||"記録なし"}</span><span>残業 ${attHM(o)}<br><button class="att-edit-btn" onclick="attOpenEdit('${k}')">修正</button></span><span>休日 ${attHM(h)}</span></div>`);
   });
-  attSummary.innerHTML=`<div class="att-stats"><div class="att-stat"><span>残業</span><b>${attHM(ot)}</b></div><div class="att-stat"><span>休日勤務</span><b>${attHM(holiday)}</b></div><div class="att-stat"><span>記録不足</span><b>${missing}日</b></div></div>${rows.join("")||'<div class="note">この期間の打刻はありません</div>'}`;
+  attSummary.innerHTML=`<div class="att-stats"><div class="att-stat"><span>残業</span><b>${attHM(ot)}</b></div><div class="att-stat"><span>休日出勤</span><b>${holidayDays}日 / ${attHM(holiday)}</b></div><div class="att-stat"><span>記録不足</span><b>${missing}日</b></div></div>${rows.join("")||'<div class="note">この期間の打刻はありません</div>'}`;
 }
 
 
@@ -1735,6 +1743,16 @@ function attPrintMonthly(){
   w.document.open();w.document.write(doc);w.document.close();
 }
 
+
+// 勤怠期間の自動切替：26日になったら翌月分へ
+setInterval(()=>{
+  if(window.attPage && attPage.style.display==="block"){
+    const cur=attCurrentPayrollPeriod();
+    if(cur.year!==attPeriodYear || cur.month!==attPeriodMonth){
+      attPeriodYear=cur.year;attPeriodMonth=cur.month;attLoad();
+    }
+  }
+},60000);
 
 // update check
 async function checkAppVersion(){try{const res=await fetch(`./version.json?ts=${Date.now()}`,{cache:"no-store"});if(!res.ok)return;const v=await res.json();if(v.version&&v.version!==APP_VERSION){updateText.textContent=`現在 v${APP_VERSION} → 最新 v${v.version}`;updateBanner.style.display="block"}}catch(e){}}
