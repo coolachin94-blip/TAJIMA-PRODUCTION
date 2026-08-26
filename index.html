@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v11.11</title>
+<title>TAJIMA 生産管理 v11.12</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -296,6 +296,11 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .material-simple-note{background:#ecfdf5;border:1px solid #86efac;color:#166534;border-radius:12px;padding:9px 11px;font-size:12px;font-weight:800;margin:8px 0}
 @media(max-width:430px){.material-sheet-tab{font-size:12px;padding:10px 3px}.material-sheet-settings-row{grid-template-columns:60px 1fr}.material-sheet-settings-row button{grid-column:2}}
 
+
+/* v11.12 勤務時間9時間未満の確認表示 */
+.att-log-row.att-needs-check{background:#fff7ed;border-color:#fb923c}
+.att-check-mark{display:inline-block;margin-left:5px;padding:2px 6px;border-radius:999px;background:#f97316;color:#fff;font-size:11px;font-weight:900}
+
 </style>
 </head>
 <body>
@@ -500,7 +505,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.11";
+const APP_VERSION="11.12";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -1676,7 +1681,7 @@ function attDrawSummary(){
   if(!id){attSummary.innerHTML='<div class="note">社員を登録してください</div>';return}
   const ps=attPunches.filter(x=>Number(x.employee_id)===id),days={};
   ps.forEach(p=>{const k=attDK(new Date(p.punched_at));(days[k]||(days[k]=[])).push(p)});
-  let ot=0,satDays=0,sunDays=0,sunHours=0,companyHolidayDays=0,companyHolidayHours=0,missing=0,rows=[];
+  let ot=0,satDays=0,sunDays=0,sunHours=0,companyHolidayDays=0,companyHolidayHours=0,missing=0,needsCheck=0,rows=[];
   Object.keys(days).sort().forEach(k=>{
     const x=attSessions(days[k]),cat=attWorkCategory(k);
     let o=0,h=0;
@@ -1693,6 +1698,9 @@ function attDrawSummary(){
       if(cat==="saturday")satDays++;
     }
     if(x.missing)missing++;
+    const workedMinutes=x.s.reduce((sum,[a,b])=>sum+(b-a)/60000,0);
+    const needsWorkCheck=(cat==="normal"||cat==="saturday") && x.s.length>0 && !x.missing && workedMinutes<540;
+    if(needsWorkCheck)needsCheck++;
 
     const parts=[];
     x.s.forEach(([a,b])=>parts.push(`${String(a.getHours()).padStart(2,"0")}:${String(a.getMinutes()).padStart(2,"0")} → ${String(b.getHours()).padStart(2,"0")}:${String(b.getMinutes()).padStart(2,"0")}`));
@@ -1701,13 +1709,15 @@ function attDrawSummary(){
 
     const adminMark=attDayHasAdminEdit(k,id)?'<span class="att-admin-mark">管理者修正</span>':"";
     const label=cat==="saturday"?"土曜出勤":cat==="sunday"?"日曜出勤":cat==="company_holiday"?"会社休日出勤":"";
-    rows.push(`<div class="att-log-row"><b>${k.slice(5).replace("-","/")} ${label}${adminMark}</b><span>${parts.join("<br>")||"記録なし"}</span><span>残業 ${attHM(o)}<br><button class="att-edit-btn" onclick="attOpenEdit('${k}')">修正</button></span><span>${cat==="sunday"||cat==="company_holiday"?"休日 "+attHM(h):""}</span></div>`);
+    const checkMark=needsWorkCheck?'<span class="att-check-mark">⚠ 要確認</span>':"";
+    rows.push(`<div class="att-log-row ${needsWorkCheck?"att-needs-check":""}"><b>${k.slice(5).replace("-","/")} ${label}${checkMark}${adminMark}</b><span>${parts.join("<br>")||"記録なし"}</span><span>残業 ${attHM(o)}<br><button class="att-edit-btn" onclick="attOpenEdit('${k}')">修正</button></span><span>${cat==="sunday"||cat==="company_holiday"?"休日 "+attHM(h):""}</span></div>`);
   });
   attSummary.innerHTML=`<div class="att-stats">
     <div class="att-stat"><span>残業</span><b>${attHM(ot)}</b></div>
     <div class="att-stat"><span>土曜出勤</span><b>${satDays}日</b></div>
     <div class="att-stat"><span>日曜出勤</span><b>${sunDays}日 / ${attHM(sunHours)}</b></div>
     <div class="att-stat"><span>会社休日出勤</span><b>${companyHolidayDays}日 / ${attHM(companyHolidayHours)}</b></div>
+    <div class="att-stat"><span>要確認</span><b>${needsCheck}日</b></div>
     <div class="att-stat"><span>記録不足</span><b>${missing}日</b></div>
   </div>${rows.join("")||'<div class="note">この期間の打刻はありません</div>'}`;
 }
@@ -1725,7 +1735,7 @@ function attPrintMonthly(){
     (days[k]||(days[k]=[])).push(p);
   });
 
-  let normalDays=0,otTotal=0,satDays=0,sunDays=0,sunTotal=0,companyHolidayDays=0,companyHolidayTotal=0,missingDays=0;
+  let normalDays=0,otTotal=0,satDays=0,sunDays=0,sunTotal=0,companyHolidayDays=0,companyHolidayTotal=0,missingDays=0,needsCheckDays=0;
   let rows="",adminNotes=[];
 
   for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
@@ -1752,6 +1762,9 @@ function attPrintMonthly(){
       otTotal+=ot;
     }
     if(x.missing)missingDays++;
+    const workedMinutes=x.s.reduce((sum,[a,b])=>sum+(b-a)/60000,0);
+    const needsWorkCheck=(cat==="normal"||cat==="saturday") && x.s.length>0 && !x.missing && workedMinutes<540;
+    if(needsWorkCheck)needsCheckDays++;
 
     const adminEdited=dayPs.some(p=>p.source==="admin");
     if(adminEdited)adminNotes.push(`${k.slice(5).replace("-","/")}　管理者修正`);
@@ -1769,11 +1782,12 @@ function attPrintMonthly(){
       if(cat==="saturday")note.push("土曜出勤");
       if(cat==="sunday")note.push("日曜出勤");
       if(cat==="company_holiday")note.push("会社休日出勤");
+      if(i===0&&needsWorkCheck)note.push("⚠ 要確認");
       if(!a)note.push("出勤未打刻");
       if(!b)note.push("退勤未打刻");
       if(adminEdited)note.push("管理者修正");
       rows+=`<tr>
-        <td>${i===0?k.slice(5).replace("-","/"):""}</td>
+        <td>${i===0?k.slice(5).replace("-","/")+(needsWorkCheck?" ⚠ 要確認":""):""}</td>
         <td>${tin}</td><td>${tout}</td>
         <td>${i===0&&(cat==="normal"||cat==="saturday")?attHM(ot):""}</td>
         <td>${i===0&&(cat==="sunday"||cat==="company_holiday")?attHM(holiday):""}</td>
@@ -1826,6 +1840,7 @@ function attPrintMonthly(){
       <div class="sumitem">土曜出勤<b>${satDays}日</b></div>
       <div class="sumitem">日曜出勤<b>${sunDays}日 / ${attHM(sunTotal)}</b></div>
       <div class="sumitem">会社休日出勤<b>${companyHolidayDays}日 / ${attHM(companyHolidayTotal)}</b></div>
+      <div class="sumitem">要確認<b>${needsCheckDays}日</b></div>
       <div class="sumitem">打刻不足<b>${missingDays}日</b></div>
       <div class="sumitem">管理者修正<b>${adminNotes.length}日</b></div>
     </div>
