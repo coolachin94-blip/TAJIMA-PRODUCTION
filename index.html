@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v11.25</title>
+<title>TAJIMA 生産管理 v11.26</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -512,7 +512,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.25";
+const APP_VERSION="11.26";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -1545,7 +1545,7 @@ let boardPin="";
 function boardOpenPin(){boardPin="";boardPinView.textContent="○○○○○○";boardOverlay.style.display="flex"}
 function boardClosePin(){boardOverlay.style.display="none";boardPin=""}
 function boardClear(){boardPin="";boardPinView.textContent="○○○○○○"}
-function boardKey(n){if(boardPin.length>=6)return;boardPin+=n;boardPinView.textContent="●".repeat(boardPin.length)+"○".repeat(6-boardPin.length);if(boardPin.length===6){if(boardPin==="234223"){boardClosePin();location.href="board-test-admin.html?v=1125"}else{alert("パスワードが違います");boardClear()}}}
+function boardKey(n){if(boardPin.length>=6)return;boardPin+=n;boardPinView.textContent="●".repeat(boardPin.length)+"○".repeat(6-boardPin.length);if(boardPin.length===6){if(boardPin==="234223"){boardClosePin();location.href="board-test-admin.html?v=1126"}else{alert("パスワードが違います");boardClear()}}}
 // ===== v11.1 勤怠集計補助 =====
 let attPin="",attEmployees=[],attCalRows=[],attPunches=[];
 function attCurrentPayrollPeriod(){
