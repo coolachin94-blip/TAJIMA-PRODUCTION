@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v11.9</title>
+<title>TAJIMA 生産管理 v11.10</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -500,7 +500,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.9";
+const APP_VERSION="11.10";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -521,7 +521,7 @@ let selectedProduct="", calYear=2026, calMonth=6, schedules=[], allMonthSchedule
 let autoSaveTimer=null, autoSaving=false;
 let shipmentUpdateMap={};
 let machineSetups=[]; let setupDirty=false;
-let materialAdmin=false, materialMasters=[], materialOrdersData=[], materialEvents=[], selectedMaterialId=null, materialFilter="active", materialDeleteMode=false, bulkSelectedMaterialIds=[], openOrderDateGroups={}, materialSheetSlot=Number(localStorage.getItem("tajima_material_sheet")||1), materialSheetSettings=[];
+let materialAdmin=false, materialMasters=[], materialOrdersData=[], materialEvents=[], selectedMaterialId=null, materialFilter="active", materialDeleteMode=false, bulkSelectedMaterialIds=[], openOrderDateGroups={}, materialSheetSlot=Number(localStorage.getItem("tajima_material_sheet")||1), materialSheetConfigRows=[];
 const HQ_MACHINES=["MPH","MPE","MVR40","MVR25","KNC"];
 let currentSection=localStorage.getItem("tajima_section")||"home";
 let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqAdmin=false, hqEditing=false;
@@ -1041,21 +1041,27 @@ async function deleteHqSchedule(id){
 
 function materialSheetIsSimple(){return Number(materialSheetSlot)!==1}
 function materialSheetName(slot=materialSheetSlot){
-  const r=materialSheetSettings.find(x=>Number(x.slot_no)===Number(slot));
+  const r=materialSheetConfigRows.find(x=>Number(x.slot_no)===Number(slot));
   return r?.sheet_name || `仕入先${slot}`;
 }
 function drawMaterialSheetTabs(){
-  if(!window.materialSheetTabs)return;
-  materialSheetTabs.innerHTML=[1,2,3].map(slot=>`<button class="material-sheet-tab ${Number(materialSheetSlot)===slot?"active":""}" onclick="switchMaterialSheet(${slot})">${esc(materialSheetName(slot))}</button>`).join("");
-  if(window.materialSheetSettings){
-    materialSheetSettings.classList.toggle("hidden",!materialAdmin);
-    materialSheetSettings.innerHTML=materialAdmin?[1,2,3].map(slot=>`<div class="material-sheet-settings-row"><b>シート${slot}</b><input id="materialSheetName-${slot}" value="${esc(materialSheetName(slot))}" maxlength="40"><button class="btn-blue btn-small" onclick="saveMaterialSheetName(${slot})">名称保存</button></div>`).join(""):"";
+  const tabsEl=document.getElementById("materialSheetTabs");
+  const settingsEl=document.getElementById("materialSheetSettings");
+  if(!tabsEl)return;
+  tabsEl.innerHTML=[1,2,3].map(slot=>`<button class="material-sheet-tab ${Number(materialSheetSlot)===slot?"active":""}" onclick="switchMaterialSheet(${slot})">${esc(materialSheetName(slot))}</button>`).join("");
+  if(settingsEl){
+    settingsEl.classList.toggle("hidden",!materialAdmin);
+    settingsEl.innerHTML=materialAdmin?[1,2,3].map(slot=>`<div class="material-sheet-settings-row"><b>シート${slot}</b><input id="materialSheetName-${slot}" value="${esc(materialSheetName(slot))}" maxlength="40"><button class="btn-blue btn-small" onclick="saveMaterialSheetName(${slot})">名称保存</button></div>`).join(""):"";
   }
   const simple=materialSheetIsSimple();
-  if(window.materialSimpleNote)materialSimpleNote.style.display=simple?"block":"none";
-  if(window.materialPolishingFilter)materialPolishingFilter.style.display=simple?"none":"";
-  if(window.newMaterialSupplierWrap)newMaterialSupplierWrap.style.display=simple?"none":"";
-  if(window.materialBottomNote)materialBottomNote.textContent=simple
+  const simpleNoteEl=document.getElementById("materialSimpleNote");
+  const polishingFilterEl=document.getElementById("materialPolishingFilter");
+  const supplierWrapEl=document.getElementById("newMaterialSupplierWrap");
+  const bottomNoteEl=document.getElementById("materialBottomNote");
+  if(simpleNoteEl)simpleNoteEl.style.display=simple?"block":"none";
+  if(polishingFilterEl)polishingFilterEl.style.display=simple?"none":"";
+  if(supplierWrapEl)supplierWrapEl.style.display=simple?"none":"";
+  if(bottomNoteEl)bottomNoteEl.textContent=simple
     ?"この仕入先は発注No.ごとに管理し、入荷完了で履歴に残ります。分割入荷にも対応します。"
     :"同じ材料を何度発注しても、発注No.ごとに別管理されます。分割入荷・分割研磨にも対応します。";
   if(simple && materialFilter==="polishing")materialFilter="active";
@@ -1135,7 +1141,7 @@ function setMaterialFilter(v){materialFilter=v;drawMaterialOrders()}
 async function loadMaterialPage(){
   if(!checkConfig()){alert("config.jsにPublishable keyを入れてください");return}
   try{
-    [materialSheetSettings,materialMasters,materialOrdersData,materialEvents]=await Promise.all([
+    [materialSheetConfigRows,materialMasters,materialOrdersData,materialEvents]=await Promise.all([
       restGet(`${MATERIAL_SHEET_API}?select=*&order=slot_no.asc`),
       restGet(`${MATERIAL_MASTER_API}?sheet_slot=eq.${materialSheetSlot}&select=*&order=updated_at.desc`),
       restGet(`${MATERIAL_ORDER_API}?sheet_slot=eq.${materialSheetSlot}&select=*&order=ordered_at.desc`),
