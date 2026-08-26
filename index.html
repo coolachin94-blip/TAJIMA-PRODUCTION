@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v11.12</title>
+<title>TAJIMA 生産管理 v11.13</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -301,6 +301,12 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .att-log-row.att-needs-check{background:#fff7ed;border-color:#fb923c}
 .att-check-mark{display:inline-block;margin-left:5px;padding:2px 6px;border-radius:999px;background:#f97316;color:#fff;font-size:11px;font-weight:900}
 
+
+/* v11.13 材料・発注メモ常時表示 */
+.material-visible-memo{margin-top:6px;padding:7px 9px;border-radius:9px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.material-item-memo{background:#f8fafc;border:1px solid #cbd5e1;color:#334155}
+.material-order-memo{background:#fffbeb;border:1px solid #fbbf24;color:#78350f}
+
 </style>
 </head>
 <body>
@@ -505,7 +511,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.12";
+const APP_VERSION="11.13";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -1491,7 +1497,9 @@ function drawMaterialOrders(){
         <div class="material-order-title"><div class="material-order-heading"><span class="material-order-date-badge">${formatOrderDateOnly(o.ordered_at)}</span><b>${esc(m.material_name||"不明")}</b>&nbsp;× ${c.ordered}</div><div class="material-order-no">発注No. ${esc(o.order_no)} / ${formatTime(o.ordered_at)}</div></div>
         <div class="material-status ${c.done?"done":""}">${st}</div>
       </div>
-      <div style="font-size:12px;color:#64748b;margin-top:5px">${esc(m.spec||"")}${o.memo?` / ${esc(o.memo)}`:""}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:5px">${esc(m.spec||"")}</div>
+      ${m.note?`<div class="material-visible-memo material-item-memo"><b>品目メモ：</b>${esc(m.note)}</div>`:""}
+      ${o.memo?`<div class="material-visible-memo material-order-memo"><b>発注メモ：</b>${esc(o.memo)}</div>`:""}
       ${simple?`
       <div class="material-counts" style="grid-template-columns:repeat(2,1fr)">
         <div class="material-count"><span>発注</span><b>${c.ordered}</b></div>
