@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v11.10</title>
+<title>TAJIMA 生産管理 v11.11</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -500,7 +500,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.10";
+const APP_VERSION="11.11";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -1547,6 +1547,14 @@ function attRange(){return{start:new Date(attPeriodYear,attPeriodMonth-2,26,0,0,
 function attDK(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 function attHM(m){m=Math.max(0,Math.round(Number(m)||0));return `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`}
 function attDayType(k){const saved=attCalRows.find(x=>x.work_date===k);if(saved)return saved.day_type;return new Date(k+"T00:00:00").getDay()===0?"holiday":"normal"}
+function attWorkCategory(k){
+  const saved=attCalRows.find(x=>x.work_date===k);
+  const dow=new Date(k+"T00:00:00").getDay();
+  if(saved&&saved.day_type==="holiday")return "company_holiday";
+  if(dow===0)return "sunday";
+  if(dow===6)return "saturday";
+  return "normal";
+}
 function attRoundStart(d){const x=new Date(d),m=x.getMinutes();if(m<=15)x.setMinutes(0,0,0);else if(m>=45)x.setHours(x.getHours()+1,0,0,0);else x.setSeconds(0,0);return x}
 function attOT(firstIn,lastOut){const start=attRoundStart(firstIn),regularEnd=new Date(start.getTime()+9*60*60*1000),overtimeStart=new Date(regularEnd.getTime()-30*60*1000),raw=(lastOut-overtimeStart)/60000;if(raw<25)return 0;return Math.floor((raw+5)/30)*30}
 function attSessions(ps){
@@ -1668,38 +1676,41 @@ function attDrawSummary(){
   if(!id){attSummary.innerHTML='<div class="note">社員を登録してください</div>';return}
   const ps=attPunches.filter(x=>Number(x.employee_id)===id),days={};
   ps.forEach(p=>{const k=attDK(new Date(p.punched_at));(days[k]||(days[k]=[])).push(p)});
-  let ot=0,holiday=0,holidayDays=0,missing=0,rows=[];
+  let ot=0,satDays=0,sunDays=0,sunHours=0,companyHolidayDays=0,companyHolidayHours=0,missing=0,rows=[];
   Object.keys(days).sort().forEach(k=>{
-    const x=attSessions(days[k]),type=attDayType(k);
+    const x=attSessions(days[k]),cat=attWorkCategory(k);
     let o=0,h=0;
-    if(type==="holiday"){
+    if(cat==="sunday"||cat==="company_holiday"){
       h=x.s.reduce((sum,[a,b])=>sum+(b-a)/60000,0);
       h=Math.floor((h+5)/30)*30;
-      if(h>0)holidayDays++;
-      holiday+=h;
+      if(h>0){
+        if(cat==="sunday"){sunDays++;sunHours+=h}
+        else{companyHolidayDays++;companyHolidayHours+=h}
+      }
     }else if(x.s.length){
       o=attOT(x.s[0][0],x.s[x.s.length-1][1]);
       ot+=o;
+      if(cat==="saturday")satDays++;
     }
     if(x.missing)missing++;
 
     const parts=[];
-    x.s.forEach(([a,b])=>{
-      parts.push(`${String(a.getHours()).padStart(2,"0")}:${String(a.getMinutes()).padStart(2,"0")} → ${String(b.getHours()).padStart(2,"0")}:${String(b.getMinutes()).padStart(2,"0")}`);
-    });
-    if(x.openIn){
-      parts.push(`<span class="att-warning">出勤 ${String(x.openIn.getHours()).padStart(2,"0")}:${String(x.openIn.getMinutes()).padStart(2,"0")} / 退勤未打刻</span>`);
-    }
-    x.unmatchedOut.forEach(out=>{
-      parts.push(`<span class="att-warning">出勤未打刻 / 退勤 ${String(out.getHours()).padStart(2,"0")}:${String(out.getMinutes()).padStart(2,"0")}</span>`);
-    });
+    x.s.forEach(([a,b])=>parts.push(`${String(a.getHours()).padStart(2,"0")}:${String(a.getMinutes()).padStart(2,"0")} → ${String(b.getHours()).padStart(2,"0")}:${String(b.getMinutes()).padStart(2,"0")}`));
+    if(x.openIn)parts.push(`<span class="att-warning">出勤 ${String(x.openIn.getHours()).padStart(2,"0")}:${String(x.openIn.getMinutes()).padStart(2,"0")} / 退勤未打刻</span>`);
+    x.unmatchedOut.forEach(out=>parts.push(`<span class="att-warning">出勤未打刻 / 退勤 ${String(out.getHours()).padStart(2,"0")}:${String(out.getMinutes()).padStart(2,"0")}</span>`));
 
     const adminMark=attDayHasAdminEdit(k,id)?'<span class="att-admin-mark">管理者修正</span>':"";
-    rows.push(`<div class="att-log-row"><b>${k.slice(5).replace("-","/")} ${type==="holiday"?"休日":""}${adminMark}</b><span>${parts.join("<br>")||"記録なし"}</span><span>残業 ${attHM(o)}<br><button class="att-edit-btn" onclick="attOpenEdit('${k}')">修正</button></span><span>休日 ${attHM(h)}</span></div>`);
+    const label=cat==="saturday"?"土曜出勤":cat==="sunday"?"日曜出勤":cat==="company_holiday"?"会社休日出勤":"";
+    rows.push(`<div class="att-log-row"><b>${k.slice(5).replace("-","/")} ${label}${adminMark}</b><span>${parts.join("<br>")||"記録なし"}</span><span>残業 ${attHM(o)}<br><button class="att-edit-btn" onclick="attOpenEdit('${k}')">修正</button></span><span>${cat==="sunday"||cat==="company_holiday"?"休日 "+attHM(h):""}</span></div>`);
   });
-  attSummary.innerHTML=`<div class="att-stats"><div class="att-stat"><span>残業</span><b>${attHM(ot)}</b></div><div class="att-stat"><span>休日出勤</span><b>${holidayDays}日 / ${attHM(holiday)}</b></div><div class="att-stat"><span>記録不足</span><b>${missing}日</b></div></div>${rows.join("")||'<div class="note">この期間の打刻はありません</div>'}`;
+  attSummary.innerHTML=`<div class="att-stats">
+    <div class="att-stat"><span>残業</span><b>${attHM(ot)}</b></div>
+    <div class="att-stat"><span>土曜出勤</span><b>${satDays}日</b></div>
+    <div class="att-stat"><span>日曜出勤</span><b>${sunDays}日 / ${attHM(sunHours)}</b></div>
+    <div class="att-stat"><span>会社休日出勤</span><b>${companyHolidayDays}日 / ${attHM(companyHolidayHours)}</b></div>
+    <div class="att-stat"><span>記録不足</span><b>${missing}日</b></div>
+  </div>${rows.join("")||'<div class="note">この期間の打刻はありません</div>'}`;
 }
-
 
 function attPrintMonthly(){
   const id=Number(attEmpSelect.value);
@@ -1714,26 +1725,29 @@ function attPrintMonthly(){
     (days[k]||(days[k]=[])).push(p);
   });
 
-  let normalDays=0,otTotal=0,holidayDays=0,holidayTotal=0,missingDays=0;
+  let normalDays=0,otTotal=0,satDays=0,sunDays=0,sunTotal=0,companyHolidayDays=0,companyHolidayTotal=0,missingDays=0;
   let rows="",adminNotes=[];
 
   for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
     const k=attDK(d);
     const dayPs=days[k]||[];
-    const type=attDayType(k);
+    const type=attDayType(k),cat=attWorkCategory(k);
     if(!dayPs.length) continue;
 
     const x=attSessions(dayPs);
     let ot=0,holiday=0;
-    if(type==="holiday"){
+    if(cat==="sunday"||cat==="company_holiday"){
       holiday=x.s.reduce((sum,[a,b])=>sum+(b-a)/60000,0);
       holiday=Math.floor((holiday+5)/30)*30;
-      if(holiday>0)holidayDays++;
-      holidayTotal+=holiday;
+      if(holiday>0){
+        if(cat==="sunday"){sunDays++;sunTotal+=holiday}
+        else{companyHolidayDays++;companyHolidayTotal+=holiday}
+      }
     }else{
       if(x.s.length){
         ot=attOT(x.s[0][0],x.s[x.s.length-1][1]);
         normalDays++;
+        if(cat==="saturday")satDays++;
       }
       otTotal+=ot;
     }
@@ -1752,15 +1766,17 @@ function attPrintMonthly(){
       const tin=a?`${String(a.getHours()).padStart(2,"0")}:${String(a.getMinutes()).padStart(2,"0")}`:"—";
       const tout=b?`${String(b.getHours()).padStart(2,"0")}:${String(b.getMinutes()).padStart(2,"0")}`:"—";
       let note=[];
-      if(type==="holiday")note.push("休日");
+      if(cat==="saturday")note.push("土曜出勤");
+      if(cat==="sunday")note.push("日曜出勤");
+      if(cat==="company_holiday")note.push("会社休日出勤");
       if(!a)note.push("出勤未打刻");
       if(!b)note.push("退勤未打刻");
       if(adminEdited)note.push("管理者修正");
       rows+=`<tr>
         <td>${i===0?k.slice(5).replace("-","/"):""}</td>
         <td>${tin}</td><td>${tout}</td>
-        <td>${i===0&&type!=="holiday"?attHM(ot):""}</td>
-        <td>${i===0&&type==="holiday"?attHM(holiday):""}</td>
+        <td>${i===0&&(cat==="normal"||cat==="saturday")?attHM(ot):""}</td>
+        <td>${i===0&&(cat==="sunday"||cat==="company_holiday")?attHM(holiday):""}</td>
         <td>${note.join(" / ")}</td>
       </tr>`;
     });
@@ -1807,8 +1823,9 @@ function attPrintMonthly(){
     <div class="sumgrid">
       <div class="sumitem">通常勤務日数<b>${normalDays}日</b></div>
       <div class="sumitem">残業時間合計<b>${attHM(otTotal)}</b></div>
-      <div class="sumitem">休日勤務日数<b>${holidayDays}日</b></div>
-      <div class="sumitem">休日勤務時間<b>${attHM(holidayTotal)}</b></div>
+      <div class="sumitem">土曜出勤<b>${satDays}日</b></div>
+      <div class="sumitem">日曜出勤<b>${sunDays}日 / ${attHM(sunTotal)}</b></div>
+      <div class="sumitem">会社休日出勤<b>${companyHolidayDays}日 / ${attHM(companyHolidayTotal)}</b></div>
       <div class="sumitem">打刻不足<b>${missingDays}日</b></div>
       <div class="sumitem">管理者修正<b>${adminNotes.length}日</b></div>
     </div>
