@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v11.8</title>
+<title>TAJIMA 生産管理 v11.9</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -285,6 +285,17 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
   }
 }
 
+
+/* v11.9 材料発注 仕入先シート */
+.material-sheet-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 12px}
+.material-sheet-tab{border:2px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:12px;padding:11px 6px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.material-sheet-tab.active{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.material-sheet-settings{background:#fff;border:2px dashed #93c5fd;border-radius:14px;padding:10px;margin:-3px 0 12px}
+.material-sheet-settings-row{display:grid;grid-template-columns:90px 1fr auto;gap:7px;align-items:center;margin:6px 0}
+.material-sheet-settings-row input{width:100%;padding:9px;border:2px solid var(--line);border-radius:10px}
+.material-simple-note{background:#ecfdf5;border:1px solid #86efac;color:#166534;border-radius:12px;padding:9px 11px;font-size:12px;font-weight:800;margin:8px 0}
+@media(max-width:430px){.material-sheet-tab{font-size:12px;padding:10px 3px}.material-sheet-settings-row{grid-template-columns:60px 1fr}.material-sheet-settings-row button{grid-column:2}}
+
 </style>
 </head>
 <body>
@@ -361,6 +372,10 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
     <button class="btn-light" onclick="loadMaterialPage()">再読み込み</button>
   </div>
 
+  <div id="materialSheetTabs" class="material-sheet-tabs"></div>
+  <div id="materialSheetSettings" class="material-sheet-settings hidden"></div>
+  <div id="materialSimpleNote" class="material-simple-note" style="display:none">この仕入先は「発注 → 入荷 → 完了」の簡易管理です。</div>
+
   <div class="material-toolbar">
     <div class="material-autocomplete">
       <input id="materialSearch" class="material-search" placeholder="材料名・規格を検索（検索も可能）" autocomplete="off" oninput="drawMaterialSuggestions();drawMaterialOrders()" onfocus="drawMaterialSuggestions()">
@@ -389,7 +404,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
     <div class="setup-title">新規材料登録</div>
     <input id="newMaterialName" placeholder="材料名・品番">
     <input id="newMaterialSpec" placeholder="規格・サイズ">
-    <input id="newMaterialSupplier" placeholder="仕入先">
+    <div id="newMaterialSupplierWrap"><input id="newMaterialSupplier" placeholder="仕入先"></div>
     <input id="newMaterialNote" placeholder="メモ">
     <button class="btn-green" style="width:100%" onclick="createMaterialMaster()">材料を登録</button>
   </div>
@@ -397,13 +412,13 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
   <div class="material-filter-row">
     <button class="btn-light" onclick="setMaterialFilter('active')">進行中</button>
     <button class="btn-light" onclick="setMaterialFilter('waiting')">入荷待ち</button>
-    <button class="btn-light" onclick="setMaterialFilter('polishing')">研磨中</button>
+    <button id="materialPolishingFilter" class="btn-light" onclick="setMaterialFilter('polishing')">研磨中</button>
     <button class="btn-light" onclick="setMaterialFilter('done')">完了履歴</button>
     <button class="btn-light" onclick="setMaterialFilter('all')">全部</button>
   </div>
 
   <div id="materialOrders"></div>
-  <div class="note">同じ材料を何度発注しても、発注No.ごとに別管理されます。分割入荷・分割研磨にも対応します。</div>
+  <div id="materialBottomNote" class="note">同じ材料を何度発注しても、発注No.ごとに別管理されます。分割入荷・分割研磨にも対応します。</div>
 </div>
 
 
@@ -485,7 +500,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.8";
+const APP_VERSION="11.9";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -495,6 +510,7 @@ const SETUP_API=`${SUPABASE_URL}/rest/v1/factory_machine_setups`;
 const MATERIAL_MASTER_API=`${SUPABASE_URL}/rest/v1/material_master`;
 const MATERIAL_ORDER_API=`${SUPABASE_URL}/rest/v1/material_orders`;
 const MATERIAL_EVENT_API=`${SUPABASE_URL}/rest/v1/material_order_events`;
+const MATERIAL_SHEET_API=`${SUPABASE_URL}/rest/v1/material_vendor_sheets`;
 const ATT_EMP_API=`${SUPABASE_URL}/rest/v1/attendance_employees`;
 const ATT_CAL_API=`${SUPABASE_URL}/rest/v1/attendance_company_calendar`;
 const ATT_PUNCH_API=`${SUPABASE_URL}/rest/v1/attendance_punches`;
@@ -505,7 +521,7 @@ let selectedProduct="", calYear=2026, calMonth=6, schedules=[], allMonthSchedule
 let autoSaveTimer=null, autoSaving=false;
 let shipmentUpdateMap={};
 let machineSetups=[]; let setupDirty=false;
-let materialAdmin=false, materialMasters=[], materialOrdersData=[], materialEvents=[], selectedMaterialId=null, materialFilter="active", materialDeleteMode=false, bulkSelectedMaterialIds=[], openOrderDateGroups={};
+let materialAdmin=false, materialMasters=[], materialOrdersData=[], materialEvents=[], selectedMaterialId=null, materialFilter="active", materialDeleteMode=false, bulkSelectedMaterialIds=[], openOrderDateGroups={}, materialSheetSlot=Number(localStorage.getItem("tajima_material_sheet")||1), materialSheetSettings=[];
 const HQ_MACHINES=["MPH","MPE","MVR40","MVR25","KNC"];
 let currentSection=localStorage.getItem("tajima_section")||"home";
 let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqAdmin=false, hqEditing=false;
@@ -1022,6 +1038,46 @@ async function deleteHqSchedule(id){
 
 
 // material order management
+
+function materialSheetIsSimple(){return Number(materialSheetSlot)!==1}
+function materialSheetName(slot=materialSheetSlot){
+  const r=materialSheetSettings.find(x=>Number(x.slot_no)===Number(slot));
+  return r?.sheet_name || `仕入先${slot}`;
+}
+function drawMaterialSheetTabs(){
+  if(!window.materialSheetTabs)return;
+  materialSheetTabs.innerHTML=[1,2,3].map(slot=>`<button class="material-sheet-tab ${Number(materialSheetSlot)===slot?"active":""}" onclick="switchMaterialSheet(${slot})">${esc(materialSheetName(slot))}</button>`).join("");
+  if(window.materialSheetSettings){
+    materialSheetSettings.classList.toggle("hidden",!materialAdmin);
+    materialSheetSettings.innerHTML=materialAdmin?[1,2,3].map(slot=>`<div class="material-sheet-settings-row"><b>シート${slot}</b><input id="materialSheetName-${slot}" value="${esc(materialSheetName(slot))}" maxlength="40"><button class="btn-blue btn-small" onclick="saveMaterialSheetName(${slot})">名称保存</button></div>`).join(""):"";
+  }
+  const simple=materialSheetIsSimple();
+  if(window.materialSimpleNote)materialSimpleNote.style.display=simple?"block":"none";
+  if(window.materialPolishingFilter)materialPolishingFilter.style.display=simple?"none":"";
+  if(window.newMaterialSupplierWrap)newMaterialSupplierWrap.style.display=simple?"none":"";
+  if(window.materialBottomNote)materialBottomNote.textContent=simple
+    ?"この仕入先は発注No.ごとに管理し、入荷完了で履歴に残ります。分割入荷にも対応します。"
+    :"同じ材料を何度発注しても、発注No.ごとに別管理されます。分割入荷・分割研磨にも対応します。";
+  if(simple && materialFilter==="polishing")materialFilter="active";
+}
+async function switchMaterialSheet(slot){
+  slot=Number(slot);if(slot<1||slot>3)return;
+  materialSheetSlot=slot;
+  localStorage.setItem("tajima_material_sheet",String(slot));
+  selectedMaterialId=null;bulkSelectedMaterialIds=[];materialDeleteMode=false;materialFilter="active";openOrderDateGroups={};
+  if(window.materialSearch)materialSearch.value="";
+  await loadMaterialPage();
+}
+async function saveMaterialSheetName(slot){
+  if(!materialAdmin)return;
+  const inp=document.getElementById(`materialSheetName-${slot}`);
+  const name=(inp?.value||"").trim();
+  if(!name){alert("仕入先名を入力してください");return}
+  const row=[{slot_no:Number(slot),sheet_name:name,process_type:Number(slot)===1?"full":"simple",updated_at:new Date().toISOString()}];
+  const r=await fetch(`${MATERIAL_SHEET_API}?on_conflict=slot_no`,{method:"POST",headers:{...headers(),"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify(row)});
+  if(!r.ok){alert("シート名保存エラー: "+await r.text());return}
+  await loadMaterialPage();
+}
 function materialModeApply(){
   materialModeState.textContent=materialAdmin?"材料管理者モード":"閲覧モード";
   materialModeState.className=materialAdmin?"mode admin":"mode";
@@ -1033,6 +1089,7 @@ function materialModeApply(){
     materialDeleteToggle.classList.toggle("active",materialDeleteMode);
   }
   document.querySelectorAll(".material-admin-only").forEach(e=>e.classList.toggle("hidden",!materialAdmin));
+  drawMaterialSheetTabs();
   drawMaterialButtons();
 }
 function toggleMaterialAdmin(){
@@ -1051,20 +1108,22 @@ function orderCalc(o){
   const received=eventTotal(o.id,"received");
   const sent=eventTotal(o.id,"polish_sent");
   const returned=eventTotal(o.id,"polish_returned");
+  const simple=Number(o.sheet_slot??materialSheetSlot)!==1;
   return {
     ordered,received,sent,returned,
     waiting:Math.max(0,ordered-received),
     inhouse:Math.max(0,received-sent),
     polishing:Math.max(0,sent-returned),
-    done:ordered>0&&returned>=ordered
+    done:simple ? (ordered>0&&received>=ordered) : (ordered>0&&returned>=ordered)
   };
 }
 function orderStatus(o){
   const c=orderCalc(o);
   if(c.done)return "完了";
+  if(c.waiting>0)return "入荷待ち";
+  if(Number(o.sheet_slot??materialSheetSlot)!==1)return "発注済";
   if(c.polishing>0)return "研磨中";
   if(c.inhouse>0)return "社内";
-  if(c.waiting>0)return "入荷待ち";
   return "発注済";
 }
 function makeOrderNo(){
@@ -1076,12 +1135,13 @@ function setMaterialFilter(v){materialFilter=v;drawMaterialOrders()}
 async function loadMaterialPage(){
   if(!checkConfig()){alert("config.jsにPublishable keyを入れてください");return}
   try{
-    [materialMasters,materialOrdersData,materialEvents]=await Promise.all([
-      restGet(`${MATERIAL_MASTER_API}?select=*&order=updated_at.desc`),
-      restGet(`${MATERIAL_ORDER_API}?select=*&order=ordered_at.desc`),
+    [materialSheetSettings,materialMasters,materialOrdersData,materialEvents]=await Promise.all([
+      restGet(`${MATERIAL_SHEET_API}?select=*&order=slot_no.asc`),
+      restGet(`${MATERIAL_MASTER_API}?sheet_slot=eq.${materialSheetSlot}&select=*&order=updated_at.desc`),
+      restGet(`${MATERIAL_ORDER_API}?sheet_slot=eq.${materialSheetSlot}&select=*&order=ordered_at.desc`),
       restGet(`${MATERIAL_EVENT_API}?select=*&order=event_at.desc`)
     ]);
-    drawMaterialSuggestions();drawSelectedMaterial();drawMaterialButtons();drawBulkOrderArea();drawMaterialOrders();materialModeApply();
+    drawMaterialSheetTabs();drawMaterialSuggestions();drawSelectedMaterial();drawMaterialButtons();drawBulkOrderArea();drawMaterialOrders();materialModeApply();
   }catch(e){alert("材料発注データ読み込みエラー: "+e.message)}
 }
 function toggleMaterialDeleteMode(){
@@ -1112,7 +1172,7 @@ async function createBulkMaterialOrders(){
   for(const id of bulkSelectedMaterialIds){
     const mat=materialById(id),qty=num(document.getElementById(`bulkQty-${id}`)?.value);
     if(qty<=0){alert(`「${mat.material_name}」の数量を入力してください`);return}
-    rows.push({order_no:makeOrderNo()+"-"+id,material_id:id,ordered_qty:qty,ordered_at:new Date(y,m-1,d,now.getHours(),now.getMinutes(),now.getSeconds()).toISOString(),memo:document.getElementById(`bulkMemo-${id}`)?.value||"",sort_order:Date.now()+rows.length,updated_at:new Date().toISOString()});
+    rows.push({order_no:makeOrderNo()+"-"+id,material_id:id,sheet_slot:materialSheetSlot,ordered_qty:qty,ordered_at:new Date(y,m-1,d,now.getHours(),now.getMinutes(),now.getSeconds()).toISOString(),memo:document.getElementById(`bulkMemo-${id}`)?.value||"",sort_order:Date.now()+rows.length,updated_at:new Date().toISOString()});
   }
   const r=await fetch(MATERIAL_ORDER_API,{method:"POST",headers:headers(),body:JSON.stringify(rows)});
   if(!r.ok){alert("一括発注エラー: "+await r.text());return}
@@ -1241,7 +1301,7 @@ async function createMaterialMaster(){
   if(!materialAdmin)return;
   const name=(newMaterialName.value||"").trim();
   if(!name){alert("材料名を入力してください");return}
-  const row={material_name:name,spec:newMaterialSpec.value||"",supplier:newMaterialSupplier.value||"",note:newMaterialNote.value||"",is_active:true,sort_order:Date.now(),updated_at:new Date().toISOString()};
+  const row={material_name:name,spec:newMaterialSpec.value||"",supplier:materialSheetIsSimple()?materialSheetName():newMaterialSupplier.value||"",note:newMaterialNote.value||"",sheet_slot:materialSheetSlot,is_active:true,sort_order:Date.now(),updated_at:new Date().toISOString()};
   const r=await fetch(MATERIAL_MASTER_API,{method:"POST",headers:headers(),body:JSON.stringify([row])});
   if(!r.ok){
     const t=await r.text();
@@ -1266,7 +1326,7 @@ async function createMaterialOrder(){
   const now=new Date();
   const [yy,mm,dd]=dateValue.split("-").map(Number);
   const orderedAt=new Date(yy,mm-1,dd,now.getHours(),now.getMinutes(),now.getSeconds()).toISOString();
-  const row={order_no:makeOrderNo(),material_id:m.id,ordered_qty:qty,ordered_at:orderedAt,memo:document.getElementById("quickOrderMemo")?.value||"",updated_at:new Date().toISOString()};
+  const row={order_no:makeOrderNo(),material_id:m.id,sheet_slot:materialSheetSlot,ordered_qty:qty,ordered_at:orderedAt,memo:document.getElementById("quickOrderMemo")?.value||"",updated_at:new Date().toISOString()};
   const r=await fetch(MATERIAL_ORDER_API,{method:"POST",headers:headers(),body:JSON.stringify([row])});
   if(!r.ok){alert("発注登録エラー: "+await r.text());return}
   await loadMaterialPage();
@@ -1281,6 +1341,7 @@ function maxEventQty(o,type){
 async function addMaterialEvent(orderId,type){
   if(!materialAdmin)return;
   const o=materialOrdersData.find(x=>Number(x.id)===Number(orderId));if(!o)return;
+  if(Number(o.sheet_slot??materialSheetSlot)!==1 && type!=="received"){alert("この仕入先は入荷で完了します。");return}
   const max=maxEventQty(o,type);
   if(max<=0){alert("この工程で移動できる数量がありません");return}
   const label=type==="received"?"入荷":type==="polish_sent"?"研磨へ発送":"研磨戻り";
@@ -1291,7 +1352,7 @@ async function addMaterialEvent(orderId,type){
   const row={order_id:o.id,event_type:type,qty:qty,event_at:new Date().toISOString()};
   const r=await fetch(MATERIAL_EVENT_API,{method:"POST",headers:headers(),body:JSON.stringify([row])});
   if(!r.ok){alert("工程更新エラー: "+await r.text());return}
-  const willComplete = type==="polish_returned" && qty===max && (orderCalc(o).returned + qty)>=num(o.ordered_qty);
+  const willComplete = (Number(o.sheet_slot??materialSheetSlot)!==1 ? type==="received" : type==="polish_returned") && qty===max;
   await loadMaterialPage();
   if(willComplete)alert("全工程完了しました。完了履歴に保存されています。");
 }
@@ -1309,7 +1370,7 @@ function materialOrderVisible(o){
   if(materialFilter==="all")return true;
   if(materialFilter==="done")return c.done;
   if(materialFilter==="waiting")return c.waiting>0;
-  if(materialFilter==="polishing")return c.polishing>0;
+  if(materialFilter==="polishing")return !materialSheetIsSimple()&&c.polishing>0;
   return !c.done;
 }
 function formatOrderDateOnly(v){
@@ -1328,7 +1389,7 @@ function printOrdersForDate(dateKey,event){
   const bySupplier={};
   orders.forEach(o=>{
     const m=materialById(o.material_id)||{};
-    const supplier=(m.supplier||"").trim()||"仕入先未設定";
+    const supplier=(m.supplier||"").trim()||materialSheetName();
     if(!bySupplier[supplier])bySupplier[supplier]=[];
     bySupplier[supplier].push({o,m});
   });
@@ -1411,7 +1472,7 @@ function drawMaterialOrders(){
     const list=groups[k].slice().sort((a,b)=>Number(a.sort_order??a.id)-Number(b.sort_order??b.id));
     const cards=list.map(o=>{
     const m=materialById(o.material_id)||{};
-    const c=orderCalc(o),st=orderStatus(o);
+    const c=orderCalc(o),st=orderStatus(o),simple=Number(o.sheet_slot??materialSheetSlot)!==1;
     const ev=orderEvents(o.id).slice().sort((a,b)=>new Date(b.event_at)-new Date(a.event_at));
     const history=ev.slice(0,5).map(e=>`${formatTime(e.event_at)}　${e.event_type==="received"?"入荷":e.event_type==="polish_sent"?"研磨発送":"研磨戻り"} ${e.qty}`).join("<br>");
     return `<div class="material-order-card">
@@ -1420,6 +1481,18 @@ function drawMaterialOrders(){
         <div class="material-status ${c.done?"done":""}">${st}</div>
       </div>
       <div style="font-size:12px;color:#64748b;margin-top:5px">${esc(m.spec||"")}${o.memo?` / ${esc(o.memo)}`:""}</div>
+      ${simple?`
+      <div class="material-counts" style="grid-template-columns:repeat(2,1fr)">
+        <div class="material-count"><span>発注</span><b>${c.ordered}</b></div>
+        <div class="material-count"><span>入荷済</span><b>${c.received}</b></div>
+      </div>
+      <div class="material-location" style="grid-template-columns:1fr">
+        <div class="loc-wait ${c.received>=c.ordered?'step-done':''}">入荷待ち ${c.received>=c.ordered?'<span class="stamp-inline">㊞ 完了</span>':c.waiting}</div>
+      </div>
+      ${c.done?'<div class="material-complete-note">㊞ 入荷完了・完了履歴に保存済み</div>':''}
+      <div class="material-actions material-admin-only ${materialAdmin?"":"hidden"}" style="grid-template-columns:1fr">
+        <button class="btn-blue" onclick="addMaterialEvent(${o.id},'received')">入荷</button>
+      </div>`:`
       <div class="material-counts">
         <div class="material-count"><span>発注</span><b>${c.ordered}</b></div>
         <div class="material-count"><span>入荷済</span><b>${c.received}</b></div>
@@ -1436,7 +1509,7 @@ function drawMaterialOrders(){
         <button class="btn-blue" onclick="addMaterialEvent(${o.id},'received')">入荷</button>
         <button class="btn-purple" onclick="addMaterialEvent(${o.id},'polish_sent')">研磨へ発送</button>
         <button class="btn-green" onclick="addMaterialEvent(${o.id},'polish_returned')">研磨戻り</button>
-      </div>
+      </div>`}
       ${history?`<div class="material-history">${history}</div>`:""}
       <button class="btn-red btn-small material-admin-only ${materialAdmin?"":"hidden"}" style="margin-top:8px" onclick="deleteMaterialOrder(${o.id})">発注削除</button>
     </div>`;
