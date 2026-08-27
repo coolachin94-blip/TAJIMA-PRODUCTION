@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 日程管理 TEST v0.1</title><script src="config.js"></script>
+<title>TAJIMA 日程管理 TEST v0.2</title><script src="config.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#eef3f8;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
 header{height:64px;background:#132033;color:white;display:flex;align-items:center;padding:0 24px;gap:18px}header h1{font-size:20px;margin:0}header small{opacity:.7}
@@ -19,7 +19,7 @@ main{padding:18px;min-width:0}.calhead{display:flex;align-items:center;justify-c
 .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:10}.modal.show{display:flex}.modalbox{width:min(760px,90vw);max-height:80vh;overflow:auto;background:white;border-radius:12px;padding:18px}.hist{border-bottom:1px solid #ddd;padding:9px}
 @media(max-width:1000px){.layout{grid-template-columns:320px 1fr}.day{min-height:105px}}
 </style></head><body>
-<header><h1>TAJIMA 日程管理 <small>TEST v0.1</small></h1>
+<header><h1>TAJIMA 日程管理 <small>TEST v0.2</small></h1>
 <div class="topbtns"><button onclick="window.open('penboard.html','_blank')">ペンボード入力</button><button onclick="window.open('monitor.html','_blank')">工場表示を確認</button></div></header>
 <div class="layout"><aside>
 <div class="nav"><button class="active" onclick="showJob()">作業登録</button><button onclick="showEvent()">行事・点検登録</button><button onclick="showHoliday()">休日設定</button><button onclick="showCompanies()">会社別履歴</button></div>
@@ -41,7 +41,7 @@ main{padding:18px;min-width:0}.calhead{display:flex;align-items:center;justify-c
 <div id="modal" class="modal" onclick="if(event.target===this)this.classList.remove('show')"><div class="modalbox"><div id="modalBody"></div><button onclick="modal.classList.remove('show')">閉じる</button></div></div>
 <script>
 
-const C=window.CONFIG||{}, URL=C.SUPABASE_URL||"", KEY=C.SUPABASE_PUBLISHABLE_KEY||C.SUPABASE_ANON_KEY||C.SUPABASE_KEY||"";
+const C=window.TAJIMA_CONFIG||window.CONFIG||{}, URL=C.SUPABASE_URL||"", KEY=C.SUPABASE_PUBLISHABLE_KEY||C.SUPABASE_ANON_KEY||C.SUPABASE_KEY||"";
 const API=n=>`${URL}/rest/v1/${n}`;
 const H=()=>({"apikey":KEY,"Authorization":`Bearer ${KEY}`,"Content-Type":"application/json","Prefer":"return=representation"});
 const ok=()=>URL&&KEY;
