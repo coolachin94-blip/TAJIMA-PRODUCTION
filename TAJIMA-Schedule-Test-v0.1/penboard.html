@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA ペンボード TEST v0.9</title><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA ペンボード TEST v0.10</title><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
 *{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;font-family:"Yu Gothic",sans-serif;background:#eef2f7}
 .frame{height:100%;position:relative;background:#fff;padding-right:88px}
 .frame iframe{position:absolute;left:0;top:0;bottom:0;right:88px;border:0;width:calc(100% - 88px);height:100%;z-index:1}
@@ -53,7 +53,7 @@ let nowClock=new Date(),boardY=nowClock.getFullYear(),boardM=nowClock.getMonth()
 const c=document.getElementById("drawCanvas"),ctx=c.getContext("2d"),sc=document.getElementById("stampCanvas"),sctx=sc.getContext("2d"),statusEl=document.getElementById("syncStatus"),monitorFrame=document.getElementById("monitorFrame");
 
 function boardMonth(){return `${boardY}-${String(boardM).padStart(2,"0")}`}
-function refreshBoardMonth(){boardMonthLabel.textContent=`${boardY}年${boardM}月`;monitorFrame.src=`monitor.html?v=0.9&penboard=1&year=${boardY}&month=${boardM}`}
+function refreshBoardMonth(){boardMonthLabel.textContent=`${boardY}年${boardM}月`;monitorFrame.src=`monitor.html?v=0.10&penboard=1&year=${boardY}&month=${boardM}`}
 function sizeCanvas(el,context){const r=el.getBoundingClientRect(),dpr=devicePixelRatio||1;el.width=Math.max(1,Math.round(r.width*dpr));el.height=Math.max(1,Math.round(r.height*dpr));context.setTransform(dpr,0,0,dpr,0,0)}
 function resize(){sizeCanvas(c,ctx);sizeCanvas(sc,sctx);redraw();redrawStamps()}
 function xy(e){const r=c.getBoundingClientRect();return [(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]}
