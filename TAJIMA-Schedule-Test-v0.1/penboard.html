@@ -1,9 +1,37 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA ペンボード TEST v0.6</title><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA ペンボード TEST v0.7</title><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
 *{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;font-family:"Yu Gothic",sans-serif;background:#eef2f7}.bar{height:62px;background:#132033;color:#fff;display:flex;align-items:center;padding:0 12px;gap:8px;box-shadow:0 2px 8px #0004;position:relative;z-index:100}.bar b{margin-right:4px}.tool{height:38px;min-width:42px;border:1px solid #40516a;background:#1b2b42;color:#fff;border-radius:7px;font-weight:800;cursor:pointer;padding:0 10px}.tool.active{background:#2563eb;border-color:#60a5fa}.tool.danger{background:#7f1d1d}.colors{display:flex;gap:5px}.color{width:30px;height:30px;border-radius:50%;border:2px solid #cbd5e1;cursor:pointer}.color.sel{outline:3px solid #fff;outline-offset:1px}.widths{display:flex;gap:4px}.widthbtn{width:38px;height:34px;border:1px solid #40516a;background:#1b2b42;border-radius:7px;cursor:pointer;display:grid;place-items:center}.widthbtn.sel{outline:2px solid #fff}.dot{background:#fff;border-radius:999px}.status{margin-left:auto;font-size:11px;color:#cbd5e1}.frame{height:calc(100% - 62px);position:relative;background:#fff}.frame iframe{position:absolute;inset:0;border:0;width:100%;height:100%;z-index:1}#drawCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:5;touch-action:none;cursor:crosshair}.eraser-cursor{cursor:cell!important}
-</style></head><body><div class="bar"><b>ペンボード入力</b><button id="penBtn" class="tool active" onclick="setMode('pen')">✎ ペン</button><button id="eraserBtn" class="tool" onclick="setMode('eraser')">⌫ 消しゴム</button><button class="tool" onclick="undoStroke()">↶ 1つ戻る</button><div class="colors"><button class="color sel" style="background:#111" data-c="#111111" onclick="setColor(this)"></button><button class="color" style="background:#ef4444" data-c="#ef4444" onclick="setColor(this)"></button><button class="color" style="background:#2563eb" data-c="#2563eb" onclick="setColor(this)"></button><button class="color" style="background:#16a34a" data-c="#16a34a" onclick="setColor(this)"></button><button class="color" style="background:#f59e0b" data-c="#f59e0b" onclick="setColor(this)"></button><button class="color" style="background:#8b5cf6" data-c="#8b5cf6" onclick="setColor(this)"></button></div><div class="widths"><button class="widthbtn" data-w="2" onclick="setWidth(this)"><span class="dot" style="width:4px;height:4px"></span></button><button class="widthbtn sel" data-w="4" onclick="setWidth(this)"><span class="dot" style="width:8px;height:8px"></span></button><button class="widthbtn" data-w="7" onclick="setWidth(this)"><span class="dot" style="width:13px;height:13px"></span></button></div><button class="tool danger" onclick="clearBoard()">全消去</button><span id="syncStatus" class="status">接続準備中</span></div><div class="frame"><iframe src="monitor.html?v=0.6&penboard=1"></iframe><canvas id="drawCanvas"></canvas></div><script>
-const C=window.TAJIMA_CONFIG||window.CONFIG||{},URL=C.SUPABASE_URL||"",KEY=C.SUPABASE_PUBLISHABLE_KEY||C.SUPABASE_ANON_KEY||C.SUPABASE_KEY||"";const ok=()=>URL&&KEY;
-let sb=null,channel=null,strokes=[],mode="pen",color="#111111",width=4,drawing=false,currentPoints=[];const c=document.getElementById("drawCanvas"),ctx=c.getContext("2d"),statusEl=document.getElementById("syncStatus");
-function boardMonth(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
+</style></head><body><div class="bar"><b>ペンボード入力</b>
+<button class="tool" onclick="changeBoardMonth(-1)">◀ 前月</button>
+<span id="boardMonthLabel" style="min-width:88px;text-align:center;font-size:12px;font-weight:900"></span>
+<button class="tool" onclick="changeBoardMonth(1)">次月 ▶</button>
+<button class="tool" onclick="goBoardCurrentMonth()">今月</button><button id="penBtn" class="tool active" onclick="setMode('pen')">✎ ペン</button><button id="eraserBtn" class="tool" onclick="setMode('eraser')">⌫ 消しゴム</button><button class="tool" onclick="undoStroke()">↶ 1つ戻る</button><div class="colors"><button class="color sel" style="background:#111" data-c="#111111" onclick="setColor(this)"></button><button class="color" style="background:#ef4444" data-c="#ef4444" onclick="setColor(this)"></button><button class="color" style="background:#2563eb" data-c="#2563eb" onclick="setColor(this)"></button><button class="color" style="background:#16a34a" data-c="#16a34a" onclick="setColor(this)"></button><button class="color" style="background:#f59e0b" data-c="#f59e0b" onclick="setColor(this)"></button><button class="color" style="background:#8b5cf6" data-c="#8b5cf6" onclick="setColor(this)"></button></div><div class="widths"><button class="widthbtn" data-w="2" onclick="setWidth(this)"><span class="dot" style="width:4px;height:4px"></span></button><button class="widthbtn sel" data-w="4" onclick="setWidth(this)"><span class="dot" style="width:8px;height:8px"></span></button><button class="widthbtn" data-w="7" onclick="setWidth(this)"><span class="dot" style="width:13px;height:13px"></span></button></div><button class="tool danger" onclick="clearBoard()">全消去</button><span id="syncStatus" class="status">接続準備中</span></div><div class="frame"><iframe id="monitorFrame" src="about:blank"></iframe><canvas id="drawCanvas"></canvas></div><script>
+const C=window.TAJIMA_CONFIG||window.CONFIG||{},SUPABASE_URL=C.SUPABASE_URL||"",SUPABASE_KEY=C.SUPABASE_PUBLISHABLE_KEY||C.SUPABASE_ANON_KEY||C.SUPABASE_KEY||"";const ok=()=>SUPABASE_URL&&SUPABASE_KEY;
+let sb=null,channel=null,strokes=[],mode="pen",color="#111111",width=4,drawing=false,currentPoints=[];
+let nowClock=new Date(),boardY=nowClock.getFullYear(),boardM=nowClock.getMonth()+1,lastSystemYM=`${nowClock.getFullYear()}-${nowClock.getMonth()+1}`;
+const c=document.getElementById("drawCanvas"),ctx=c.getContext("2d"),statusEl=document.getElementById("syncStatus");
+function boardMonth(){return `${boardY}-${String(boardM).padStart(2,"0")}`}
+
+function refreshBoardMonth(){
+  boardMonthLabel.textContent=`${boardY}年${boardM}月`;
+  monitorFrame.src=`monitor.html?v=0.7&penboard=1&year=${boardY}&month=${boardM}`;
+}
+async function restartRealtime(){
+  if(!sb)return;
+  if(channel){await sb.removeChannel(channel);channel=null}
+  await loadAll();
+  channel=sb.channel("penboard-"+boardMonth())
+   .on("postgres_changes",{event:"*",schema:"public",table:"schedule_pen_strokes",filter:`board_month=eq.${boardMonth()}`},payload=>{
+     const r=payload.new||payload.old;if(!r)return;
+     const i=strokes.findIndex(x=>Number(x.id)===Number(r.id));
+     if(payload.eventType==="INSERT"){if(i<0)strokes.push(r);else strokes[i]=r}
+     else if(payload.eventType==="UPDATE"){if(i>=0)strokes[i]=r;else strokes.push(r)}
+     else if(payload.eventType==="DELETE"&&i>=0)strokes.splice(i,1);
+     redraw();
+   }).subscribe(state=>statusEl.textContent=state==="SUBSCRIBED"?"Realtime 接続済み":state);
+}
+async function changeBoardMonth(d){boardM+=d;if(boardM<1){boardM=12;boardY--}if(boardM>12){boardM=1;boardY++}refreshBoardMonth();await restartRealtime()}
+async function goBoardCurrentMonth(){const d=new Date();boardY=d.getFullYear();boardM=d.getMonth()+1;refreshBoardMonth();await restartRealtime()}
+function autoBoardMonthCheck(){const d=new Date(),sys=`${d.getFullYear()}-${d.getMonth()+1}`;if(sys!==lastSystemYM){lastSystemYM=sys;boardY=d.getFullYear();boardM=d.getMonth()+1;refreshBoardMonth();restartRealtime()}}
 function resize(){const r=c.getBoundingClientRect(),dpr=devicePixelRatio||1;c.width=Math.round(r.width*dpr);c.height=Math.round(r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);redraw()}
 function xy(e){const r=c.getBoundingClientRect();return[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]}
 function sp(p){const r=c.getBoundingClientRect();return[p[0]*r.width,p[1]*r.height]}
@@ -22,6 +50,12 @@ c.addEventListener("pointermove",e=>{if(!drawing||mode!=="pen")return;let evs=e.
 async function finish(){if(!drawing)return;drawing=false;if(currentPoints.length<2){currentPoints=[];redraw();return}let local={id:null,board_month:boardMonth(),points:currentPoints.slice(),stroke_color:color,stroke_width:width,deleted:false,created_at:new Date().toISOString()};strokes.push(local);currentPoints=[];redraw();const {data,error}=await sb.from("schedule_pen_strokes").insert({board_month:local.board_month,points:local.points,stroke_color:local.stroke_color,stroke_width:local.stroke_width}).select().single();if(error){strokes=strokes.filter(x=>x!==local);redraw();statusEl.textContent="保存エラー";return}local.id=data.id;local.created_at=data.created_at}
 c.addEventListener("pointerup",finish);c.addEventListener("pointercancel",finish);
 async function loadAll(){const {data,error}=await sb.from("schedule_pen_strokes").select("*").eq("board_month",boardMonth()).order("created_at");if(error){statusEl.textContent="読込エラー";return}strokes=data||[];redraw()}
-async function start(){if(!window.supabase||!ok()){statusEl.textContent="configエラー";return}sb=window.supabase.createClient(URL,KEY,{realtime:{params:{eventsPerSecond:20}}});await loadAll();channel=sb.channel("penboard-"+boardMonth()).on("postgres_changes",{event:"*",schema:"public",table:"schedule_pen_strokes",filter:`board_month=eq.${boardMonth()}`},payload=>{let r=payload.new||payload.old;if(!r)return;let i=strokes.findIndex(x=>Number(x.id)===Number(r.id));if(payload.eventType==="INSERT"){if(i<0)strokes.push(r);else strokes[i]=r}else if(payload.eventType==="UPDATE"){if(i>=0)strokes[i]=r;else strokes.push(r)}else if(payload.eventType==="DELETE"&&i>=0)strokes.splice(i,1);redraw()}).subscribe(state=>statusEl.textContent=state==="SUBSCRIBED"?"Realtime 接続済み":state)}
-addEventListener("resize",resize);resize();start();
+async function start(){
+  if(!window.supabase||!ok()){statusEl.textContent="configエラー";return}
+  try{
+    sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{realtime:{params:{eventsPerSecond:20}}});
+    await restartRealtime();
+  }catch(err){console.error(err);statusEl.textContent="接続エラー"}
+}
+addEventListener("resize",resize);refreshBoardMonth();resize();start();setInterval(autoBoardMonthCheck,60000);
 </script></body></html>
