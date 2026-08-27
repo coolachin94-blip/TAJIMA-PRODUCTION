@@ -1,5 +1,5 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA 工場表示 TEST v0.10</title><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f5f6f8;font-family:"Yu Gothic",sans-serif;color:#111;font-weight:600}.wrap{height:100vh;padding:8px;display:grid;grid-template-columns:4fr 1fr;gap:8px}.board{display:grid;grid-template-rows:auto 1fr 1fr;gap:5px}.title{text-align:center;font-size:24px;font-weight:900}.half{display:grid;gap:3px}.day{border:1px solid #6b7280;background:white;min-width:0;overflow:hidden}.day.holiday{background:#fee2e2}.num{text-align:center;font-weight:900;border-bottom:1px solid #bbb;padding:2px;font-size:13px}.holiday .num{color:#b91c1c}.it{font-size:10px;line-height:1.15;font-weight:800;padding:2px 3px;margin:2px;border:1px solid #aaa;border-radius:3px;overflow:hidden}.stamp{color:#b91c1c;font-weight:900}.memo{font-size:9px;font-weight:700;opacity:.8;margin-top:1px;white-space:normal}.side{border:1px solid #64748b;background:#fff;padding:10px;overflow:hidden}.side h2{text-align:center;margin:0 0 10px}.notice{padding:7px 4px;border-bottom:1px solid #ddd;font-weight:700}.pen-layer{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:50}
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA 工場表示 TEST v0.11</title><script src="config.js"></script>
+<style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f5f6f8;font-family:"Yu Gothic",sans-serif;color:#111;font-weight:600}.wrap{height:100vh;padding:8px;display:grid;grid-template-columns:4fr 1fr;gap:8px}.board{display:grid;grid-template-rows:auto 1fr 1fr;gap:5px}.title{text-align:center;font-size:24px;font-weight:900}.half{display:grid;gap:3px}.day{border:1px solid #6b7280;background:white;min-width:0;overflow:hidden}.day.holiday{background:#fee2e2}.num{text-align:center;font-weight:900;border-bottom:1px solid #bbb;padding:2px;font-size:13px}.holiday .num{color:#b91c1c}.it{font-size:10px;line-height:1.15;font-weight:800;padding:2px 3px;margin:2px;border:1px solid #aaa;border-radius:3px;overflow:hidden}.stamp{color:#b91c1c;font-weight:900}.memo{font-size:9px;font-weight:700;opacity:.8;margin-top:1px;white-space:normal}.side{border:1px solid #64748b;background:#fff;padding:10px;overflow:hidden}.side h2{text-align:center;margin:0 0 10px}.notice{padding:7px 4px;border-bottom:1px solid #ddd;font-weight:700}
 
 
 /* ===== v0.9 shared-board readability =====
@@ -21,7 +21,7 @@
 .it.out .tag{color:#ea580c !important}
 
 </style></head><body>
-<div class="wrap"><div class="board"><div id="title" class="title"></div><div id="boardTop" class="half"></div><div id="boardBottom" class="half"></div></div><div class="side"><h2>連絡事項</h2><div id="syncStatus" style="font-size:9px;color:#64748b;text-align:center;margin-bottom:6px"></div><div id="notices"></div></div></div><canvas id="penLayer" class="pen-layer"></canvas>
+<div class="wrap"><div class="board"><div id="title" class="title"></div><div id="boardTop" class="half"></div><div id="boardBottom" class="half"></div></div><div class="side"><h2>連絡事項</h2><div id="syncStatus" style="font-size:9px;color:#64748b;text-align:center;margin-bottom:6px"></div><div id="notices"></div></div></div>
 <script>
 const C=window.TAJIMA_CONFIG||window.CONFIG||{}, SUPABASE_URL=C.SUPABASE_URL||"", SUPABASE_KEY=C.SUPABASE_PUBLISHABLE_KEY||C.SUPABASE_ANON_KEY||C.SUPABASE_KEY||"";
 const API=n=>`${SUPABASE_URL}/rest/v1/${n}`;
@@ -43,23 +43,24 @@ let Y=Number(q.get("year"))||n.getFullYear(), M=Number(q.get("month"))||n.getMon
 let lastSystemYM=`${n.getFullYear()}-${n.getMonth()+1}`;
 
 function updateMonthLabel(){const el=document.getElementById("monthNavLabel");if(el)el.textContent=`${Y}年${M}月`}
-async function changeMonth(d){M+=d;if(M<1){M=12;Y--}if(M>12){M=1;Y++}updateMonthLabel();await load();await restartPenMonth()}
-async function goCurrentMonth(){const d=new Date();Y=d.getFullYear();M=d.getMonth()+1;updateMonthLabel();await load();await restartPenMonth()}
-function autoMonthCheck(){const d=new Date(),sys=`${d.getFullYear()}-${d.getMonth()+1}`;if(sys!==lastSystemYM){lastSystemYM=sys;Y=d.getFullYear();M=d.getMonth()+1;updateMonthLabel();load();restartPenMonth()}}
+async function changeMonth(d){M+=d;if(M<1){M=12;Y--}if(M>12){M=1;Y++}updateMonthLabel();await load()}
+async function goCurrentMonth(){const d=new Date();Y=d.getFullYear();M=d.getMonth()+1;updateMonthLabel();await load()}
+function autoMonthCheck(){const d=new Date(),sys=`${d.getFullYear()}-${d.getMonth()+1}`;if(sys!==lastSystemYM){lastSystemYM=sys;Y=d.getFullYear();M=d.getMonth()+1;updateMonthLabel();load()}}
 
 async function load(){
   const st=document.getElementById("syncStatus");
   if(!ok()){if(st)st.textContent="設定エラー";return}
   try{
-    let [all,e,h]=await Promise.all([
+    let [all,e,h,noticeRows]=await Promise.all([
       get("schedule_jobs","?select=*&order=created_at.asc"),
       get("schedule_events","?select=*&order=event_date.asc"),
-      get("schedule_holidays","?select=*")
+      get("schedule_holidays","?select=*"),
+      get("schedule_notices","?id=eq.1&select=notice_text,updated_at")
     ]);
     let j=all.filter(x=>inMonth(x.arrival_date,Y,M)||inMonth(x.due_date,Y,M));
     e=e.filter(x=>inMonth(x.event_date,Y,M));
     h=h.filter(x=>inMonth(x.holiday_date,Y,M));
-    draw(j,e,h);
+    draw(j,e,h,noticeRows?.[0]?.notice_text||"");
     if(st)st.textContent=`同期済み ${new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit"})} / 案件 ${j.length}件`;
   }catch(err){
     console.error(err);
@@ -76,47 +77,18 @@ function draw(j,e,h,noticeText){
   let last=new Date(Y,M,0).getDate(),split=Math.ceil(last/2);
   drawHalf(topEl,1,split,j,e,h);
   drawHalf(bottomEl,split+1,last,j,e,h);
-  let now=new Date(),today=iso(now.getFullYear(),now.getMonth()+1,now.getDate());
-  let todayEvents=e.filter(x=>x.event_date===today);
-  noticesEl.innerHTML=(todayEvents.length?todayEvents:e.slice(0,12)).map(x=>`<div class="notice">${x.event_date.slice(5).replace("-","/")}　${esc(x.title)}</div>`).join("")||'<div class="notice">連絡事項なし</div>';
+  noticesEl.innerHTML=noticeText
+    ? `<div class="notice">${esc(noticeText).replaceAll("\n","<br>")}</div>`
+    : '<div class="notice">連絡事項なし</div>';
 }
 function drawHalf(el,a,b,j,e,h){let cnt=b-a+1;el.style.gridTemplateColumns=`repeat(${cnt},1fr)`;let s="";for(let d=a;d<=b;d++){let date=iso(Y,M,d),hol=new Date(Y,M-1,d).getDay()===0||h.some(x=>x.holiday_date===date);s+=`<div class="day ${hol?"holiday":""}"><div class="num">${d}日</div>`;j.filter(x=>x.arrival_date===date).forEach(x=>s+=item(x,"入",false));j.filter(x=>x.due_date===date).forEach(x=>s+=item(x,"納",false));e.filter(x=>x.event_date===date).forEach(x=>s+=`<div class="it" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}">◆ ${esc(x.title)}</div>`);s+="</div>"}el.innerHTML=s}
 function item(x,k,done){
-  const baseColor=k==="入"?"#2563eb":"#f97316";
+  const kindClass=k==="入"?"in":"out";
   const accentStyle=x.accent_color?`outline:2px solid ${x.accent_color};outline-offset:1px;`:"";
-  return `<div class="it" style="border:2px solid ${baseColor};${accentStyle}">${done?'<span class="stamp">㊞</span> ':""}<b>${k} ${esc(x.part_no)}</b><br>${esc(x.company_name)} ${esc(x.machine_name||"")}${x.memo?`<div class="memo">${esc(x.memo)}</div>`:""}</div>`;
+  return `<div class="it ${kindClass}" style="${accentStyle}">${done?'<span class="stamp">㊞</span> ':""}<b><span class="tag">${k}</span> ${esc(x.part_no)}</b><br>${esc(x.company_name)} ${esc(x.machine_name||"")}${x.memo?`<div class="memo">${esc(x.memo)}</div>`:""}</div>`;
 }
 
-// ===== v0.6 Realtime pen layer =====
-let penClient=null,penChannel=null,penStrokes=[];
-const penCanvas=document.getElementById("penLayer"),penCtx=penCanvas.getContext("2d");
-function penBoardMonth(){return `${Y}-${String(M).padStart(2,"0")}`}
-function penResize(){const dpr=devicePixelRatio||1;penCanvas.width=Math.round(innerWidth*dpr);penCanvas.height=Math.round(innerHeight*dpr);penCanvas.style.width=innerWidth+"px";penCanvas.style.height=innerHeight+"px";penCtx.setTransform(dpr,0,0,dpr,0,0);penRedraw()}
-function penDraw(s){const pts=Array.isArray(s.points)?s.points:[];if(pts.length<2)return;penCtx.save();penCtx.strokeStyle=s.stroke_color||"#111";penCtx.lineWidth=Number(s.stroke_width)||3;penCtx.lineCap="round";penCtx.lineJoin="round";penCtx.beginPath();let x0=pts[0][0]*innerWidth,y0=pts[0][1]*innerHeight;penCtx.moveTo(x0,y0);for(let i=1;i<pts.length-1;i++){let x=pts[i][0]*innerWidth,y=pts[i][1]*innerHeight,nx=pts[i+1][0]*innerWidth,ny=pts[i+1][1]*innerHeight;penCtx.quadraticCurveTo(x,y,(x+nx)/2,(y+ny)/2)}let l=pts[pts.length-1];penCtx.lineTo(l[0]*innerWidth,l[1]*innerHeight);penCtx.stroke();penCtx.restore()}
-function penRedraw(){penCtx.clearRect(0,0,innerWidth,innerHeight);penStrokes.filter(s=>!s.deleted).forEach(penDraw)}
-async function penLoad(){if(!penClient)return;const {data,error}=await penClient.from("schedule_pen_strokes").select("*").eq("board_month",penBoardMonth()).order("created_at");if(error){console.error(error);return}penStrokes=data||[];penRedraw()}
-async function restartPenMonth(){
-  if(!penClient)return;
-  if(penChannel){await penClient.removeChannel(penChannel);penChannel=null}
-  await penLoad();
-  penChannel=penClient.channel("monitor-pen-"+penBoardMonth())
-    .on("postgres_changes",{event:"*",schema:"public",table:"schedule_pen_strokes",filter:`board_month=eq.${penBoardMonth()}`},p=>{
-      const r=p.new||p.old;if(!r)return;
-      let i=penStrokes.findIndex(x=>Number(x.id)===Number(r.id));
-      if(p.eventType==="INSERT"){if(i<0)penStrokes.push(r);else penStrokes[i]=r}
-      else if(p.eventType==="UPDATE"){if(i>=0)penStrokes[i]=r;else penStrokes.push(r)}
-      else if(p.eventType==="DELETE"&&i>=0)penStrokes.splice(i,1);
-      penRedraw();
-    }).subscribe();
-}
-async function penStart(){
-  if(!window.supabase||!ok())return;
-  try{
-    penClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{realtime:{params:{eventsPerSecond:20}}});
-    await restartPenMonth();
-  }catch(err){console.error("pen realtime",err)}
-}
-addEventListener("resize",penResize);penResize();updateMonthLabel();penStart();setInterval(autoMonthCheck,60000);
+updateMonthLabel();setInterval(autoMonthCheck,60000);
 
 load();setInterval(load,10000);
 </script></body></html>
