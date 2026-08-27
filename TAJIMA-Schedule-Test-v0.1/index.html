@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 日程管理 TEST v0.4</title><script src="config.js"></script>
+<title>TAJIMA 日程管理 TEST v0.5</title><script src="config.js"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#f3f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
 button,input,textarea,select{font:inherit}
@@ -34,8 +34,16 @@ textarea{min-height:78px;resize:vertical}
 .panel{display:none}.panel.show{display:block}.hint{font-size:11px;color:#758398;margin-top:8px}.companylist button,.machinelist button{width:100%;text-align:left;border:1px solid #d7e0eb;background:#fff;padding:9px;border-radius:6px;margin:4px 0;cursor:pointer}
 .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:100}.modal.show{display:flex}.modalbox{width:min(760px,90vw);max-height:80vh;overflow:auto;background:#fff;border-radius:12px;padding:18px}.hist{padding:10px;border-bottom:1px solid #e2e8f0}
 @media(max-width:1200px){.shell{grid-template-columns:170px 350px 1fr}.day{min-height:112px}}
+
+/* v0.5 custom autocomplete */
+.auto-wrap{position:relative;min-width:0}
+.auto-menu{position:absolute;left:0;right:0;top:calc(100% + 3px);z-index:60;background:#fff;border:1px solid #cbd5e1;border-radius:7px;box-shadow:0 8px 20px #0f172a22;overflow:hidden;display:none;max-height:220px;overflow-y:auto}
+.auto-menu.show{display:block}
+.auto-option{display:block;width:100%;border:0;border-bottom:1px solid #eef2f7;background:#fff;text-align:left;padding:9px 10px;color:#172033;font-weight:700;cursor:pointer}
+.auto-option:last-child{border-bottom:0}.auto-option:hover{background:#eff6ff}
+
 </style></head><body>
-<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.4</small></div>
+<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.5</small></div>
 <div class="top-actions"><button class="ok" onclick="window.open('penboard.html','_blank')">ペンボード入力</button><button onclick="window.open('monitor.html','_blank')">工場表示を確認</button></div></div>
 <div class="shell">
 <nav class="sidebar"><div class="title">メニュー</div><div class="menu">
@@ -51,10 +59,10 @@ textarea{min-height:78px;resize:vertical}
 
 <section class="editor-col">
 <div id="jobPanel" class="panel show"><div class="card"><h2>作業登録 / 編集</h2><div id="editing" class="editing"></div>
-<label>会社名 *</label><div class="fieldrow"><input id="company" list="companyList" placeholder="会社名を入力"><button onclick="showPanel('company')">管理</button></div><datalist id="companyList"></datalist>
+<label>会社名 *</label><div class="fieldrow"><div class="auto-wrap"><input id="company" autocomplete="off" placeholder="会社名を入力"><div id="companyMenu" class="auto-menu"></div></div><button onclick="showPanel('company')">管理</button></div>
 <label>品番 *</label><div class="fieldrow"><input id="part" list="partList" placeholder="品番を入力"><button onclick="openPartHistory()">履歴</button></div><datalist id="partList"></datalist>
 <label>日程</label><div class="dategrid"><div class="datebox"><div class="checkline"><input id="hasArrival" type="checkbox"><span>入荷日</span></div><input id="arrival" type="date"></div><div class="datebox"><div class="checkline"><input id="hasDue" type="checkbox"><span>納期</span></div><input id="due" type="date"></div></div>
-<label>担当機械</label><div class="machine-row"><input id="machine" list="machineList" placeholder="選択または入力"><datalist id="machineList"></datalist><label class="unknown"><input id="machineUnknown" type="checkbox"> 未定</label></div>
+<label>担当機械</label><div class="machine-row"><div class="auto-wrap"><input id="machine" autocomplete="off" placeholder="選択または入力"><div id="machineMenu" class="auto-menu"></div></div><label class="unknown"><input id="machineUnknown" type="checkbox"> 未定</label></div>
 <label>表示強調（基本：なし）</label><div id="colors" class="colors"></div>
 <label>メモ <span style="font-weight:500;color:#8a96a8">（管理カレンダーには表示しません）</span></label><textarea id="memo" placeholder="特記事項など"></textarea>
 <div class="actions"><button id="saveBtn" class="save" onclick="saveJob()">登録</button><button id="completeBtn" class="complete" style="display:none" onclick="completeJob()">完了</button><button id="deleteBtn" class="delete" style="display:none" onclick="deleteJob()">削除</button><button id="cancelBtn" class="cancel" style="display:none" onclick="resetForm()">編集解除</button></div>
@@ -85,7 +93,7 @@ async function patch(t,id,row){let r=await fetch(`${API(t)}?id=eq.${id}`,{method
 async function del(t,id){let r=await fetch(`${API(t)}?id=eq.${id}`,{method:"DELETE",headers:H()});if(!r.ok)throw Error(await r.text())}
 const ym=(y,m)=>`${y}-${String(m).padStart(2,"0")}`;
 const iso=(y,m,d)=>`${ym(y,m)}-${String(d).padStart(2,"0")}`;
-const colors=["#ef4444","#f97316","#eab308","#22c55e","#06b6d4","#3b82f6","#8b5cf6","#ec4899"];
+const colors=["#ef4444","#eab308","#22c55e","#06b6d4","#8b5cf6","#ec4899"];
 function inMonth(date,y,m){return !!date && String(date).startsWith(`${ym(y,m)}-`)}
 
 let now=new Date(),Y=now.getFullYear(),M=now.getMonth()+1,jobs=[],events=[],holidays=[],allJobs=[],editId=null,accent=null,eventAccent=null,currentPanel="job";
@@ -125,12 +133,45 @@ async function load(){
   }catch(e){alert("読込エラー: "+e.message)}
 }
 function refreshMasters(){
-  let cs=[...new Set(allJobs.map(x=>x.company_name).filter(Boolean))];
-  let ms=[...new Set(allJobs.map(x=>x.machine_name).filter(Boolean))];
-  companyList.innerHTML=cs.map(x=>`<option value="${esc(x)}">`).join("");
-  machineList.innerHTML=ms.map(x=>`<option value="${esc(x)}">`).join("");
-  company.oninput=()=>{let c=company.value;let ps=[...new Set(allJobs.filter(x=>x.company_name===c).map(x=>x.part_no).filter(Boolean))];partList.innerHTML=ps.map(x=>`<option value="${esc(x)}">`).join("")}
+  const cs=[...new Set(allJobs.map(x=>x.company_name).filter(Boolean))];
+  const ms=[...new Set(allJobs.map(x=>x.machine_name).filter(Boolean))];
+  setupAutoComplete(company,companyMenu,cs,()=>{
+    const c=company.value;
+    const ps=[...new Set(allJobs.filter(x=>x.company_name===c).map(x=>x.part_no).filter(Boolean))];
+    partList.innerHTML=ps.map(x=>`<option value="${esc(x)}">`).join("");
+  });
+  setupAutoComplete(machine,machineMenu,ms);
+  const c=company.value;
+  const ps=[...new Set(allJobs.filter(x=>x.company_name===c).map(x=>x.part_no).filter(Boolean))];
+  partList.innerHTML=ps.map(x=>`<option value="${esc(x)}">`).join("");
 }
+function setupAutoComplete(input,menu,items,onPick){
+  input._autoItems=items;
+  input._autoPick=onPick;
+  if(input.dataset.autoReady==="1")return;
+  input.addEventListener("focus",()=>renderAutoMenu(input,menu));
+  input.addEventListener("input",()=>renderAutoMenu(input,menu));
+  input.addEventListener("keydown",e=>{if(e.key==="Escape")menu.classList.remove("show")});
+  input.dataset.autoReady="1";
+}
+function renderAutoMenu(input,menu){
+  const items=input._autoItems||[];
+  const q=input.value.trim().toLowerCase();
+  const shown=items.filter(x=>!q||String(x).toLowerCase().includes(q)).slice(0,30);
+  if(!shown.length){menu.classList.remove("show");menu.innerHTML="";return}
+  menu.innerHTML=shown.map(x=>`<button type="button" class="auto-option" data-value="${esc(x)}">${esc(x)}</button>`).join("");
+  menu.querySelectorAll(".auto-option").forEach(b=>b.onclick=()=>{
+    input.value=b.dataset.value||"";
+    menu.classList.remove("show");
+    if(input._autoPick)input._autoPick();
+  });
+  menu.classList.add("show");
+}
+document.addEventListener("pointerdown",e=>{
+  document.querySelectorAll(".auto-menu.show").forEach(menu=>{
+    if(!menu.parentElement.contains(e.target))menu.classList.remove("show");
+  });
+});
 function draw(){
   let dows=[["日","sun"],["月",""],["火",""],["水",""],["木",""],["金",""],["土","sat"]];
   let first=new Date(Y,M-1,1),last=new Date(Y,M,0).getDate(),s=dows.map(([x,c])=>`<div class="dow ${c}">${x}</div>`).join("");
@@ -146,7 +187,9 @@ function draw(){
 }
 function jobItem(x,type){
   let label=type==="arrival"?"入":"納",done=type==="due"&&x.status==="完了";
-  return `<div class="item ${done?"done":""}" draggable="true" data-id="${x.id}" data-type="${type}" ondragstart="dragStart(event)" ondragend="dragEnd(event)" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}" onclick="event.stopPropagation();editJob(${x.id})">${done?'<span class="stamp">㊞</span> ':""}<b>${label}</b> ${esc(x.part_no)} ${esc(x.company_name)} ${esc(x.machine_name||"")}</div>`;
+  const baseColor=type==="arrival"?"#2563eb":"#f97316";
+  const accentStyle=x.accent_color?`outline:3px solid ${x.accent_color};outline-offset:1px;`:"";
+  return `<div class="item ${done?"done":""}" draggable="true" data-id="${x.id}" data-type="${type}" ondragstart="dragStart(event)" ondragend="dragEnd(event)" style="border:2px solid ${baseColor};${accentStyle}" onclick="event.stopPropagation();editJob(${x.id})">${done?'<span class="stamp">㊞</span> ':""}<b>${label}</b> ${esc(x.part_no)} ${esc(x.company_name)} ${esc(x.machine_name||"")}</div>`;
 }
 function dragStart(e){e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",JSON.stringify({id:Number(e.currentTarget.dataset.id),type:e.currentTarget.dataset.type}));e.currentTarget.classList.add("dragging")}
 function dragEnd(e){e.currentTarget.classList.remove("dragging");document.querySelectorAll(".drop-target").forEach(x=>x.classList.remove("drop-target"))}

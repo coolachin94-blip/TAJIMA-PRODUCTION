@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA 工場表示 TEST v0.4</title><script src="config.js"></script>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA 工場表示 TEST v0.5</title><script src="config.js"></script>
 <style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f5f6f8;font-family:"Yu Gothic",sans-serif;color:#111}.wrap{height:100vh;padding:8px;display:grid;grid-template-columns:4fr 1fr;gap:8px}.board{display:grid;grid-template-rows:auto 1fr 1fr;gap:5px}.title{text-align:center;font-size:24px;font-weight:900}.half{display:grid;gap:3px}.day{border:1px solid #6b7280;background:white;min-width:0;overflow:hidden}.day.holiday{background:#fee2e2}.num{text-align:center;font-weight:900;border-bottom:1px solid #bbb;padding:2px;font-size:13px}.holiday .num{color:#b91c1c}.it{font-size:10px;line-height:1.15;padding:2px 3px;margin:2px;border:1px solid #aaa;border-radius:3px;overflow:hidden}.stamp{color:#b91c1c;font-weight:900}.memo{font-size:9px;opacity:.8;margin-top:1px;white-space:normal}.side{border:1px solid #64748b;background:#fff;padding:10px;overflow:hidden}.side h2{text-align:center;margin:0 0 10px}.notice{padding:7px 4px;border-bottom:1px solid #ddd;font-weight:700}</style></head><body><div class="wrap"><div class="board"><div id="title" class="title"></div><div id="boardTop" class="half"></div><div id="boardBottom" class="half"></div></div><div class="side"><h2>連絡事項</h2><div id="syncStatus" style="font-size:9px;color:#64748b;text-align:center;margin-bottom:6px"></div><div id="notices"></div></div></div>
 <script>
 const C=window.TAJIMA_CONFIG||window.CONFIG||{}, URL=C.SUPABASE_URL||"", KEY=C.SUPABASE_PUBLISHABLE_KEY||C.SUPABASE_ANON_KEY||C.SUPABASE_KEY||"";
@@ -12,7 +12,7 @@ async function patch(t,id,row){let r=await fetch(`${API(t)}?id=eq.${id}`,{method
 async function del(t,id){let r=await fetch(`${API(t)}?id=eq.${id}`,{method:"DELETE",headers:H()});if(!r.ok)throw Error(await r.text())}
 const ym=(y,m)=>`${y}-${String(m).padStart(2,"0")}`;
 const iso=(y,m,d)=>`${ym(y,m)}-${String(d).padStart(2,"0")}`;
-const colors=["#ef4444","#f97316","#eab308","#22c55e","#06b6d4","#3b82f6","#8b5cf6","#ec4899"];
+const colors=["#ef4444","#eab308","#22c55e","#06b6d4","#8b5cf6","#ec4899"];
 function inMonth(date,y,m){return !!date && String(date).startsWith(`${ym(y,m)}-`)}
 
 let n=new Date(),Y=n.getFullYear(),M=n.getMonth()+1;
@@ -50,6 +50,10 @@ function draw(j,e,h){
   noticesEl.innerHTML=(todayEvents.length?todayEvents:e.slice(0,12)).map(x=>`<div class="notice">${x.event_date.slice(5).replace("-","/")}　${esc(x.title)}</div>`).join("")||'<div class="notice">連絡事項なし</div>';
 }
 function drawHalf(el,a,b,j,e,h){let cnt=b-a+1;el.style.gridTemplateColumns=`repeat(${cnt},1fr)`;let s="";for(let d=a;d<=b;d++){let date=iso(Y,M,d),hol=new Date(Y,M-1,d).getDay()===0||h.some(x=>x.holiday_date===date);s+=`<div class="day ${hol?"holiday":""}"><div class="num">${d}日</div>`;j.filter(x=>x.arrival_date===date).forEach(x=>s+=item(x,"入",false));j.filter(x=>x.due_date===date).forEach(x=>s+=item(x,"納",x.status==="完了"));e.filter(x=>x.event_date===date).forEach(x=>s+=`<div class="it" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}">◆ ${esc(x.title)}</div>`);s+="</div>"}el.innerHTML=s}
-function item(x,k,done){return `<div class="it" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}">${done?'<span class="stamp">㊞</span> ':""}<b>${k} ${esc(x.part_no)}</b><br>${esc(x.company_name)} ${esc(x.machine_name||"")}${x.memo?`<div class="memo">${esc(x.memo)}</div>`:""}</div>`}
+function item(x,k,done){
+  const baseColor=k==="入"?"#2563eb":"#f97316";
+  const accentStyle=x.accent_color?`outline:2px solid ${x.accent_color};outline-offset:1px;`:"";
+  return `<div class="it" style="border:2px solid ${baseColor};${accentStyle}">${done?'<span class="stamp">㊞</span> ':""}<b>${k} ${esc(x.part_no)}</b><br>${esc(x.company_name)} ${esc(x.machine_name||"")}${x.memo?`<div class="memo">${esc(x.memo)}</div>`:""}</div>`;
+}
 load();setInterval(load,10000);
 </script></body></html>
