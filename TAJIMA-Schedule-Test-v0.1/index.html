@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 日程管理 TEST v0.7</title><script src="config.js"></script>
+<title>TAJIMA 日程管理 TEST v0.8</title><script src="config.js"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#f3f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
 button,input,textarea,select{font:inherit}
@@ -43,8 +43,8 @@ textarea{min-height:78px;resize:vertical}
 .auto-option:last-child{border-bottom:0}.auto-option:hover{background:#eff6ff}
 
 </style></head><body>
-<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.7</small></div>
-<div class="top-actions"><button class="ok" onclick="window.open('penboard.html','_blank')">ペンボード入力</button><button onclick="window.open('monitor.html','_blank')">工場表示を確認</button></div></div>
+<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.8</small></div>
+<div class="top-actions"><button class="ok" onclick="window.open('penboard.html','_blank')">ペンボードを開く</button></div></div>
 <div class="shell">
 <nav class="sidebar"><div class="title">メニュー</div><div class="menu">
 <button id="mJob" class="active" onclick="showPanel('job')">作業登録</button>
@@ -52,9 +52,9 @@ textarea{min-height:78px;resize:vertical}
 <button id="mMachine" onclick="showPanel('machine')">機械管理</button>
 <button id="mEvent" onclick="showPanel('event')">行事・点検登録</button>
 <button id="mHoliday" onclick="showPanel('holiday')">休日設定</button>
-<button id="mHistory" onclick="showPanel('history')">完了履歴</button>
+<button id="mNotice" onclick="showPanel('notice')">連絡事項</button>
 </div>
-<div class="quick"><h3>クイックメニュー</h3><button onclick="window.open('penboard.html','_blank')">ペンボード入力</button><button onclick="window.open('monitor.html','_blank')">工場表示を確認</button><button onclick="showPanel('event')">行事・点検を登録</button><button onclick="showPanel('holiday')">休日を設定</button></div>
+<div class="quick"><h3>クイックメニュー</h3><button onclick="window.open('penboard.html','_blank')">ペンボードを開く</button><button onclick="showPanel('event')">行事・点検を登録</button><button onclick="showPanel('holiday')">休日を設定</button><button onclick="showPanel('notice')">連絡事項を編集</button></div>
 </nav>
 
 <section class="editor-col">
@@ -65,14 +65,18 @@ textarea{min-height:78px;resize:vertical}
 <label>担当機械</label><div class="machine-row"><div class="auto-wrap"><input id="machine" autocomplete="off" placeholder="選択または入力"><div id="machineMenu" class="auto-menu"></div></div><label class="unknown"><input id="machineUnknown" type="checkbox"> 未定</label></div>
 <label>表示強調（基本：なし）</label><div id="colors" class="colors"></div>
 <label>メモ <span style="font-weight:500;color:#8a96a8">（管理カレンダーには表示しません）</span></label><textarea id="memo" placeholder="特記事項など"></textarea>
-<div class="actions"><button id="saveBtn" class="save" onclick="saveJob()">登録</button><button id="completeBtn" class="complete" style="display:none" onclick="completeJob()">完了</button><button id="deleteBtn" class="delete" style="display:none" onclick="deleteJob()">削除</button><button id="cancelBtn" class="cancel" style="display:none" onclick="resetForm()">編集解除</button></div>
+<div class="actions"><button id="saveBtn" class="save" onclick="saveJob()">登録</button><button id="deleteBtn" class="delete" style="display:none" onclick="deleteJob()">削除</button><button id="cancelBtn" class="cancel" style="display:none" onclick="resetForm()">編集解除</button></div>
 </div><div class="card"><h2 style="font-size:14px">今日の予定</h2><div id="todayBox" class="todaybox"></div></div></div>
 
 <div id="companyPanel" class="panel"><div class="card"><h2>会社管理</h2><div class="hint">登録済み会社と過去案件を確認できます。</div><div id="companies" class="companylist"></div></div></div>
 <div id="machinePanel" class="panel"><div class="card"><h2>機械管理</h2><div class="hint">過去に入力した機械名を一覧表示します。</div><div id="machines" class="machinelist"></div></div></div>
 <div id="eventPanel" class="panel"><div class="card"><h2>行事・点検登録</h2><label>日付</label><input id="eventDate" type="date"><label>内容</label><input id="eventText" placeholder="例：電気設備点検"><label>表示強調</label><div id="eventColors" class="colors"></div><div class="actions"><button class="save" onclick="saveEvent()">登録</button></div></div></div>
 <div id="holidayPanel" class="panel"><div class="card"><h2>休日設定</h2><div class="hint">この画面を開いた状態で、右側カレンダーの日付をクリックすると会社休日をON/OFFできます。日曜日は自動休日です。</div></div></div>
-<div id="historyPanel" class="panel"><div class="card"><h2>完了履歴</h2><div id="historyList"></div></div></div>
+<div id="noticePanel" class="panel"><div class="card"><h2>連絡事項</h2>
+<label>表示内容</label><textarea id="noticeText" placeholder="工場・事務所で共有する連絡事項"></textarea>
+<div class="actions"><button class="save" onclick="saveNotice()">保存</button></div>
+<div class="hint">保存するとペンボード右側の連絡事項欄に反映されます。</div>
+</div></div>
 </section>
 
 <main class="main"><div class="calendar-card"><div class="cal-toolbar"><div><span class="heading">カレンダー（作業予定）</span><span class="sub">クリックで編集 / ドラッグ&ドロップで日付変更</span></div><div class="spacer"></div><button onclick="moveMonth(-1)">‹</button><button id="monthTitle" class="month"></button><button onclick="moveMonth(1)">›</button><button onclick="goToday()">今日</button></div>
@@ -100,13 +104,13 @@ let now=new Date(),Y=now.getFullYear(),M=now.getMonth()+1,jobs=[],events=[],holi
 
 function showPanel(name){
   currentPanel=name;
-  ["job","company","machine","event","holiday","history"].forEach(n=>{
+  ["job","company","machine","event","holiday","notice"].forEach(n=>{
     document.getElementById(n+"Panel").classList.toggle("show",n===name);
     let b=document.getElementById("m"+n.charAt(0).toUpperCase()+n.slice(1)); if(b)b.classList.toggle("active",n===name)
   });
   if(name==="company")drawCompanies();
   if(name==="machine")drawMachines();
-  if(name==="history")drawHistory();
+  if(name==="notice")loadNotice();
 }
 function initColors(id,fn){let e=document.getElementById(id);e.innerHTML=`<button class="sw none sel" data-c="" onclick="${fn}(null,this)">なし</button>`+colors.map(c=>`<button class="sw" style="background:${c}" data-c="${c}" onclick="${fn}('${c}',this)"></button>`).join("")}
 function chooseColor(c,el){accent=c;document.querySelectorAll("#colors .sw").forEach(x=>x.classList.remove("sel"));el.classList.add("sel")}
@@ -217,9 +221,9 @@ function editJob(id){
   company.value=x.company_name||"";part.value=x.part_no||"";machine.value=x.machine_name||"";machineUnknown.checked=!x.machine_name;
   hasArrival.checked=!!x.arrival_date;arrival.value=x.arrival_date||"";hasDue.checked=!!x.due_date;due.value=x.due_date||"";
   memo.value=x.memo||"";accent=x.accent_color||null;setColorUI("colors",accent);
-  saveBtn.textContent="更新保存";completeBtn.style.display="block";deleteBtn.style.display="block";cancelBtn.style.display="block";
+  saveBtn.textContent="更新保存";deleteBtn.style.display="block";cancelBtn.style.display="block";
 }
-function resetForm(){editId=null;editing.style.display="none";company.value=part.value=machine.value=memo.value=arrival.value=due.value="";machineUnknown.checked=false;hasArrival.checked=hasDue.checked=false;accent=null;setColorUI("colors",null);saveBtn.textContent="登録";completeBtn.style.display=deleteBtn.style.display=cancelBtn.style.display="none"}
+function resetForm(){editId=null;editing.style.display="none";company.value=part.value=machine.value=memo.value=arrival.value=due.value="";machineUnknown.checked=false;hasArrival.checked=hasDue.checked=false;accent=null;setColorUI("colors",null);saveBtn.textContent="登録";deleteBtn.style.display=cancelBtn.style.display="none"}
 async function saveJob(){
   let c=company.value.trim(),p=part.value.trim(),mach=machineUnknown.checked?"":machine.value.trim(),a=hasArrival.checked?arrival.value:null,d=hasDue.checked?due.value:null;
   if(!c||!p){alert("会社名と品番は入力してください");return}
@@ -228,14 +232,26 @@ async function saveJob(){
   if(editId)await patch("schedule_jobs",editId,row); else await post("schedule_jobs",row);
   resetForm();await load()
 }
-async function completeJob(){if(!editId)return;let x=allJobs.find(j=>Number(j.id)===Number(editId));if(!x?.due_date){alert("納期が未定です。先に納期を登録してください");return}if(!confirm("この案件を完了にしますか？ 完了印は納期側に表示されます。"))return;await patch("schedule_jobs",editId,{status:"完了",completed_at:new Date().toISOString(),updated_at:new Date().toISOString()});resetForm();await load()}
 async function deleteJob(){if(editId&&confirm("この案件を削除しますか？")){await del("schedule_jobs",editId);resetForm();await load()}}
 async function saveEvent(){if(!eventDate.value||!eventText.value.trim()){alert("日付と内容を入力してください");return}await post("schedule_events",{event_date:eventDate.value,title:eventText.value.trim(),accent_color:eventAccent});eventText.value="";await load()}
 function drawCompanies(){let cs=[...new Set(allJobs.map(x=>x.company_name).filter(Boolean))];companies.innerHTML=cs.map(c=>`<button onclick='companyHistory(${JSON.stringify(c)})'>${esc(c)}　<small>${allJobs.filter(x=>x.company_name===c).length}件</small></button>`).join("")||'<div class="hint">登録済み会社はありません。</div>'}
 function drawMachines(){let ms=[...new Set(allJobs.map(x=>x.machine_name).filter(Boolean))];machines.innerHTML=ms.map(m=>`<button>${esc(m)}　<small>${allJobs.filter(x=>x.machine_name===m).length}件</small></button>`).join("")||'<div class="hint">登録済み機械はありません。</div>'}
-function companyHistory(c){let a=allJobs.filter(x=>x.company_name===c);modalBody.innerHTML=`<h2>${esc(c)}</h2>`+a.map(x=>`<div class="hist"><b>${esc(x.part_no)}</b>　${x.status==="完了"?"㊞ 完了":"進行中"}<br>入荷 ${x.arrival_date||"未定"} ／ 納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}<br>${esc(x.memo||"")}</div>`).join("");modal.classList.add("show")}
+function companyHistory(c){let a=allJobs.filter(x=>x.company_name===c);modalBody.innerHTML=`<h2>${esc(c)}</h2>`+a.map(x=>`<div class="hist"><b>${esc(x.part_no)}</b>　${x.status==="完了"?"過去データ":"進行中"}<br>入荷 ${x.arrival_date||"未定"} ／ 納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}<br>${esc(x.memo||"")}</div>`).join("");modal.classList.add("show")}
 function openPartHistory(){let c=company.value.trim(),p=part.value.trim();let a=allJobs.filter(x=>(!c||x.company_name===c)&&(!p||x.part_no===p));modalBody.innerHTML=`<h2>品番履歴</h2>`+(a.length?a.map(x=>`<div class="hist">${esc(x.company_name)} / <b>${esc(x.part_no)}</b><br>入荷 ${x.arrival_date||"未定"} ／ 納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}</div>`).join(""):'履歴なし');modal.classList.add("show")}
-function drawHistory(){let a=allJobs.filter(x=>x.status==="完了").sort((a,b)=>String(b.completed_at||"").localeCompare(String(a.completed_at||"")));historyList.innerHTML=a.map(x=>`<div class="hist"><b>${esc(x.company_name)} / ${esc(x.part_no)}</b><br>入荷 ${x.arrival_date||"未定"} ／ 納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}</div>`).join("")||'<div class="hint">完了履歴はありません。</div>'}
+
+async function loadNotice(){
+  try{
+    const rows=await get("schedule_notices","?id=eq.1&select=*");
+    noticeText.value=rows[0]?.notice_text||"";
+  }catch(e){noticeText.value="";console.error(e)}
+}
+async function saveNotice(){
+  const row={id:1,notice_text:noticeText.value.trim(),updated_at:new Date().toISOString()};
+  let r=await fetch(API("schedule_notices")+"?on_conflict=id",{method:"POST",headers:{...H(),"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify([row])});
+  if(!r.ok){alert("連絡事項保存エラー: "+await r.text());return}
+  alert("連絡事項を保存しました");
+}
+
 function drawToday(){let t=new Date(),k=iso(t.getFullYear(),t.getMonth()+1,t.getDate());let a=allJobs.filter(x=>x.arrival_date===k),d=allJobs.filter(x=>x.due_date===k),e=events.filter(x=>x.event_date===k);todayBox.innerHTML=`<b>入荷 ${a.length}件 / 納期 ${d.length}件 / 行事・点検 ${e.length}件</b><br>`+[...a.map(x=>"入 "+esc(x.part_no)),...d.map(x=>"納 "+esc(x.part_no)),...e.map(x=>"◆ "+esc(x.title))].join("<br>");todayNotes.innerHTML=e.length?e.map(x=>`・${esc(x.title)}`).join("<br>"):"・本日の行事・点検登録なし"}
 initColors("colors","chooseColor");initColors("eventColors","chooseEventColor");load();
 </script></body></html>

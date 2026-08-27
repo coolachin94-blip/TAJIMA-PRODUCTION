@@ -1,61 +1,88 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA ペンボード TEST v0.7</title><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
-*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;font-family:"Yu Gothic",sans-serif;background:#eef2f7}.bar{height:62px;background:#132033;color:#fff;display:flex;align-items:center;padding:0 12px;gap:8px;box-shadow:0 2px 8px #0004;position:relative;z-index:100}.bar b{margin-right:4px}.tool{height:38px;min-width:42px;border:1px solid #40516a;background:#1b2b42;color:#fff;border-radius:7px;font-weight:800;cursor:pointer;padding:0 10px}.tool.active{background:#2563eb;border-color:#60a5fa}.tool.danger{background:#7f1d1d}.colors{display:flex;gap:5px}.color{width:30px;height:30px;border-radius:50%;border:2px solid #cbd5e1;cursor:pointer}.color.sel{outline:3px solid #fff;outline-offset:1px}.widths{display:flex;gap:4px}.widthbtn{width:38px;height:34px;border:1px solid #40516a;background:#1b2b42;border-radius:7px;cursor:pointer;display:grid;place-items:center}.widthbtn.sel{outline:2px solid #fff}.dot{background:#fff;border-radius:999px}.status{margin-left:auto;font-size:11px;color:#cbd5e1}.frame{height:calc(100% - 62px);position:relative;background:#fff}.frame iframe{position:absolute;inset:0;border:0;width:100%;height:100%;z-index:1}#drawCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:5;touch-action:none;cursor:crosshair}.eraser-cursor{cursor:cell!important}
-</style></head><body><div class="bar"><b>ペンボード入力</b>
-<button class="tool" onclick="changeBoardMonth(-1)">◀ 前月</button>
-<span id="boardMonthLabel" style="min-width:88px;text-align:center;font-size:12px;font-weight:900"></span>
-<button class="tool" onclick="changeBoardMonth(1)">次月 ▶</button>
-<button class="tool" onclick="goBoardCurrentMonth()">今月</button><button id="penBtn" class="tool active" onclick="setMode('pen')">✎ ペン</button><button id="eraserBtn" class="tool" onclick="setMode('eraser')">⌫ 消しゴム</button><button class="tool" onclick="undoStroke()">↶ 1つ戻る</button><div class="colors"><button class="color sel" style="background:#111" data-c="#111111" onclick="setColor(this)"></button><button class="color" style="background:#ef4444" data-c="#ef4444" onclick="setColor(this)"></button><button class="color" style="background:#2563eb" data-c="#2563eb" onclick="setColor(this)"></button><button class="color" style="background:#16a34a" data-c="#16a34a" onclick="setColor(this)"></button><button class="color" style="background:#f59e0b" data-c="#f59e0b" onclick="setColor(this)"></button><button class="color" style="background:#8b5cf6" data-c="#8b5cf6" onclick="setColor(this)"></button></div><div class="widths"><button class="widthbtn" data-w="2" onclick="setWidth(this)"><span class="dot" style="width:4px;height:4px"></span></button><button class="widthbtn sel" data-w="4" onclick="setWidth(this)"><span class="dot" style="width:8px;height:8px"></span></button><button class="widthbtn" data-w="7" onclick="setWidth(this)"><span class="dot" style="width:13px;height:13px"></span></button></div><button class="tool danger" onclick="clearBoard()">全消去</button><span id="syncStatus" class="status">接続準備中</span></div><div class="frame"><iframe id="monitorFrame" src="about:blank"></iframe><canvas id="drawCanvas"></canvas></div><script>
-const C=window.TAJIMA_CONFIG||window.CONFIG||{},SUPABASE_URL=C.SUPABASE_URL||"",SUPABASE_KEY=C.SUPABASE_PUBLISHABLE_KEY||C.SUPABASE_ANON_KEY||C.SUPABASE_KEY||"";const ok=()=>SUPABASE_URL&&SUPABASE_KEY;
-let sb=null,channel=null,strokes=[],mode="pen",color="#111111",width=4,drawing=false,currentPoints=[];
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA ペンボード TEST v0.8</title><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;font-family:"Yu Gothic",sans-serif;background:#eef2f7}
+.frame{height:100%;position:relative;background:#fff;padding-right:88px}
+.frame iframe{position:absolute;left:0;top:0;bottom:0;right:88px;border:0;width:calc(100% - 88px);height:100%;z-index:1}
+#drawCanvas,#stampCanvas{position:absolute;left:0;top:0;bottom:0;right:88px;width:calc(100% - 88px);height:100%;z-index:5;touch-action:none}
+#stampCanvas{pointer-events:none;z-index:6}
+.toolbar{position:absolute;right:0;top:0;width:88px;height:100%;z-index:100;background:#132033;color:#fff;display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:8px 7px;box-shadow:-2px 0 8px #0004;overflow-y:auto}
+.toolbar .title{font-size:11px;font-weight:900;text-align:center;padding:3px 0 5px}
+.tool{min-height:42px;border:1px solid #40516a;background:#1b2b42;color:#fff;border-radius:8px;font-weight:900;cursor:pointer;padding:5px 4px;font-size:12px}
+.tool.active{background:#2563eb;border-color:#93c5fd}.tool.stamp-active{background:#b91c1c;border-color:#fca5a5}.tool.danger{background:#7f1d1d}
+.month-label{text-align:center;font-size:11px;font-weight:900;padding:2px 0}
+.colors{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}.color{width:30px;height:30px;border-radius:50%;border:2px solid #cbd5e1;cursor:pointer;justify-self:center}.color.sel{outline:3px solid #fff;outline-offset:1px}
+.widths{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.widthbtn{height:34px;border:1px solid #40516a;background:#1b2b42;border-radius:7px;cursor:pointer;display:grid;place-items:center}.widthbtn.sel{outline:2px solid #fff}.dot{background:#fff;border-radius:999px}
+.status{font-size:9px;color:#cbd5e1;text-align:center;margin-top:auto;line-height:1.25}
+.eraser-cursor{cursor:cell!important}.stamp-cursor{cursor:copy!important}
+</style></head><body><div class="frame">
+<iframe id="monitorFrame" src="about:blank"></iframe>
+<canvas id="drawCanvas"></canvas>
+<canvas id="stampCanvas"></canvas>
+<div class="toolbar">
+  <div class="title">共有ペンボード</div>
+  <button class="tool" onclick="changeBoardMonth(-1)">◀ 前月</button>
+  <div id="boardMonthLabel" class="month-label"></div>
+  <button class="tool" onclick="goBoardCurrentMonth()">今月</button>
+  <button class="tool" onclick="changeBoardMonth(1)">次月 ▶</button>
+  <button id="penBtn" class="tool active" onclick="setMode('pen')">✎ ペン</button>
+  <div class="colors">
+    <button class="color sel" style="background:#111111" data-c="#111111" onclick="setColor(this)"></button>
+    <button class="color" style="background:#ef4444" data-c="#ef4444" onclick="setColor(this)"></button>
+    <button class="color" style="background:#2563eb" data-c="#2563eb" onclick="setColor(this)"></button>
+    <button class="color" style="background:#16a34a" data-c="#16a34a" onclick="setColor(this)"></button>
+    <button class="color" style="background:#f59e0b" data-c="#f59e0b" onclick="setColor(this)"></button>
+    <button class="color" style="background:#8b5cf6" data-c="#8b5cf6" onclick="setColor(this)"></button>
+  </div>
+  <div class="widths">
+    <button class="widthbtn" data-w="0.8" onclick="setWidth(this)"><span class="dot" style="width:2px;height:2px"></span></button>
+    <button class="widthbtn sel" data-w="1.3" onclick="setWidth(this)"><span class="dot" style="width:4px;height:4px"></span></button>
+    <button class="widthbtn" data-w="2" onclick="setWidth(this)"><span class="dot" style="width:7px;height:7px"></span></button>
+  </div>
+  <button id="eraserBtn" class="tool" onclick="setMode('eraser')">⌫ 消しゴム</button>
+  <button class="tool" onclick="undoLast()">↶ 戻す</button>
+  <button id="stampBtn" class="tool" onclick="setMode('stamp')">印鑑</button>
+  <button class="tool danger" onclick="clearAllBoard()">全消去</button>
+  <button class="tool" onclick="window.open('index.html','_blank')">管理</button>
+  <div id="syncStatus" class="status">接続準備中</div>
+</div>
+</div>
+<script>
+const C=window.TAJIMA_CONFIG||window.CONFIG||{},SUPABASE_URL=C.SUPABASE_URL||"",SUPABASE_KEY=C.SUPABASE_PUBLISHABLE_KEY||C.SUPABASE_ANON_KEY||C.SUPABASE_KEY||"";
+const ok=()=>SUPABASE_URL&&SUPABASE_KEY;
+let sb=null,strokeChannel=null,stampChannel=null,strokes=[],stamps=[],mode="pen",color="#111111",width=1.3,drawing=false,currentPoints=[];
 let nowClock=new Date(),boardY=nowClock.getFullYear(),boardM=nowClock.getMonth()+1,lastSystemYM=`${nowClock.getFullYear()}-${nowClock.getMonth()+1}`;
-const c=document.getElementById("drawCanvas"),ctx=c.getContext("2d"),statusEl=document.getElementById("syncStatus");
-function boardMonth(){return `${boardY}-${String(boardM).padStart(2,"0")}`}
+const c=document.getElementById("drawCanvas"),ctx=c.getContext("2d"),sc=document.getElementById("stampCanvas"),sctx=sc.getContext("2d"),statusEl=document.getElementById("syncStatus"),monitorFrame=document.getElementById("monitorFrame");
 
-function refreshBoardMonth(){
-  boardMonthLabel.textContent=`${boardY}年${boardM}月`;
-  monitorFrame.src=`monitor.html?v=0.7&penboard=1&year=${boardY}&month=${boardM}`;
-}
-async function restartRealtime(){
-  if(!sb)return;
-  if(channel){await sb.removeChannel(channel);channel=null}
-  await loadAll();
-  channel=sb.channel("penboard-"+boardMonth())
-   .on("postgres_changes",{event:"*",schema:"public",table:"schedule_pen_strokes",filter:`board_month=eq.${boardMonth()}`},payload=>{
-     const r=payload.new||payload.old;if(!r)return;
-     const i=strokes.findIndex(x=>Number(x.id)===Number(r.id));
-     if(payload.eventType==="INSERT"){if(i<0)strokes.push(r);else strokes[i]=r}
-     else if(payload.eventType==="UPDATE"){if(i>=0)strokes[i]=r;else strokes.push(r)}
-     else if(payload.eventType==="DELETE"&&i>=0)strokes.splice(i,1);
-     redraw();
-   }).subscribe(state=>statusEl.textContent=state==="SUBSCRIBED"?"Realtime 接続済み":state);
-}
+function boardMonth(){return `${boardY}-${String(boardM).padStart(2,"0")}`}
+function refreshBoardMonth(){boardMonthLabel.textContent=`${boardY}年${boardM}月`;monitorFrame.src=`monitor.html?v=0.8&penboard=1&year=${boardY}&month=${boardM}`}
+function sizeCanvas(el,context){const r=el.getBoundingClientRect(),dpr=devicePixelRatio||1;el.width=Math.max(1,Math.round(r.width*dpr));el.height=Math.max(1,Math.round(r.height*dpr));context.setTransform(dpr,0,0,dpr,0,0)}
+function resize(){sizeCanvas(c,ctx);sizeCanvas(sc,sctx);redraw();redrawStamps()}
+function xy(e){const r=c.getBoundingClientRect();return [(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]}
+function screenPoint(p){const r=c.getBoundingClientRect();return [p[0]*r.width,p[1]*r.height]}
+function drawStroke(s){const pts=s.points||[];if(pts.length<2)return;ctx.save();ctx.strokeStyle=s.stroke_color||"#111";ctx.lineWidth=Number(s.stroke_width)||1.3;ctx.lineCap="round";ctx.lineJoin="round";ctx.beginPath();let [x0,y0]=screenPoint(pts[0]);ctx.moveTo(x0,y0);if(pts.length===2){let [x,y]=screenPoint(pts[1]);ctx.lineTo(x,y)}else{for(let i=1;i<pts.length-1;i++){let [x,y]=screenPoint(pts[i]),[nx,ny]=screenPoint(pts[i+1]);ctx.quadraticCurveTo(x,y,(x+nx)/2,(y+ny)/2)}let [lx,ly]=screenPoint(pts[pts.length-1]);ctx.lineTo(lx,ly)}ctx.stroke();ctx.restore()}
+function redraw(extra=null){const r=c.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);strokes.filter(s=>!s.deleted).forEach(drawStroke);if(extra&&extra.length>1)drawStroke({points:extra,stroke_color:color,stroke_width:width})}
+function redrawStamps(){const r=sc.getBoundingClientRect();sctx.clearRect(0,0,r.width,r.height);stamps.filter(x=>!x.deleted).forEach(st=>{const x=st.x_norm*r.width,y=st.y_norm*r.height;sctx.save();sctx.translate(x,y);sctx.rotate(-0.12);sctx.strokeStyle="#b91c1c";sctx.fillStyle="rgba(255,255,255,.76)";sctx.lineWidth=2;sctx.beginPath();sctx.arc(0,0,24,0,Math.PI*2);sctx.fill();sctx.stroke();sctx.fillStyle="#b91c1c";sctx.font="900 15px Yu Gothic";sctx.textAlign="center";sctx.textBaseline="middle";sctx.fillText("出荷",0,0);sctx.restore()})}
+function setMode(v){mode=v;penBtn.classList.toggle("active",v==="pen");eraserBtn.classList.toggle("active",v==="eraser");stampBtn.classList.toggle("stamp-active",v==="stamp");c.classList.toggle("eraser-cursor",v==="eraser");c.classList.toggle("stamp-cursor",v==="stamp")}
+function setColor(el){color=el.dataset.c;document.querySelectorAll(".color").forEach(x=>x.classList.toggle("sel",x===el));setMode("pen")}
+function setWidth(el){width=Number(el.dataset.w);document.querySelectorAll(".widthbtn").forEach(x=>x.classList.toggle("sel",x===el));setMode("pen")}
+function distToSeg(px,py,x1,y1,x2,y2){const A=px-x1,B=py-y1,C=x2-x1,D=y2-y1,den=C*C+D*D;let t=den?Math.max(0,Math.min(1,(A*C+B*D)/den)):0;const x=x1+t*C,y=y1+t*D,dx=px-x,dy=py-y;return Math.sqrt(dx*dx+dy*dy)}
+function hitStroke(p){const [px,py]=screenPoint(p);for(let si=strokes.length-1;si>=0;si--){const s=strokes[si];if(s.deleted)continue;const pts=s.points||[];for(let i=0;i<pts.length-1;i++){const [x1,y1]=screenPoint(pts[i]),[x2,y2]=screenPoint(pts[i+1]);if(distToSeg(px,py,x1,y1,x2,y2)<10)return s}}return null}
+function hitStamp(p){const r=c.getBoundingClientRect(),px=p[0]*r.width,py=p[1]*r.height;for(let i=stamps.length-1;i>=0;i--){const st=stamps[i];if(st.deleted)continue;const x=st.x_norm*r.width,y=st.y_norm*r.height;if(Math.hypot(px-x,py-y)<30)return st}return null}
+async function markStrokeDeleted(s){if(!s||s.deleted)return;s.deleted=true;redraw();if(s.id){const {error}=await sb.from("schedule_pen_strokes").update({deleted:true,updated_at:new Date().toISOString()}).eq("id",s.id);if(error){s.deleted=false;redraw();statusEl.textContent="削除エラー"}}}
+async function markStampDeleted(s){if(!s||s.deleted)return;s.deleted=true;redrawStamps();if(s.id){const {error}=await sb.from("schedule_pen_stamps").update({deleted:true,updated_at:new Date().toISOString()}).eq("id",s.id);if(error){s.deleted=false;redrawStamps();statusEl.textContent="削除エラー"}}}
+async function undoLast(){const candidates=[...strokes.filter(x=>!x.deleted).map(x=>({...x,_kind:"stroke"})),...stamps.filter(x=>!x.deleted).map(x=>({...x,_kind:"stamp"}))].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));const x=candidates[0];if(!x)return;if(x._kind==="stroke")await markStrokeDeleted(strokes.find(s=>Number(s.id)===Number(x.id))||strokes.find(s=>s.created_at===x.created_at));else await markStampDeleted(stamps.find(s=>Number(s.id)===Number(x.id)))}
+async function clearAllBoard(){if(!confirm("今月の手書きと印鑑をすべて消しますか？"))return;await Promise.all([sb.from("schedule_pen_strokes").update({deleted:true,updated_at:new Date().toISOString()}).eq("board_month",boardMonth()).eq("deleted",false),sb.from("schedule_pen_stamps").update({deleted:true,updated_at:new Date().toISOString()}).eq("board_month",boardMonth()).eq("deleted",false)]);await loadAll()}
+async function placeStamp(p){const local={id:null,board_month:boardMonth(),x_norm:p[0],y_norm:p[1],deleted:false,created_at:new Date().toISOString()};stamps.push(local);redrawStamps();const {data,error}=await sb.from("schedule_pen_stamps").insert({board_month:local.board_month,x_norm:local.x_norm,y_norm:local.y_norm}).select().single();if(error){stamps=stamps.filter(x=>x!==local);redrawStamps();statusEl.textContent="印鑑保存エラー";return}local.id=data.id;local.created_at=data.created_at}
+
+c.addEventListener("pointerdown",async e=>{c.setPointerCapture?.(e.pointerId);const p=xy(e);if(mode==="eraser"){const st=hitStamp(p);if(st){await markStampDeleted(st);return}const s=hitStroke(p);if(s)await markStrokeDeleted(s);return}if(mode==="stamp"){await placeStamp(p);return}drawing=true;currentPoints=[p];redraw(currentPoints)});
+c.addEventListener("pointermove",e=>{if(!drawing||mode!=="pen")return;const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];for(const ev of evs){const p=xy(ev),l=currentPoints[currentPoints.length-1];if(!l||Math.hypot((p[0]-l[0])*innerWidth,(p[1]-l[1])*innerHeight)>1.2)currentPoints.push(p)}requestAnimationFrame(()=>redraw(currentPoints))});
+async function finish(){if(!drawing)return;drawing=false;if(currentPoints.length<2){currentPoints=[];redraw();return}const local={id:null,board_month:boardMonth(),points:currentPoints.slice(),stroke_color:color,stroke_width:width,deleted:false,created_at:new Date().toISOString()};strokes.push(local);currentPoints=[];redraw();const {data,error}=await sb.from("schedule_pen_strokes").insert({board_month:local.board_month,points:local.points,stroke_color:local.stroke_color,stroke_width:local.stroke_width}).select().single();if(error){strokes=strokes.filter(x=>x!==local);redraw();statusEl.textContent="保存エラー";return}local.id=data.id;local.created_at=data.created_at}
+c.addEventListener("pointerup",finish);c.addEventListener("pointercancel",finish);
+
+async function loadAll(){const [a,b]=await Promise.all([sb.from("schedule_pen_strokes").select("*").eq("board_month",boardMonth()).order("created_at"),sb.from("schedule_pen_stamps").select("*").eq("board_month",boardMonth()).order("created_at")]);if(a.error||b.error){statusEl.textContent="読込エラー";return}strokes=a.data||[];stamps=b.data||[];redraw();redrawStamps()}
+async function restartRealtime(){if(!sb)return;if(strokeChannel)await sb.removeChannel(strokeChannel);if(stampChannel)await sb.removeChannel(stampChannel);await loadAll();strokeChannel=sb.channel("pen-"+boardMonth()).on("postgres_changes",{event:"*",schema:"public",table:"schedule_pen_strokes",filter:`board_month=eq.${boardMonth()}`},p=>{const r=p.new||p.old;if(!r)return;const i=strokes.findIndex(x=>Number(x.id)===Number(r.id));if(p.eventType==="INSERT"){if(i<0)strokes.push(r);else strokes[i]=r}else if(p.eventType==="UPDATE"){if(i>=0)strokes[i]=r;else strokes.push(r)}else if(p.eventType==="DELETE"&&i>=0)strokes.splice(i,1);redraw()}).subscribe(state=>{if(state==="SUBSCRIBED")statusEl.textContent="Realtime 接続済み"});stampChannel=sb.channel("stamp-"+boardMonth()).on("postgres_changes",{event:"*",schema:"public",table:"schedule_pen_stamps",filter:`board_month=eq.${boardMonth()}`},p=>{const r=p.new||p.old;if(!r)return;const i=stamps.findIndex(x=>Number(x.id)===Number(r.id));if(p.eventType==="INSERT"){if(i<0)stamps.push(r);else stamps[i]=r}else if(p.eventType==="UPDATE"){if(i>=0)stamps[i]=r;else stamps.push(r)}else if(p.eventType==="DELETE"&&i>=0)stamps.splice(i,1);redrawStamps()}).subscribe()}
 async function changeBoardMonth(d){boardM+=d;if(boardM<1){boardM=12;boardY--}if(boardM>12){boardM=1;boardY++}refreshBoardMonth();await restartRealtime()}
 async function goBoardCurrentMonth(){const d=new Date();boardY=d.getFullYear();boardM=d.getMonth()+1;refreshBoardMonth();await restartRealtime()}
 function autoBoardMonthCheck(){const d=new Date(),sys=`${d.getFullYear()}-${d.getMonth()+1}`;if(sys!==lastSystemYM){lastSystemYM=sys;boardY=d.getFullYear();boardM=d.getMonth()+1;refreshBoardMonth();restartRealtime()}}
-function resize(){const r=c.getBoundingClientRect(),dpr=devicePixelRatio||1;c.width=Math.round(r.width*dpr);c.height=Math.round(r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);redraw()}
-function xy(e){const r=c.getBoundingClientRect();return[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]}
-function sp(p){const r=c.getBoundingClientRect();return[p[0]*r.width,p[1]*r.height]}
-function drawStroke(s){const pts=s.points||[];if(pts.length<2)return;ctx.save();ctx.strokeStyle=s.stroke_color||"#111";ctx.lineWidth=Number(s.stroke_width)||3;ctx.lineCap="round";ctx.lineJoin="round";ctx.beginPath();let a=sp(pts[0]);ctx.moveTo(a[0],a[1]);for(let i=1;i<pts.length-1;i++){let p=sp(pts[i]),n=sp(pts[i+1]);ctx.quadraticCurveTo(p[0],p[1],(p[0]+n[0])/2,(p[1]+n[1])/2)}let l=sp(pts[pts.length-1]);ctx.lineTo(l[0],l[1]);ctx.stroke();ctx.restore()}
-function redraw(extra=null){const r=c.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);strokes.filter(s=>!s.deleted).forEach(drawStroke);if(extra&&extra.length>1)drawStroke({points:extra,stroke_color:color,stroke_width:width})}
-function setMode(v){mode=v;penBtn.classList.toggle("active",v==="pen");eraserBtn.classList.toggle("active",v==="eraser");c.classList.toggle("eraser-cursor",v==="eraser")}
-function setColor(el){color=el.dataset.c;document.querySelectorAll(".color").forEach(x=>x.classList.toggle("sel",x===el));setMode("pen")}
-function setWidth(el){width=Number(el.dataset.w);document.querySelectorAll(".widthbtn").forEach(x=>x.classList.toggle("sel",x===el));setMode("pen")}
-function dist(px,py,x1,y1,x2,y2){const A=px-x1,B=py-y1,C=x2-x1,D=y2-y1,den=C*C+D*D;let t=den?Math.max(0,Math.min(1,(A*C+B*D)/den)):0;let x=x1+t*C,y=y1+t*D;return Math.hypot(px-x,py-y)}
-function hit(p){let a=sp(p);for(let si=strokes.length-1;si>=0;si--){let s=strokes[si];if(s.deleted)continue;let pts=s.points||[];for(let i=0;i<pts.length-1;i++){let p1=sp(pts[i]),p2=sp(pts[i+1]);if(dist(a[0],a[1],p1[0],p1[1],p2[0],p2[1])<Math.max(10,Number(s.stroke_width||3)*2))return s}}return null}
-async function markDeleted(s){if(!s||s.deleted)return;s.deleted=true;redraw();if(s.id){const {error}=await sb.from("schedule_pen_strokes").update({deleted:true,updated_at:new Date().toISOString()}).eq("id",s.id);if(error){s.deleted=false;redraw()}}}
-async function undoStroke(){const s=[...strokes].reverse().find(x=>!x.deleted);if(s)await markDeleted(s)}
-async function clearBoard(){if(!confirm("今月のペン書きをすべて消しますか？"))return;strokes.filter(x=>!x.deleted).forEach(x=>x.deleted=true);redraw();const {error}=await sb.from("schedule_pen_strokes").update({deleted:true,updated_at:new Date().toISOString()}).eq("board_month",boardMonth()).eq("deleted",false);if(error)await loadAll()}
-c.addEventListener("pointerdown",async e=>{c.setPointerCapture?.(e.pointerId);let p=xy(e);if(mode==="eraser"){let s=hit(p);if(s)await markDeleted(s);return}drawing=true;currentPoints=[p];redraw(currentPoints)});
-c.addEventListener("pointermove",e=>{if(!drawing||mode!=="pen")return;let evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];for(const ev of evs){let p=xy(ev),l=currentPoints[currentPoints.length-1];if(!l||Math.hypot((p[0]-l[0])*innerWidth,(p[1]-l[1])*innerHeight)>1.5)currentPoints.push(p)}requestAnimationFrame(()=>redraw(currentPoints))});
-async function finish(){if(!drawing)return;drawing=false;if(currentPoints.length<2){currentPoints=[];redraw();return}let local={id:null,board_month:boardMonth(),points:currentPoints.slice(),stroke_color:color,stroke_width:width,deleted:false,created_at:new Date().toISOString()};strokes.push(local);currentPoints=[];redraw();const {data,error}=await sb.from("schedule_pen_strokes").insert({board_month:local.board_month,points:local.points,stroke_color:local.stroke_color,stroke_width:local.stroke_width}).select().single();if(error){strokes=strokes.filter(x=>x!==local);redraw();statusEl.textContent="保存エラー";return}local.id=data.id;local.created_at=data.created_at}
-c.addEventListener("pointerup",finish);c.addEventListener("pointercancel",finish);
-async function loadAll(){const {data,error}=await sb.from("schedule_pen_strokes").select("*").eq("board_month",boardMonth()).order("created_at");if(error){statusEl.textContent="読込エラー";return}strokes=data||[];redraw()}
-async function start(){
-  if(!window.supabase||!ok()){statusEl.textContent="configエラー";return}
-  try{
-    sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{realtime:{params:{eventsPerSecond:20}}});
-    await restartRealtime();
-  }catch(err){console.error(err);statusEl.textContent="接続エラー"}
-}
+async function start(){if(!window.supabase||!ok()){statusEl.textContent="configエラー";return}try{sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{realtime:{params:{eventsPerSecond:20}}});await restartRealtime()}catch(err){console.error(err);statusEl.textContent="接続エラー"}}
 addEventListener("resize",resize);refreshBoardMonth();resize();start();setInterval(autoBoardMonthCheck,60000);
 </script></body></html>
