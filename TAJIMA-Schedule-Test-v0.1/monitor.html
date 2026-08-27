@@ -1,0 +1,23 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA 工場表示 TEST</title><script src="config.js"></script>
+<style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f6f7f9;font-family:"Yu Gothic",sans-serif;color:#111}.wrap{height:100vh;padding:8px;display:grid;grid-template-columns:4fr 1fr;gap:8px}.board{display:grid;grid-template-rows:auto 1fr 1fr;gap:5px}.title{text-align:center;font-size:24px;font-weight:900}.half{display:grid;gap:3px}.day{border:1px solid #6b7280;background:white;min-width:0;overflow:hidden}.day.holiday{background:#fee2e2}.num{text-align:center;font-weight:900;border-bottom:1px solid #bbb;padding:2px;font-size:13px}.holiday .num{color:#b91c1c}.it{font-size:10px;line-height:1.15;padding:2px 3px;margin:2px;border:1px solid #aaa;border-radius:3px;overflow:hidden}.stamp{color:#b91c1c;font-weight:900}.memo{font-size:9px;opacity:.78}.side{border:1px solid #64748b;background:#fff;padding:10px;overflow:hidden}.side h2{text-align:center;margin:0 0 10px}.notice{padding:7px 4px;border-bottom:1px solid #ddd;font-weight:700}</style></head><body><div class="wrap"><div class="board"><div id="title" class="title"></div><div id="top" class="half"></div><div id="bottom" class="half"></div></div><div class="side"><h2>連絡事項</h2><div id="notices"></div></div></div>
+<script>
+const C=window.CONFIG||{}, URL=C.SUPABASE_URL||"", KEY=C.SUPABASE_PUBLISHABLE_KEY||C.SUPABASE_ANON_KEY||C.SUPABASE_KEY||"";
+const API=n=>`${URL}/rest/v1/${n}`;
+const H=()=>({"apikey":KEY,"Authorization":`Bearer ${KEY}`,"Content-Type":"application/json","Prefer":"return=representation"});
+const ok=()=>URL&&KEY;
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+async function get(t,q=""){let r=await fetch(API(t)+q,{headers:H()});if(!r.ok)throw Error(await r.text());return r.json()}
+async function post(t,row){let r=await fetch(API(t),{method:"POST",headers:H(),body:JSON.stringify(row)});if(!r.ok)throw Error(await r.text());return r.json()}
+async function patch(t,id,row){let r=await fetch(`${API(t)}?id=eq.${id}`,{method:"PATCH",headers:H(),body:JSON.stringify(row)});if(!r.ok)throw Error(await r.text());return r.json()}
+async function del(t,id){let r=await fetch(`${API(t)}?id=eq.${id}`,{method:"DELETE",headers:H()});if(!r.ok)throw Error(await r.text())}
+const ym=(y,m)=>`${y}-${String(m).padStart(2,"0")}`;
+const iso=(y,m,d)=>`${ym(y,m)}-${String(d).padStart(2,"0")}`;
+const colors=["#ef4444","#f97316","#eab308","#22c55e","#06b6d4","#3b82f6","#8b5cf6","#ec4899"];
+
+let n=new Date(),Y=n.getFullYear(),M=n.getMonth()+1;
+async function load(){if(!ok())return;let from=`${ym(Y,M)}-01`,ny=M===12?Y+1:Y,nm=M===12?1:M+1,to=`${ym(ny,nm)}-01`;let [j,e,h]=await Promise.all([get("schedule_jobs",`?or=(arrival_date.gte.${from},due_date.gte.${from})&or=(arrival_date.lt.${to},due_date.lt.${to})&select=*`),get("schedule_events",`?event_date=gte.${from}&event_date=lt.${to}&select=*`),get("schedule_holidays",`?holiday_date=gte.${from}&holiday_date=lt.${to}&select=*`)]);draw(j,e,h)}
+function draw(j,e,h){title.textContent=`${Y}年 ${M}月　入荷・納期予定`;let last=new Date(Y,M,0).getDate(),split=Math.ceil(last/2);drawHalf(top,1,split,j,e,h);drawHalf(bottom,split+1,last,j,e,h);notices.innerHTML=e.slice(0,12).map(x=>`<div class="notice">${x.event_date.slice(5).replace("-","/")}　${esc(x.title)}</div>`).join("")}
+function drawHalf(el,a,b,j,e,h){let cnt=b-a+1;el.style.gridTemplateColumns=`repeat(${cnt},1fr)`;let s="";for(let d=a;d<=b;d++){let date=iso(Y,M,d),hol=new Date(Y,M-1,d).getDay()===0||h.some(x=>x.holiday_date===date);s+=`<div class="day ${hol?"holiday":""}"><div class="num">${d}日</div>`;for(let x of j.filter(x=>x.arrival_date===date))s+=item(x,"入",false);for(let x of j.filter(x=>x.due_date===date))s+=item(x,"納",x.status==="完了");for(let x of e.filter(x=>x.event_date===date))s+=`<div class="it" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}">◆ ${esc(x.title)}</div>`;s+="</div>"}el.innerHTML=s}
+function item(x,k,done){return `<div class="it" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}">${done?'<span class="stamp">㊞</span> ':""}<b>${k} ${esc(x.part_no)}</b><br>${esc(x.company_name)} ${esc(x.machine_name||"")}${x.memo?`<div class="memo">${esc(x.memo)}</div>`:""}</div>`}
+load();setInterval(load,20000);
+</script></body></html>
