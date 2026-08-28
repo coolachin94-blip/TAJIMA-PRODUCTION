@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 日程管理 TEST v0.21</title><script src="config.js"></script>
+<title>TAJIMA 日程管理 TEST v0.22</title><script src="config.js"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#f3f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
 button,input,textarea,select{font:inherit}
@@ -55,8 +55,8 @@ textarea{min-height:78px;resize:vertical}
 .manage-empty{padding:10px;border:1px dashed #cbd5e1;border-radius:7px;color:#64748b;font-size:12px}
 
 </style></head><body>
-<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.21</small></div>
-<div class="top-actions"><button class="ok" onclick="window.open('penboard.html?v=0.21','_blank')">ペンボードを開く</button></div></div>
+<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.22</small></div>
+<div class="top-actions"><button class="ok" onclick="window.open('penboard.html?v=0.22','_blank')">ペンボードを開く</button></div></div>
 <div class="shell">
 <nav class="sidebar"><div class="title">メニュー</div><div class="menu">
 <button id="mJob" class="active" onclick="showPanel('job')">作業登録</button>
@@ -275,6 +275,7 @@ async function deleteEvent(){
   if(eventEditId&&confirm("この行事・点検を削除しますか？")){await del("schedule_events",eventEditId);resetEventForm();await load()}
 }
 function clean(v){return String(v??"").trim()}
+function validJobs(){return allJobs.filter(x=>!!x.due_date)}
 function jobMonth(x){return x.due_date?String(x.due_date).slice(0,7):""}
 function monthLabel(k){if(!k)return "納期未設定";let [y,m]=k.split("-");return `${y}.${m}`}
 function sortedMonths(a){return [...new Set(a.map(jobMonth).filter(Boolean))].sort().reverse()}
@@ -282,62 +283,57 @@ function sortDue(a){return [...a].sort((x,y)=>String(x.due_date||"9999-99-99").l
 function machineKey(x){return clean(x.machine_name)||"__UNASSIGNED__"}
 function machineLabel(k){return k==="__UNASSIGNED__"?"未定":k}
 function managementIssues(){
-  return {
-    unassigned:allJobs.filter(x=>!clean(x.machine_name)).length,
-    nodue:allJobs.filter(x=>!x.due_date).length
-  };
+  const a=validJobs();
+  return {unassigned:a.filter(x=>!clean(x.machine_name)).length};
 }
 function drawManageCheck(id){
   const e=document.getElementById(id);if(!e)return;
   const q=managementIssues();
-  e.innerHTML=`<div class="manage-check"><span class="manage-chip ${q.unassigned?"warn":""}">機械未定 ${q.unassigned}件</span><span class="manage-chip ${q.nodue?"warn":""}">納期未設定 ${q.nodue}件</span></div>`;
+  e.innerHTML=q.unassigned?`<div class="manage-check"><span class="manage-chip warn">機械未定 ${q.unassigned}件</span></div>`:"";
 }
 function drawCompanies(){
   manageContext={type:"company-list"};
-  drawManageCheck("manageCheckCompany");
-  let cs=[...new Set(allJobs.map(x=>clean(x.company_name)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
+  manageCheckCompany.innerHTML="";
+  let base=validJobs(),cs=[...new Set(base.map(x=>clean(x.company_name)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
   companies.innerHTML=cs.map(c=>{
-    const a=allJobs.filter(x=>clean(x.company_name)===c), n=sortedMonths(a).length;
+    const a=base.filter(x=>clean(x.company_name)===c), n=sortedMonths(a).length;
     return `<button class="manage-row" onclick='companyMonths(${JSON.stringify(c)})'><span>${esc(c)}</span><small>${n}ヶ月 / ${a.length}件</small></button>`;
   }).join("")||'<div class="manage-empty">登録済み会社はありません。</div>';
 }
 function companyMonths(c){
   c=clean(c);manageContext={type:"company-months",key:c};
-  drawManageCheck("manageCheckCompany");
-  let a=allJobs.filter(x=>clean(x.company_name)===c), ms=sortedMonths(a), nodue=a.filter(x=>!x.due_date).length;
+  manageCheckCompany.innerHTML="";
+  let a=validJobs().filter(x=>clean(x.company_name)===c), ms=sortedMonths(a);
   companies.innerHTML=`<button class="manage-back" onclick="drawCompanies()">← 会社一覧</button><div class="manage-title">${esc(c)}　${a.length}件</div>`+
-    ms.map(k=>`<button class="manage-row" onclick='showManagedJobs("company",${JSON.stringify(c)},${JSON.stringify(k)})'><span>${monthLabel(k)}</span><small>${a.filter(x=>jobMonth(x)===k).length}件</small></button>`).join("")+
-    (nodue?`<button class="manage-row" onclick='showManagedJobs("company",${JSON.stringify(c)},"")'><span>納期未設定</span><small>${nodue}件</small></button>`:"");
+    ms.map(k=>`<button class="manage-row" onclick='showManagedJobs("company",${JSON.stringify(c)},${JSON.stringify(k)})'><span>${monthLabel(k)}</span><small>${a.filter(x=>jobMonth(x)===k).length}件</small></button>`).join("");
 }
 function drawMachines(){
   manageContext={type:"machine-list"};
   drawManageCheck("manageCheckMachine");
-  let keys=[...new Set(allJobs.map(machineKey))].sort((a,b)=>{
+  let base=validJobs(),keys=[...new Set(base.map(machineKey))].sort((a,b)=>{
     if(a==="__UNASSIGNED__")return -1;if(b==="__UNASSIGNED__")return 1;return a.localeCompare(b,"ja")
   });
   machines.innerHTML=keys.map(k=>{
-    const a=allJobs.filter(x=>machineKey(x)===k), n=sortedMonths(a).length;
+    const a=base.filter(x=>machineKey(x)===k), n=sortedMonths(a).length;
     return `<button class="manage-row" onclick='machineMonths(${JSON.stringify(k)})'><span>${esc(machineLabel(k))}</span><small>${n}ヶ月 / ${a.length}件</small></button>`;
   }).join("")||'<div class="manage-empty">登録済み案件はありません。</div>';
 }
 function machineMonths(k){
   manageContext={type:"machine-months",key:k};
   drawManageCheck("manageCheckMachine");
-  let a=allJobs.filter(x=>machineKey(x)===k), ms=sortedMonths(a), nodue=a.filter(x=>!x.due_date).length;
+  let a=validJobs().filter(x=>machineKey(x)===k), ms=sortedMonths(a);
   machines.innerHTML=`<button class="manage-back" onclick="drawMachines()">← 機械一覧</button><div class="manage-title">${esc(machineLabel(k))}　${a.length}件</div>`+
-    ms.map(m=>`<button class="manage-row" onclick='showManagedJobs("machine",${JSON.stringify(k)},${JSON.stringify(m)})'><span>${monthLabel(m)}</span><small>${a.filter(x=>jobMonth(x)===m).length}件</small></button>`).join("")+
-    (nodue?`<button class="manage-row" onclick='showManagedJobs("machine",${JSON.stringify(k)},"")'><span>納期未設定</span><small>${nodue}件</small></button>`:"");
+    ms.map(m=>`<button class="manage-row" onclick='showManagedJobs("machine",${JSON.stringify(k)},${JSON.stringify(m)})'><span>${monthLabel(m)}</span><small>${a.filter(x=>jobMonth(x)===m).length}件</small></button>`).join("");
 }
 function drawMonths(){
   manageContext={type:"month-list"};
-  drawManageCheck("manageCheckMonth");
-  let ms=sortedMonths(allJobs), nodue=allJobs.filter(x=>!x.due_date).length;
-  months.innerHTML=ms.map(k=>`<button class="manage-row" onclick='showManagedJobs("month","",${JSON.stringify(k)})'><span>${monthLabel(k)}</span><small>${allJobs.filter(x=>jobMonth(x)===k).length}件</small></button>`).join("")+
-    (nodue?`<button class="manage-row" onclick='showManagedJobs("month","","")'><span>納期未設定</span><small>${nodue}件</small></button>`:"")||
+  manageCheckMonth.innerHTML="";
+  let base=validJobs(),ms=sortedMonths(base);
+  months.innerHTML=ms.map(k=>`<button class="manage-row" onclick='showManagedJobs("month","",${JSON.stringify(k)})'><span>${monthLabel(k)}</span><small>${base.filter(x=>jobMonth(x)===k).length}件</small></button>`).join("")||
     '<div class="manage-empty">登録済み案件はありません。</div>';
 }
 function managedSet(type,key,k){
-  let a=allJobs.filter(x=>jobMonth(x)===k);
+  let a=validJobs().filter(x=>jobMonth(x)===k);
   if(type==="company")a=a.filter(x=>clean(x.company_name)===clean(key));
   if(type==="machine")a=a.filter(x=>machineKey(x)===key);
   return sortDue(a);
