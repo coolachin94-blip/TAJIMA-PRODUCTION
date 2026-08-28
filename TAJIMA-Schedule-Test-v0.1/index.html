@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 日程管理 TEST v0.14</title><script src="config.js"></script>
+<title>TAJIMA 日程管理 TEST v0.16</title><script src="config.js"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#f3f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
 button,input,textarea,select{font:inherit}
@@ -43,8 +43,8 @@ textarea{min-height:78px;resize:vertical}
 .auto-option:last-child{border-bottom:0}.auto-option:hover{background:#eff6ff}
 
 </style></head><body>
-<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.14</small></div>
-<div class="top-actions"><button class="ok" onclick="window.open('penboard.html?v=0.14','_blank')">ペンボードを開く</button></div></div>
+<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.16</small></div>
+<div class="top-actions"><button class="ok" onclick="window.open('penboard.html?v=0.16','_blank')">ペンボードを開く</button></div></div>
 <div class="shell">
 <nav class="sidebar"><div class="title">メニュー</div><div class="menu">
 <button id="mJob" class="active" onclick="showPanel('job')">作業登録</button>
@@ -54,14 +54,14 @@ textarea{min-height:78px;resize:vertical}
 <button id="mHoliday" onclick="showPanel('holiday')">休日設定</button>
 <button id="mNotice" onclick="showPanel('notice')">連絡事項</button>
 </div>
-<div class="quick"><h3>クイックメニュー</h3><button onclick="window.open('penboard.html?v=0.14','_blank')">ペンボードを開く</button><button onclick="showPanel('event')">行事・点検を登録</button><button onclick="showPanel('holiday')">休日を設定</button><button onclick="showPanel('notice')">連絡事項を編集</button></div>
+<div class="quick"><h3>クイックメニュー</h3><button onclick="window.open('penboard.html?v=0.16','_blank')">ペンボードを開く</button><button onclick="showPanel('event')">行事・点検を登録</button><button onclick="showPanel('holiday')">休日を設定</button><button onclick="showPanel('notice')">連絡事項を編集</button></div>
 </nav>
 
 <section class="editor-col">
 <div id="jobPanel" class="panel show"><div class="card"><h2>作業登録 / 編集</h2><div id="editing" class="editing"></div>
 <label>会社名 *</label><div class="fieldrow"><div class="auto-wrap"><input id="company" autocomplete="off" placeholder="会社名を入力"><div id="companyMenu" class="auto-menu"></div></div><button onclick="showPanel('company')">管理</button></div>
 <label>品番 *</label><div class="fieldrow"><input id="part" list="partList" placeholder="品番を入力"><button onclick="openPartHistory()">履歴</button></div><datalist id="partList"></datalist>
-<label>日程</label><div class="dategrid"><div class="datebox"><div class="checkline"><input id="hasArrival" type="checkbox"><span>入荷日</span></div><input id="arrival" type="date"></div><div class="datebox"><div class="checkline"><input id="hasDue" type="checkbox"><span>納期</span></div><input id="due" type="date"></div></div>
+<label>納期 *</label><div class="datebox"><input id="due" type="date"></div>
 <label>担当機械</label><div class="machine-row"><div class="auto-wrap"><input id="machine" autocomplete="off" placeholder="選択または入力"><div id="machineMenu" class="auto-menu"></div></div><label class="unknown"><input id="machineUnknown" type="checkbox"> 未定</label></div>
 <label>表示強調（基本：なし）</label><div id="colors" class="colors"></div>
 <label>メモ <span style="font-weight:500;color:#8a96a8">（管理カレンダーには表示しません）</span></label><textarea id="memo" placeholder="特記事項など"></textarea>
@@ -182,18 +182,17 @@ function draw(){
   for(let i=0;i<first.getDay();i++)s+=`<div class="day"></div>`;
   for(let d=1;d<=last;d++){
     let date=iso(Y,M,d),dow=new Date(Y,M-1,d).getDay(),isHol=dow===0||holidays.some(h=>h.holiday_date===date);
-    let arr=jobs.filter(x=>x.arrival_date===date),duej=jobs.filter(x=>x.due_date===date),ev=events.filter(x=>x.event_date===date);
+    let duej=jobs.filter(x=>x.due_date===date),ev=events.filter(x=>x.event_date===date);
     s+=`<div class="day ${isHol?"holiday":""}" data-date="${date}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event,'${date}')" onclick="holidayClick(event,'${date}',${dow})"><div class="num">${d}</div>`;
-    arr.forEach(x=>s+=jobItem(x,"arrival")); duej.forEach(x=>s+=jobItem(x,"due")); ev.forEach(x=>s+=`<div class="item event" draggable="true" data-id="${x.id}" data-type="event" ondragstart="dragStart(event)" ondragend="dragEnd(event)" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}" onclick="event.stopPropagation();editEvent(${x.id})" title="クリックで編集 / ドラッグで日付変更">◆ ${esc(x.title)}</div>`);
+    duej.forEach(x=>s+=jobItem(x)); ev.forEach(x=>s+=`<div class="item event" draggable="true" data-id="${x.id}" data-type="event" ondragstart="dragStart(event)" ondragend="dragEnd(event)" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}" onclick="event.stopPropagation();editEvent(${x.id})" title="クリックで編集 / ドラッグで日付変更">◆ ${esc(x.title)}</div>`);
     s+="</div>";
   }
   calendar.innerHTML=s;
 }
-function jobItem(x,type){
-  let label=type==="arrival"?"入":"納",done=type==="due"&&x.status==="完了";
-  const baseColor=type==="arrival"?"#2563eb":"#f97316";
+function jobItem(x){
+  const done=x.status==="完了";
   const accentStyle=x.accent_color?`outline:3px solid ${x.accent_color};outline-offset:1px;`:"";
-  return `<div class="item ${done?"done":""}" draggable="true" data-id="${x.id}" data-type="${type}" ondragstart="dragStart(event)" ondragend="dragEnd(event)" style="border:2px solid ${baseColor};${accentStyle}" onclick="event.stopPropagation();editJob(${x.id})">${done?'<span class="stamp">㊞</span> ':""}<b>${label}</b> ${esc(x.part_no)} ${esc(x.company_name)} ${esc(x.machine_name||"")}</div>`;
+  return `<div class="item ${done?"done":""}" draggable="true" data-id="${x.id}" data-type="due" ondragstart="dragStart(event)" ondragend="dragEnd(event)" style="border:2px solid #64748b;${accentStyle}" onclick="event.stopPropagation();editJob(${x.id})">${done?'<span class="stamp">㊞</span> ':""}${esc(x.part_no)} ${esc(x.company_name)} ${esc(x.machine_name||"")}</div>`;
 }
 function dragStart(e){e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",JSON.stringify({id:Number(e.currentTarget.dataset.id),type:e.currentTarget.dataset.type}));e.currentTarget.classList.add("dragging")}
 function dragEnd(e){e.currentTarget.classList.remove("dragging");document.querySelectorAll(".drop-target").forEach(x=>x.classList.remove("drop-target"))}
@@ -211,10 +210,9 @@ async function dropItem(e,date){
     await load();return;
   }
   let x=allJobs.find(j=>Number(j.id)===Number(d.id));if(!x)return;
-  let old=d.type==="arrival"?x.arrival_date:x.due_date;if(old===date)return;
-  let label=d.type==="arrival"?"入荷日":"納期";
-  if(!confirm(`${label}を ${old||"未定"} → ${date} に変更しますか？`))return;
-  await patch("schedule_jobs",x.id,d.type==="arrival"?{arrival_date:date,updated_at:new Date().toISOString()}:{due_date:date,updated_at:new Date().toISOString()});await load()
+  let old=x.due_date;if(old===date)return;
+  if(!confirm(`納期を ${old||"未定"} → ${date} に変更しますか？`))return;
+  await patch("schedule_jobs",x.id,{due_date:date,updated_at:new Date().toISOString()});await load()
 }
 async function holidayClick(e,date,dow){
   if(currentPanel!=="holiday"||e.target.closest(".item"))return;
@@ -227,16 +225,16 @@ function editJob(id){
   showPanel("job");let x=allJobs.find(j=>Number(j.id)===Number(id));if(!x)return;
   editId=id;editing.style.display="block";editing.textContent=`編集中：${x.company_name} / ${x.part_no}`;
   company.value=x.company_name||"";part.value=x.part_no||"";machine.value=x.machine_name||"";machineUnknown.checked=!x.machine_name;
-  hasArrival.checked=!!x.arrival_date;arrival.value=x.arrival_date||"";hasDue.checked=!!x.due_date;due.value=x.due_date||"";
+  due.value=x.due_date||"";
   memo.value=x.memo||"";accent=x.accent_color||null;setColorUI("colors",accent);
   saveBtn.textContent="更新保存";deleteBtn.style.display="block";cancelBtn.style.display="block";
 }
-function resetForm(){editId=null;editing.style.display="none";company.value=part.value=machine.value=memo.value=arrival.value=due.value="";machineUnknown.checked=false;hasArrival.checked=hasDue.checked=false;accent=null;setColorUI("colors",null);saveBtn.textContent="登録";deleteBtn.style.display=cancelBtn.style.display="none"}
+function resetForm(){editId=null;editing.style.display="none";company.value=part.value=machine.value=memo.value=due.value="";machineUnknown.checked=false;accent=null;setColorUI("colors",null);saveBtn.textContent="登録";deleteBtn.style.display=cancelBtn.style.display="none"}
 async function saveJob(){
-  let c=company.value.trim(),p=part.value.trim(),mach=machineUnknown.checked?"":machine.value.trim(),a=hasArrival.checked?arrival.value:null,d=hasDue.checked?due.value:null;
+  let c=company.value.trim(),p=part.value.trim(),mach=machineUnknown.checked?"":machine.value.trim(),d=due.value;
   if(!c||!p){alert("会社名と品番は入力してください");return}
-  if(!a&&!d){alert("入荷日または納期のどちらかをチェックしてください");return}
-  let row={company_name:c,part_no:p,machine_name:mach||null,arrival_date:a,due_date:d,memo:memo.value.trim(),accent_color:accent,updated_at:new Date().toISOString()};
+  if(!d){alert("納期を入力してください");return}
+  let row={company_name:c,part_no:p,machine_name:mach||null,arrival_date:null,due_date:d,memo:memo.value.trim(),accent_color:accent,updated_at:new Date().toISOString()};
   if(editId)await patch("schedule_jobs",editId,row); else await post("schedule_jobs",row);
   resetForm();await load()
 }
@@ -264,8 +262,8 @@ async function deleteEvent(){
 }
 function drawCompanies(){let cs=[...new Set(allJobs.map(x=>x.company_name).filter(Boolean))];companies.innerHTML=cs.map(c=>`<button onclick='companyHistory(${JSON.stringify(c)})'>${esc(c)}　<small>${allJobs.filter(x=>x.company_name===c).length}件</small></button>`).join("")||'<div class="hint">登録済み会社はありません。</div>'}
 function drawMachines(){let ms=[...new Set(allJobs.map(x=>x.machine_name).filter(Boolean))];machines.innerHTML=ms.map(m=>`<button>${esc(m)}　<small>${allJobs.filter(x=>x.machine_name===m).length}件</small></button>`).join("")||'<div class="hint">登録済み機械はありません。</div>'}
-function companyHistory(c){let a=allJobs.filter(x=>x.company_name===c);modalBody.innerHTML=`<h2>${esc(c)}</h2>`+a.map(x=>`<div class="hist"><b>${esc(x.part_no)}</b>　${x.status==="完了"?"過去データ":"進行中"}<br>入荷 ${x.arrival_date||"未定"} ／ 納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}<br>${esc(x.memo||"")}</div>`).join("");modal.classList.add("show")}
-function openPartHistory(){let c=company.value.trim(),p=part.value.trim();let a=allJobs.filter(x=>(!c||x.company_name===c)&&(!p||x.part_no===p));modalBody.innerHTML=`<h2>品番履歴</h2>`+(a.length?a.map(x=>`<div class="hist">${esc(x.company_name)} / <b>${esc(x.part_no)}</b><br>入荷 ${x.arrival_date||"未定"} ／ 納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}</div>`).join(""):'履歴なし');modal.classList.add("show")}
+function companyHistory(c){let a=allJobs.filter(x=>x.company_name===c);modalBody.innerHTML=`<h2>${esc(c)}</h2>`+a.map(x=>`<div class="hist"><b>${esc(x.part_no)}</b>　${x.status==="完了"?"過去データ":"進行中"}<br>納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}<br>${esc(x.memo||"")}</div>`).join("");modal.classList.add("show")}
+function openPartHistory(){let c=company.value.trim(),p=part.value.trim();let a=allJobs.filter(x=>(!c||x.company_name===c)&&(!p||x.part_no===p));modalBody.innerHTML=`<h2>品番履歴</h2>`+(a.length?a.map(x=>`<div class="hist">${esc(x.company_name)} / <b>${esc(x.part_no)}</b><br>納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}</div>`).join(""):'履歴なし');modal.classList.add("show")}
 
 async function loadNotice(){
   try{
@@ -280,6 +278,6 @@ async function saveNotice(){
   alert("連絡事項を保存しました");
 }
 
-function drawToday(){let t=new Date(),k=iso(t.getFullYear(),t.getMonth()+1,t.getDate());let a=allJobs.filter(x=>x.arrival_date===k),d=allJobs.filter(x=>x.due_date===k),e=events.filter(x=>x.event_date===k);todayBox.innerHTML=`<b>入荷 ${a.length}件 / 納期 ${d.length}件 / 行事・点検 ${e.length}件</b><br>`+[...a.map(x=>"入 "+esc(x.part_no)),...d.map(x=>"納 "+esc(x.part_no)),...e.map(x=>"◆ "+esc(x.title))].join("<br>");todayNotes.innerHTML=e.length?e.map(x=>`・${esc(x.title)}`).join("<br>"):"・本日の行事・点検登録なし"}
+function drawToday(){let t=new Date(),k=iso(t.getFullYear(),t.getMonth()+1,t.getDate());let d=allJobs.filter(x=>x.due_date===k),e=events.filter(x=>x.event_date===k);todayBox.innerHTML=`<b>納期 ${d.length}件 / 行事・点検 ${e.length}件</b><br>`+[...d.map(x=>esc(x.part_no)),...e.map(x=>"◆ "+esc(x.title))].join("<br>");todayNotes.innerHTML=e.length?e.map(x=>`・${esc(x.title)}`).join("<br>"):"・本日の行事・点検登録なし"}
 initColors("colors","chooseColor");initColors("eventColors","chooseEventColor");load();
 </script></body></html>
