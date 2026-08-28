@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 日程管理 TEST v0.25</title><script src="config.js"></script>
+<title>TAJIMA 日程管理 TEST v0.26</title><script src="config.js"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#f3f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
 button,input,textarea,select{font:inherit}
@@ -27,7 +27,7 @@ textarea{min-height:78px;resize:vertical}
 .main{padding:14px 18px 18px;min-width:0}.calendar-card{background:#fff;border:1px solid #d4dde8;border-radius:10px;box-shadow:0 3px 12px #22314a0d;overflow:hidden}
 .cal-toolbar{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid #dde4ec;gap:8px}.cal-toolbar .heading{font-size:18px;font-weight:900}.cal-toolbar .sub{font-size:11px;color:#718096;margin-left:8px}.cal-toolbar .spacer{flex:1}.cal-toolbar button{border:1px solid #ccd6e2;background:#fff;border-radius:7px;padding:8px 10px;font-weight:800;cursor:pointer}.cal-toolbar .month{min-width:120px;text-align:center}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);background:#d9e1eb;gap:1px}.dow,.day{background:white}.dow{text-align:center;padding:8px;font-size:12px;font-weight:900}.dow.sun{color:#e11d48}.dow.sat{color:#2563eb}.day{min-height:132px;padding:6px;overflow:hidden;position:relative}.day.holiday{background:#fff3f3}.day.drop-target{box-shadow:inset 0 0 0 3px #3b82f6}.num{font-weight:900;font-size:13px;margin-bottom:3px}.holiday .num{color:#dc2626}
-.item{font-size:11px;line-height:1.25;margin-top:4px;padding:4px 5px;border:1px solid #bfcee0;border-radius:5px;background:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}.item:hover{box-shadow:0 1px 5px #0002}.item.done{opacity:.7}.item.dragging{opacity:.35}.event{background:#f6f2ff;font-weight:800}.stamp{color:#b91c1c;font-weight:900}
+.item{font-size:11px;line-height:1.25;margin-top:4px;padding:4px 5px;border:1px solid #bfcee0;border-radius:5px;background:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}.item:hover{box-shadow:0 1px 5px #0002}.item.done{opacity:.7}.item.dragging{opacity:.35}.event{background:#fff7ed;font-weight:800;color:#f97316}.stamp{color:#b91c1c;font-weight:900}
 .bottom-strip{display:grid;grid-template-columns:1fr auto;gap:12px;padding:12px 14px;border-top:1px solid #dde4ec;background:#fbfcfe}.notes{font-size:12px;line-height:1.6}.notes b{display:block;margin-bottom:3px}.bottom-strip button{align-self:center;border:1px solid #ccd6e2;background:#fff;border-radius:7px;padding:9px 12px;font-weight:800}
 .panel{display:none}.panel.show{display:block}.hint{font-size:11px;color:#758398;margin-top:8px}.companylist button,.machinelist button{width:100%;text-align:left;border:1px solid #d7e0eb;background:#fff;padding:9px;border-radius:6px;margin:4px 0;cursor:pointer}
 .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:100}.modal.show{display:flex}.modalbox{width:min(760px,90vw);max-height:80vh;overflow:auto;background:#fff;border-radius:12px;padding:18px}.hist{padding:10px;border-bottom:1px solid #e2e8f0}
@@ -59,7 +59,7 @@ textarea{min-height:78px;resize:vertical}
 .auto-arrow{position:absolute;right:4px;top:4px;width:30px;height:calc(100% - 8px);border:0!important;border-left:1px solid #dbe3ee!important;background:#fff!important;border-radius:0 5px 5px 0!important;padding:0!important;font-size:18px;line-height:1;color:#475569;cursor:pointer}
 .auto-arrow:hover{background:#f1f5f9!important}
 
-/* v0.25 複数品番登録 / グループ表示 */
+/* v0.26 複数品番登録 / グループ表示 */
 .part-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .part-add{border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:7px;padding:6px 9px;font-size:12px;font-weight:900;cursor:pointer}
 .part-row{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:6px}
@@ -68,7 +68,7 @@ textarea{min-height:78px;resize:vertical}
 .job-company{font-weight:900;color:#172033}.job-part{font-weight:800;color:#172033}.job-machine,.job-memo{font-weight:800;color:#2563eb}
 
 </style></head><body>
-<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.25</small></div>
+<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.26</small></div>
 <div class="top-actions"><button class="ok" onclick="window.open('penboard.html?v=0.24','_blank')">ペンボードを開く</button></div></div>
 <div class="shell">
 <nav class="sidebar"><div class="title">メニュー</div><div class="menu">
@@ -78,7 +78,7 @@ textarea{min-height:78px;resize:vertical}
 <button id="mMonth" onclick="showPanel('month')">月別管理</button>
 <button id="mEvent" onclick="showPanel('event')">行事・点検登録</button>
 <button id="mHoliday" onclick="showPanel('holiday')">休日設定</button>
-<button id="mNotice" onclick="showPanel('notice')">連絡事項</button>
+<button id="mNotice" onclick="showPanel('notice')">備考</button>
 </div>
 </nav>
 
@@ -98,8 +98,8 @@ textarea{min-height:78px;resize:vertical}
 <div id="monthPanel" class="panel"><div class="card"><h2>月別管理</h2><div class="hint">月 → 日付順で全案件を確認できます。</div><div id="manageCheckMonth"></div><div id="months" class="companylist"></div></div></div>
 <div id="eventPanel" class="panel"><div class="card"><h2>行事・点検登録</h2><div id="eventEditing" class="editing"></div><label>日付</label><input id="eventDate" type="date"><label>内容</label><input id="eventText" placeholder="例：電気設備点検"><label>表示強調</label><div id="eventColors" class="colors"></div><div class="actions"><button id="eventSaveBtn" class="save" onclick="saveEvent()">登録</button><button id="eventDeleteBtn" class="delete" style="display:none" onclick="deleteEvent()">削除</button><button id="eventCancelBtn" class="cancel" style="display:none" onclick="resetEventForm()">編集解除</button></div></div></div>
 <div id="holidayPanel" class="panel"><div class="card"><h2>休日設定</h2><div class="hint">この画面を開いた状態で、右側カレンダーの日付をクリックすると会社休日をON/OFFできます。日曜日は自動休日です。</div></div></div>
-<div id="noticePanel" class="panel"><div class="card"><h2>連絡事項</h2>
-<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><label style="margin:0">表示内容</label><button type="button" class="part-add" onclick="addNoticeInput()">＋ 連絡事項追加</button></div>
+<div id="noticePanel" class="panel"><div class="card"><h2>備考</h2>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><label style="margin:0">表示内容</label><button type="button" class="part-add" onclick="addNoticeInput()">＋ 備考追加</button></div>
 <div id="noticeRows" style="margin-top:7px"></div>
 <div class="actions"><button class="save" onclick="saveNotices()">一括保存</button></div>
 <div class="hint">追加ボタンで何件でも分けて入力できます。ペンボードにも1件ずつ表示します。</div>
@@ -242,7 +242,7 @@ function draw(){
   calendar.innerHTML=s;
 }
 function jobItem(g){
-  const x=g[0],done=g.every(v=>v.status==="完了"),accentStyle=x.accent_color?`outline:3px solid ${x.accent_color};outline-offset:1px;`:"";
+  const x=g[0],done=g.every(v=>v.status==="完了"),accentStyle=x.accent_color?`outline:4px solid ${x.accent_color};outline-offset:0;box-shadow:0 0 0 1px ${x.accent_color};`:"";
   const parts=g.map(v=>`<div class="job-part">${esc(v.part_no)}</div>`).join("");
   return `<div class="item job-group ${done?"done":""}" draggable="true" data-id="${x.id}" data-type="due" ondragstart="dragStart(event)" ondragend="dragEnd(event)" style="border:2px solid #64748b;${accentStyle}" onclick="event.stopPropagation();editJob(${x.id})">${done?'<span class="stamp">㊞</span> ':""}<div class="job-company">${esc(x.company_name)}</div>${parts}${x.machine_name?`<div class="job-machine">${esc(x.machine_name)}</div>`:""}${x.memo?`<div class="job-memo">${esc(x.memo)}</div>`:""}</div>`;
 }
@@ -257,7 +257,7 @@ async function dropItem(e,date){
     let x=events.find(j=>Number(j.id)===Number(d.id));if(!x)return;
     let old=x.event_date;if(old===date)return;
     if(!confirm(`行事・点検「${x.title}」を ${old||"未定"} → ${date} に変更しますか？`))return;
-    await patch("schedule_events",x.id,{event_date:date,updated_at:new Date().toISOString()});
+    await patch("schedule_events",x.id,{event_date:date});
     if(Number(eventEditId)===Number(x.id))eventDate.value=date;
     await load();return;
   }
@@ -443,19 +443,19 @@ let loadedNoticeIds=[];
 function noticeInputs(){return [...document.querySelectorAll("#noticeRows .notice-input")]}
 function addNoticeInput(value="",id=null){
   const row=document.createElement("div");row.className="part-row notice-row";
-  row.innerHTML=`<textarea class="notice-input" placeholder="連絡事項を入力" style="min-height:72px"></textarea><button type="button" class="part-remove" onclick="removeNoticeInput(this)">削除</button>`;
+  row.innerHTML=`<textarea class="notice-input" placeholder="備考を入力" style="min-height:72px"></textarea><button type="button" class="part-remove" onclick="removeNoticeInput(this)">削除</button>`;
   const ta=row.querySelector("textarea");ta.value=value||"";if(id!=null)ta.dataset.noticeId=String(id);noticeRows.appendChild(row);
 }
 async function removeNoticeInput(btn){
   const row=btn.closest(".notice-row"),ta=row?.querySelector(".notice-input");if(!row)return;
   const id=ta?.dataset.noticeId;
-  if(id){if(!confirm("この連絡事項を削除しますか？"))return;try{await del("schedule_notices",Number(id));row.remove();loadedNoticeIds=loadedNoticeIds.filter(x=>x!==Number(id))}catch(e){alert("削除失敗：\n"+e.message);return}}
+  if(id){if(!confirm("この備考を削除しますか？"))return;try{await del("schedule_notices",Number(id));row.remove();loadedNoticeIds=loadedNoticeIds.filter(x=>x!==Number(id))}catch(e){alert("削除失敗：\n"+e.message);return}}
   else row.remove();
   if(!noticeInputs().length)addNoticeInput();
 }
 async function loadNotice(){
   try{const rows=await get("schedule_notices","?select=*&order=id.asc");noticeRows.innerHTML="";loadedNoticeIds=rows.map(x=>Number(x.id));(rows.length?rows:[{}]).forEach(x=>addNoticeInput(x.notice_text||"",x.id??null))}
-  catch(e){console.error(e);noticeRows.innerHTML="";addNoticeInput();alert("連絡事項読込失敗：\n"+e.message)}
+  catch(e){console.error(e);noticeRows.innerHTML="";addNoticeInput();alert("備考読込失敗：\n"+e.message)}
 }
 async function saveNotices(){
   const vals=noticeInputs().map(el=>({el,id:el.dataset.noticeId?Number(el.dataset.noticeId):null,text:el.value.trim()}));
@@ -464,8 +464,8 @@ async function saveNotices(){
     for(const x of vals.filter(x=>x.id&&x.text))await patch("schedule_notices",x.id,{notice_text:x.text,updated_at:new Date().toISOString()});
     let next=Math.max(0,...loadedNoticeIds)+1;
     for(const x of vals.filter(x=>!x.id&&x.text)){while(loadedNoticeIds.includes(next))next++;await post("schedule_notices",{id:next,notice_text:x.text,updated_at:new Date().toISOString()});loadedNoticeIds.push(next);next++}
-    await loadNotice();alert("連絡事項を保存しました");
-  }catch(e){console.error(e);alert("連絡事項保存失敗：\n"+e.message)}
+    await loadNotice();alert("備考を保存しました");
+  }catch(e){console.error(e);alert("備考保存失敗：\n"+e.message)}
 }
 function drawToday(){let t=new Date(),k=iso(t.getFullYear(),t.getMonth()+1,t.getDate());let d=allJobs.filter(x=>x.due_date===k),e=events.filter(x=>x.event_date===k);todayBox.innerHTML=`<b>納期 ${d.length}件 / 行事・点検 ${e.length}件</b><br>`+[...d.map(x=>esc(x.part_no)),...e.map(x=>"◆ "+esc(x.title))].join("<br>");todayNotes.innerHTML=e.length?e.map(x=>`・${esc(x.title)}`).join("<br>"):"・本日の行事・点検登録なし"}
 initColors("colors","chooseColor");initColors("eventColors","chooseEventColor");setPartInputs([]);load();
