@@ -1,5 +1,5 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA 工場表示 TEST v0.23</title><script src="config.js"></script>
-<style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f5f6f8;font-family:"Yu Gothic",sans-serif;color:#111;font-weight:600}.wrap{height:100vh;padding:8px;display:grid;grid-template-columns:4fr 1fr;gap:8px}.board{display:grid;grid-template-rows:auto 1fr 1fr;gap:5px}.title{text-align:center;font-size:24px;font-weight:900}.half{display:grid;gap:3px}.day{border:1px solid #6b7280;background:white;min-width:0;overflow:hidden}.day.holiday{background:#fee2e2}.num{text-align:center;font-weight:900;border-bottom:1px solid #bbb;padding:2px;font-size:13px}.holiday .num{color:#b91c1c}.it{font-size:10px;line-height:1.15;font-weight:800;padding:2px 3px;margin:2px;border:1px solid #aaa;border-radius:3px;overflow:hidden}.stamp{color:#b91c1c;font-weight:900}.memo{font-size:9px;font-weight:600;opacity:.8;margin-top:1px;white-space:normal}.side{border:1px solid #64748b;background:#fff;padding:10px;overflow:hidden}.side h2{text-align:center;margin:0 0 10px}.notice{padding:7px 4px;border-bottom:1px solid #ddd;font-weight:700}
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA 工場表示 TEST v0.24</title><script src="config.js"></script>
+<style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f5f6f8;font-family:"Yu Gothic",sans-serif;color:#111;font-weight:600}.wrap{height:100vh;padding:8px;display:grid;grid-template-columns:4fr 1fr;gap:8px}.board{display:grid;grid-template-rows:auto 1fr 1fr;gap:5px}.title{text-align:center;font-size:24px;font-weight:900}.half{display:grid;gap:3px}.day{border:1px solid #6b7280;background:white;min-width:0;overflow:hidden}.day.holiday{background:#fee2e2}.num{text-align:center;font-weight:900;border-bottom:1px solid #bbb;padding:2px;font-size:13px}.holiday .num{color:#b91c1c}.it{font-size:10px;line-height:1.15;font-weight:800;padding:2px 3px;margin:2px;border:1px solid #aaa;border-radius:3px;overflow:hidden}.stamp{color:#b91c1c;font-weight:900}.memo{font-size:9px;font-weight:600;margin-top:1px;white-space:normal;color:#2563eb}.side{border:1px solid #64748b;background:#fff;padding:10px;overflow:hidden}.side h2{text-align:center;margin:0 0 10px}.notice{padding:7px 4px;border-bottom:1px solid #ddd;font-weight:700}
 
 
 /* ===== v0.9 shared-board readability =====
@@ -23,7 +23,7 @@
 .it{font-size:10px !important;line-height:1.15 !important;font-weight:600 !important;white-space:normal !important;overflow-wrap:anywhere !important;word-break:break-word !important}
 .it .company{font-size:10px;font-weight:700;line-height:1.15}
 .it .part{font-size:10px;font-weight:700;line-height:1.15;margin-top:1px}
-.it .machine{font-size:9px;font-weight:600;line-height:1.15;margin-top:1px}
+.it .machine{font-size:9px;font-weight:600;line-height:1.15;margin-top:1px;color:#2563eb}
 
 /* v0.19: busy-day automatic vertical compression */
 .day.compress-1 .it{margin:1px 0 2px !important;padding:2px 3px !important}
@@ -70,7 +70,7 @@ async function load(){
   if(!ok()){if(st)st.textContent="設定エラー";return}
   try{
     let [all,e,h,noticeRows]=await Promise.all([
-      get("schedule_jobs","?select=*&order=created_at.asc"),
+      get("schedule_jobs","?select=*&due_date=not.is.null&order=due_date.asc,id.asc"),
       get("schedule_events","?select=*&order=event_date.asc"),
       get("schedule_holidays","?select=*"),
       get("schedule_notices","?id=eq.1&select=notice_text,updated_at")
@@ -99,10 +99,13 @@ function draw(j,e,h,noticeText){
     ? `<div class="notice">${esc(noticeText).replaceAll("\n","<br>")}</div>`
     : '<div class="notice">連絡事項なし</div>';
 }
-function drawHalf(el,a,b,j,e,h){let cnt=b-a+1;el.style.gridTemplateColumns=`repeat(${cnt},1fr)`;let s="";for(let d=a;d<=b;d++){let date=iso(Y,M,d),hol=new Date(Y,M-1,d).getDay()===0||h.some(x=>x.holiday_date===date);s+=`<div class="day ${hol?"holiday":""}"><div class="num">${d}日</div>`;j.filter(x=>x.due_date===date).forEach(x=>s+=item(x));e.filter(x=>x.event_date===date).forEach(x=>s+=`<div class="it" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}">◆ ${esc(x.title)}</div>`);s+="</div>"}el.innerHTML=s}
-function item(x){
-  const accentStyle=x.accent_color?`outline:2px solid ${x.accent_color};outline-offset:1px;`:"";
-  return `<div class="it" style="${accentStyle}"><div class="company">${esc(x.company_name)}</div><div class="part">${esc(x.part_no)}</div>${x.machine_name?`<div class="machine">${esc(x.machine_name)}</div>`:""}${x.memo?`<div class="memo">${esc(x.memo)}</div>`:""}</div>`;
+function groupKey(x){return x.job_group_id?`g:${x.job_group_id}`:`s:${x.id}`}
+function groupedRows(a){const m=new Map();a.forEach(x=>{const k=groupKey(x);if(!m.has(k))m.set(k,[]);m.get(k).push(x)});return [...m.values()].map(g=>g.sort((a,b)=>Number(a.id)-Number(b.id)))}
+function drawHalf(el,a,b,j,e,h){let cnt=b-a+1;el.style.gridTemplateColumns=`repeat(${cnt},1fr)`;let s="";for(let d=a;d<=b;d++){let date=iso(Y,M,d),hol=new Date(Y,M-1,d).getDay()===0||h.some(x=>x.holiday_date===date);s+=`<div class="day ${hol?"holiday":""}"><div class="num">${d}日</div>`;groupedRows(j.filter(x=>x.due_date===date)).forEach(g=>s+=item(g));e.filter(x=>x.event_date===date).forEach(x=>s+=`<div class="it" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}">◆ ${esc(x.title)}</div>`);s+="</div>"}el.innerHTML=s}
+function item(g){
+  const x=g[0],accentStyle=x.accent_color?`outline:2px solid ${x.accent_color};outline-offset:1px;`:"";
+  const parts=g.map(v=>`<div class="part">${esc(v.part_no)}</div>`).join("");
+  return `<div class="it" style="${accentStyle}"><div class="company">${esc(x.company_name)}</div>${parts}${x.machine_name?`<div class="machine">${esc(x.machine_name)}</div>`:""}${x.memo?`<div class="memo">${esc(x.memo)}</div>`:""}</div>`;
 }
 
 updateMonthLabel();setInterval(autoMonthCheck,60000);

@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 日程管理 TEST v0.23</title><script src="config.js"></script>
+<title>TAJIMA 日程管理 TEST v0.24</title><script src="config.js"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#f3f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
 button,input,textarea,select{font:inherit}
@@ -59,9 +59,17 @@ textarea{min-height:78px;resize:vertical}
 .auto-arrow{position:absolute;right:4px;top:4px;width:30px;height:calc(100% - 8px);border:0!important;border-left:1px solid #dbe3ee!important;background:#fff!important;border-radius:0 5px 5px 0!important;padding:0!important;font-size:18px;line-height:1;color:#475569;cursor:pointer}
 .auto-arrow:hover{background:#f1f5f9!important}
 
+/* v0.24 複数品番登録 / グループ表示 */
+.part-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.part-add{border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:7px;padding:6px 9px;font-size:12px;font-weight:900;cursor:pointer}
+.part-row{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:6px}
+.part-row:first-child{margin-top:0}.part-remove{border:1px solid #fecaca;background:#fff1f2;color:#b91c1c;border-radius:7px;padding:0 10px;font-weight:900;cursor:pointer}.part-remove:disabled{opacity:.35;cursor:default}
+.item.job-group{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.22}
+.job-company{font-weight:900;color:#172033}.job-part{font-weight:800;color:#172033}.job-machine,.job-memo{font-weight:800;color:#2563eb}
+
 </style></head><body>
-<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.23</small></div>
-<div class="top-actions"><button class="ok" onclick="window.open('penboard.html?v=0.23','_blank')">ペンボードを開く</button></div></div>
+<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.24</small></div>
+<div class="top-actions"><button class="ok" onclick="window.open('penboard.html?v=0.24','_blank')">ペンボードを開く</button></div></div>
 <div class="shell">
 <nav class="sidebar"><div class="title">メニュー</div><div class="menu">
 <button id="mJob" class="active" onclick="showPanel('job')">作業登録</button>
@@ -77,11 +85,11 @@ textarea{min-height:78px;resize:vertical}
 <section class="editor-col">
 <div id="jobPanel" class="panel show"><div class="card"><h2>作業登録 / 編集</h2><div id="editing" class="editing"></div>
 <label>会社名 *</label><div class="fieldrow"><div class="auto-wrap auto-with-arrow"><input id="company" autocomplete="off" placeholder="会社名を入力"><button type="button" class="auto-arrow" onclick="toggleAutoMenu(company,companyMenu)">⌄</button><div id="companyMenu" class="auto-menu"></div></div><button onclick="showPanel('company')">管理</button></div>
-<label>品番 *</label><div class="fieldrow"><input id="part" list="partList" placeholder="品番を入力"><button onclick="openPartHistory()">履歴</button></div><datalist id="partList"></datalist>
+<div class="part-head"><label style="margin-bottom:5px">品番 *</label><button type="button" class="part-add" onclick="addPartInput()">＋ 品番追加</button></div><div id="partRows"></div><div style="margin-top:6px"><button type="button" class="part-add" onclick="openPartHistory()">品番履歴</button></div><datalist id="partList"></datalist>
 <label>納期 *</label><div class="datebox"><input id="due" type="date"></div>
 <label>担当機械</label><div class="machine-row"><div class="auto-wrap auto-with-arrow"><input id="machine" autocomplete="off" placeholder="選択または入力"><button type="button" class="auto-arrow" onclick="toggleAutoMenu(machine,machineMenu)">⌄</button><div id="machineMenu" class="auto-menu"></div></div><label class="unknown"><input id="machineUnknown" type="checkbox"> 未定</label></div>
 <label>表示強調（基本：なし）</label><div id="colors" class="colors"></div>
-<label>メモ <span style="font-weight:500;color:#8a96a8">（管理カレンダーには表示しません）</span></label><textarea id="memo" placeholder="特記事項など"></textarea>
+<label>メモ</label><textarea id="memo" placeholder="特記事項など"></textarea>
 <div class="actions"><button id="saveBtn" class="save" onclick="saveJob()">登録</button><button id="deleteBtn" class="delete" style="display:none" onclick="deleteJob()">削除</button><button id="cancelBtn" class="cancel" style="display:none" onclick="resetForm()">編集解除</button></div>
 </div><div class="card"><h2 style="font-size:14px">今日の予定</h2><div id="todayBox" class="todaybox"></div></div></div>
 
@@ -118,7 +126,7 @@ const iso=(y,m,d)=>`${ym(y,m)}-${String(d).padStart(2,"0")}`;
 const colors=["#ef4444","#eab308","#22c55e","#06b6d4","#8b5cf6","#ec4899"];
 function inMonth(date,y,m){return !!date && String(date).startsWith(`${ym(y,m)}-`)}
 
-let now=new Date(),Y=now.getFullYear(),M=now.getMonth()+1,jobs=[],events=[],holidays=[],allJobs=[],editId=null,accent=null,eventAccent=null,eventEditId=null,currentPanel="job",manageContext=null;
+let now=new Date(),Y=now.getFullYear(),M=now.getMonth()+1,jobs=[],events=[],holidays=[],allJobs=[],editId=null,editJobIds=[],editGroupId=null,accent=null,eventAccent=null,eventEditId=null,currentPanel="job",manageContext=null;
 
 function showPanel(name){
   currentPanel=name;
@@ -155,6 +163,21 @@ async function load(){
     draw();refreshMasters();drawToday();refreshManagementView();
   }catch(e){alert("読込エラー: "+e.message)}
 }
+function newGroupId(){return (crypto.randomUUID?crypto.randomUUID():`grp-${Date.now()}-${Math.random().toString(36).slice(2)}`)}
+function partInputs(){return [...document.querySelectorAll("#partRows .part-input")]}
+function getPartValues(){return partInputs().map(x=>({id:x.dataset.jobId?Number(x.dataset.jobId):null,value:x.value.trim()})).filter(x=>x.value)}
+function updatePartRemoveButtons(){let rows=[...document.querySelectorAll("#partRows .part-row")];rows.forEach((r,i)=>{let b=r.querySelector(".part-remove");if(b)b.disabled=rows.length===1})}
+function addPartInput(value="",jobId=null){
+  const row=document.createElement("div");row.className="part-row";
+  row.innerHTML=`<input class="part-input" list="partList" placeholder="品番を入力"><button type="button" class="part-remove" onclick="removePartInput(this)">削除</button>`;
+  const input=row.querySelector("input");input.value=value||"";if(jobId)input.dataset.jobId=String(jobId);
+  partRows.appendChild(row);updatePartRemoveButtons();return input;
+}
+function removePartInput(btn){const row=btn.closest(".part-row");if(!row||document.querySelectorAll("#partRows .part-row").length<=1)return;row.remove();updatePartRemoveButtons()}
+function setPartInputs(rows){partRows.innerHTML="";(rows&&rows.length?rows:[{part_no:"",id:null}]).forEach(x=>addPartInput(x.part_no||"",x.id||null));updatePartRemoveButtons()}
+function groupKey(x){return x.job_group_id?`g:${x.job_group_id}`:`s:${x.id}`}
+function groupRowsFor(x){if(!x)return[];return x.job_group_id?allJobs.filter(j=>j.job_group_id===x.job_group_id):[x]}
+function groupedRows(a){const m=new Map();a.forEach(x=>{const k=groupKey(x);if(!m.has(k))m.set(k,[]);m.get(k).push(x)});return [...m.values()].map(g=>g.sort((a,b)=>Number(a.id)-Number(b.id)))}
 function refreshMasters(){
   const cs=[...new Set(validJobs().map(x=>x.company_name).filter(Boolean))];
   const ms=[...new Set(validJobs().map(x=>x.machine_name).filter(Boolean))];
@@ -212,15 +235,15 @@ function draw(){
     let date=iso(Y,M,d),dow=new Date(Y,M-1,d).getDay(),isHol=dow===0||holidays.some(h=>h.holiday_date===date);
     let duej=jobs.filter(x=>x.due_date===date),ev=events.filter(x=>x.event_date===date);
     s+=`<div class="day ${isHol?"holiday":""}" data-date="${date}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event,'${date}')" onclick="holidayClick(event,'${date}',${dow})"><div class="num">${d}</div>`;
-    duej.forEach(x=>s+=jobItem(x)); ev.forEach(x=>s+=`<div class="item event" draggable="true" data-id="${x.id}" data-type="event" ondragstart="dragStart(event)" ondragend="dragEnd(event)" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}" onclick="event.stopPropagation();editEvent(${x.id})" title="クリックで編集 / ドラッグで日付変更">◆ ${esc(x.title)}</div>`);
+    groupedRows(duej).forEach(g=>s+=jobItem(g)); ev.forEach(x=>s+=`<div class="item event" draggable="true" data-id="${x.id}" data-type="event" ondragstart="dragStart(event)" ondragend="dragEnd(event)" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}" onclick="event.stopPropagation();editEvent(${x.id})" title="クリックで編集 / ドラッグで日付変更">◆ ${esc(x.title)}</div>`);
     s+="</div>";
   }
   calendar.innerHTML=s;
 }
-function jobItem(x){
-  const done=x.status==="完了";
-  const accentStyle=x.accent_color?`outline:3px solid ${x.accent_color};outline-offset:1px;`:"";
-  return `<div class="item ${done?"done":""}" draggable="true" data-id="${x.id}" data-type="due" ondragstart="dragStart(event)" ondragend="dragEnd(event)" style="border:2px solid #64748b;${accentStyle}" onclick="event.stopPropagation();editJob(${x.id})">${done?'<span class="stamp">㊞</span> ':""}${esc(x.part_no)} ${esc(x.company_name)} ${esc(x.machine_name||"")}</div>`;
+function jobItem(g){
+  const x=g[0],done=g.every(v=>v.status==="完了"),accentStyle=x.accent_color?`outline:3px solid ${x.accent_color};outline-offset:1px;`:"";
+  const parts=g.map(v=>`<div class="job-part">${esc(v.part_no)}</div>`).join("");
+  return `<div class="item job-group ${done?"done":""}" draggable="true" data-id="${x.id}" data-type="due" ondragstart="dragStart(event)" ondragend="dragEnd(event)" style="border:2px solid #64748b;${accentStyle}" onclick="event.stopPropagation();editJob(${x.id})">${done?'<span class="stamp">㊞</span> ':""}<div class="job-company">${esc(x.company_name)}</div>${parts}${x.machine_name?`<div class="job-machine">${esc(x.machine_name)}</div>`:""}${x.memo?`<div class="job-memo">${esc(x.memo)}</div>`:""}</div>`;
 }
 function dragStart(e){e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",JSON.stringify({id:Number(e.currentTarget.dataset.id),type:e.currentTarget.dataset.type}));e.currentTarget.classList.add("dragging")}
 function dragEnd(e){e.currentTarget.classList.remove("dragging");document.querySelectorAll(".drop-target").forEach(x=>x.classList.remove("drop-target"))}
@@ -238,9 +261,9 @@ async function dropItem(e,date){
     await load();return;
   }
   let x=allJobs.find(j=>Number(j.id)===Number(d.id));if(!x)return;
-  let old=x.due_date;if(old===date)return;
-  if(!confirm(`納期を ${old||"未定"} → ${date} に変更しますか？`))return;
-  await patch("schedule_jobs",x.id,{due_date:date,updated_at:new Date().toISOString()});await load()
+  let g=groupRowsFor(x),old=x.due_date;if(old===date)return;
+  if(!confirm(`納期を ${old||"未定"} → ${date} に変更しますか？（品番 ${g.length}件）`))return;
+  await Promise.all(g.map(v=>patch("schedule_jobs",v.id,{due_date:date,updated_at:new Date().toISOString()})));await load()
 }
 async function holidayClick(e,date,dow){
   if(currentPanel!=="holiday"||e.target.closest(".item"))return;
@@ -251,22 +274,39 @@ async function holidayClick(e,date,dow){
 }
 function editJob(id){
   showPanel("job");let x=allJobs.find(j=>Number(j.id)===Number(id));if(!x)return;
-  editId=id;editing.style.display="block";editing.textContent=`編集中：${x.company_name} / ${x.part_no}`;
-  company.value=x.company_name||"";part.value=x.part_no||"";machine.value=x.machine_name||"";machineUnknown.checked=!x.machine_name;
-  due.value=x.due_date||"";
-  memo.value=x.memo||"";accent=x.accent_color||null;setColorUI("colors",accent);
+  const g=groupRowsFor(x).sort((a,b)=>Number(a.id)-Number(b.id));
+  editId=x.id;editJobIds=g.map(v=>Number(v.id));editGroupId=x.job_group_id||null;
+  editing.style.display="block";editing.textContent=`編集中：${x.company_name} / 品番 ${g.length}件`;
+  company.value=x.company_name||"";setPartInputs(g);machine.value=x.machine_name||"";machineUnknown.checked=!x.machine_name;
+  due.value=x.due_date||"";memo.value=x.memo||"";accent=x.accent_color||null;setColorUI("colors",accent);
   saveBtn.textContent="更新保存";deleteBtn.style.display="block";cancelBtn.style.display="block";
 }
-function resetForm(){editId=null;editing.style.display="none";company.value=part.value=machine.value=memo.value=due.value="";machineUnknown.checked=false;accent=null;setColorUI("colors",null);saveBtn.textContent="登録";deleteBtn.style.display=cancelBtn.style.display="none"}
+function resetForm(){editId=null;editJobIds=[];editGroupId=null;editing.style.display="none";company.value=machine.value=memo.value=due.value="";setPartInputs([]);machineUnknown.checked=false;accent=null;setColorUI("colors",null);saveBtn.textContent="登録";deleteBtn.style.display=cancelBtn.style.display="none"}
 async function saveJob(){
-  let c=company.value.trim(),p=part.value.trim(),mach=machineUnknown.checked?"":machine.value.trim(),d=due.value;
-  if(!c||!p){alert("会社名と品番は入力してください");return}
+  let c=company.value.trim(),parts=getPartValues(),mach=machineUnknown.checked?"":machine.value.trim(),d=due.value;
+  if(!c||!parts.length){alert("会社名と品番は入力してください");return}
   if(!d){alert("納期を入力してください");return}
-  let row={company_name:c,part_no:p,machine_name:mach||null,arrival_date:null,due_date:d,memo:memo.value.trim(),accent_color:accent,updated_at:new Date().toISOString()};
-  if(editId)await patch("schedule_jobs",editId,row); else await post("schedule_jobs",row);
-  resetForm();await load()
+  const vals=parts.map(x=>x.value),dups=vals.filter((v,i)=>vals.indexOf(v)!==i);if(dups.length){alert("同じ品番が重複しています");return}
+  const nowIso=new Date().toISOString();
+  let gid=editGroupId||(parts.length>1?newGroupId():null);
+  const shared={company_name:c,machine_name:mach||null,arrival_date:null,due_date:d,memo:memo.value.trim(),accent_color:accent,updated_at:nowIso,job_group_id:gid};
+  if(editId){
+    const keep=new Set();
+    for(const p of parts){
+      if(p.id){keep.add(Number(p.id));await patch("schedule_jobs",p.id,{...shared,part_no:p.value})}
+      else{await post("schedule_jobs",{...shared,part_no:p.value})}
+    }
+    const removed=editJobIds.filter(id=>!keep.has(Number(id)));await Promise.all(removed.map(id=>del("schedule_jobs",id)));
+  }else{
+    const rows=parts.map(p=>({...shared,part_no:p.value}));
+    await post("schedule_jobs",rows);
+  }
+  resetForm();await load();returnToManagementAfterEdit()
 }
-async function deleteJob(){if(editId&&confirm("この案件を削除しますか？")){await del("schedule_jobs",editId);resetForm();await load();returnToManagementAfterEdit()}}
+async function deleteJob(){
+  if(!editId)return;const ids=editJobIds.length?editJobIds:[editId];
+  if(confirm(`この作業を削除しますか？（品番 ${ids.length}件）`)){await Promise.all(ids.map(id=>del("schedule_jobs",id)));resetForm();await load();returnToManagementAfterEdit()}
+}
 function editEvent(id){
   let x=events.find(v=>Number(v.id)===Number(id));if(!x)return;
   showPanel("event");eventEditId=x.id;
@@ -391,7 +431,7 @@ function returnToManagementAfterEdit(){
   return true;
 }
 function companyHistory(c){companyMonths(c)}
-function openPartHistory(){let c=company.value.trim(),p=part.value.trim();let a=validJobs().filter(x=>(!c||x.company_name===c)&&(!p||x.part_no===p));modalBody.innerHTML=`<h2>品番履歴</h2>`+(a.length?a.map(x=>`<div class="hist">${esc(x.company_name)} / <b>${esc(x.part_no)}</b><br>納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}</div>`).join(""):'履歴なし');modal.classList.add("show")}
+function openPartHistory(){let c=company.value.trim(),p=(partInputs()[0]?.value||"").trim();let a=validJobs().filter(x=>(!c||x.company_name===c)&&(!p||x.part_no===p));modalBody.innerHTML=`<h2>品番履歴</h2>`+(a.length?a.map(x=>`<div class="hist">${esc(x.company_name)} / <b>${esc(x.part_no)}</b><br>納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}</div>`).join(""):'履歴なし');modal.classList.add("show")}
 
 async function loadNotice(){
   try{
@@ -407,5 +447,5 @@ async function saveNotice(){
 }
 
 function drawToday(){let t=new Date(),k=iso(t.getFullYear(),t.getMonth()+1,t.getDate());let d=allJobs.filter(x=>x.due_date===k),e=events.filter(x=>x.event_date===k);todayBox.innerHTML=`<b>納期 ${d.length}件 / 行事・点検 ${e.length}件</b><br>`+[...d.map(x=>esc(x.part_no)),...e.map(x=>"◆ "+esc(x.title))].join("<br>");todayNotes.innerHTML=e.length?e.map(x=>`・${esc(x.title)}`).join("<br>"):"・本日の行事・点検登録なし"}
-initColors("colors","chooseColor");initColors("eventColors","chooseEventColor");load();
+initColors("colors","chooseColor");initColors("eventColors","chooseEventColor");setPartInputs([]);load();
 </script></body></html>
