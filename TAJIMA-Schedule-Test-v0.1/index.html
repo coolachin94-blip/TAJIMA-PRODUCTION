@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 日程管理 TEST v0.24</title><script src="config.js"></script>
+<title>TAJIMA 日程管理 TEST v0.25</title><script src="config.js"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#f3f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
 button,input,textarea,select{font:inherit}
@@ -59,7 +59,7 @@ textarea{min-height:78px;resize:vertical}
 .auto-arrow{position:absolute;right:4px;top:4px;width:30px;height:calc(100% - 8px);border:0!important;border-left:1px solid #dbe3ee!important;background:#fff!important;border-radius:0 5px 5px 0!important;padding:0!important;font-size:18px;line-height:1;color:#475569;cursor:pointer}
 .auto-arrow:hover{background:#f1f5f9!important}
 
-/* v0.24 複数品番登録 / グループ表示 */
+/* v0.25 複数品番登録 / グループ表示 */
 .part-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .part-add{border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:7px;padding:6px 9px;font-size:12px;font-weight:900;cursor:pointer}
 .part-row{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:6px}
@@ -68,7 +68,7 @@ textarea{min-height:78px;resize:vertical}
 .job-company{font-weight:900;color:#172033}.job-part{font-weight:800;color:#172033}.job-machine,.job-memo{font-weight:800;color:#2563eb}
 
 </style></head><body>
-<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.24</small></div>
+<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.25</small></div>
 <div class="top-actions"><button class="ok" onclick="window.open('penboard.html?v=0.24','_blank')">ペンボードを開く</button></div></div>
 <div class="shell">
 <nav class="sidebar"><div class="title">メニュー</div><div class="menu">
@@ -99,9 +99,10 @@ textarea{min-height:78px;resize:vertical}
 <div id="eventPanel" class="panel"><div class="card"><h2>行事・点検登録</h2><div id="eventEditing" class="editing"></div><label>日付</label><input id="eventDate" type="date"><label>内容</label><input id="eventText" placeholder="例：電気設備点検"><label>表示強調</label><div id="eventColors" class="colors"></div><div class="actions"><button id="eventSaveBtn" class="save" onclick="saveEvent()">登録</button><button id="eventDeleteBtn" class="delete" style="display:none" onclick="deleteEvent()">削除</button><button id="eventCancelBtn" class="cancel" style="display:none" onclick="resetEventForm()">編集解除</button></div></div></div>
 <div id="holidayPanel" class="panel"><div class="card"><h2>休日設定</h2><div class="hint">この画面を開いた状態で、右側カレンダーの日付をクリックすると会社休日をON/OFFできます。日曜日は自動休日です。</div></div></div>
 <div id="noticePanel" class="panel"><div class="card"><h2>連絡事項</h2>
-<label>表示内容</label><textarea id="noticeText" placeholder="工場・事務所で共有する連絡事項"></textarea>
-<div class="actions"><button class="save" onclick="saveNotice()">保存</button></div>
-<div class="hint">保存するとペンボード右側の連絡事項欄に反映されます。</div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><label style="margin:0">表示内容</label><button type="button" class="part-add" onclick="addNoticeInput()">＋ 連絡事項追加</button></div>
+<div id="noticeRows" style="margin-top:7px"></div>
+<div class="actions"><button class="save" onclick="saveNotices()">一括保存</button></div>
+<div class="hint">追加ボタンで何件でも分けて入力できます。ペンボードにも1件ずつ表示します。</div>
 </div></div>
 </section>
 
@@ -321,12 +322,17 @@ function resetEventForm(){
 }
 async function saveEvent(){
   if(!eventDate.value||!eventText.value.trim()){alert("日付と内容を入力してください");return}
-  const row={event_date:eventDate.value,title:eventText.value.trim(),accent_color:eventAccent,updated_at:new Date().toISOString()};
-  if(eventEditId)await patch("schedule_events",eventEditId,row);else await post("schedule_events",row);
-  resetEventForm();await load()
+  const row={event_date:eventDate.value,title:eventText.value.trim(),accent_color:eventAccent};
+  eventSaveBtn.disabled=true;
+  try{if(eventEditId)await patch("schedule_events",eventEditId,row);else await post("schedule_events",row);resetEventForm();await load()}
+  catch(e){console.error(e);alert("行事・点検の保存に失敗しました：\n"+e.message)}
+  finally{eventSaveBtn.disabled=false}
 }
 async function deleteEvent(){
-  if(eventEditId&&confirm("この行事・点検を削除しますか？")){await del("schedule_events",eventEditId);resetEventForm();await load()}
+  if(eventEditId&&confirm("この行事・点検を削除しますか？")){
+    try{await del("schedule_events",eventEditId);resetEventForm();await load()}
+    catch(e){console.error(e);alert("行事・点検の削除に失敗しました：\n"+e.message)}
+  }
 }
 function clean(v){return String(v??"").trim()}
 function validJobs(){return allJobs.filter(x=>!!x.due_date)}
@@ -433,19 +439,34 @@ function returnToManagementAfterEdit(){
 function companyHistory(c){companyMonths(c)}
 function openPartHistory(){let c=company.value.trim(),p=(partInputs()[0]?.value||"").trim();let a=validJobs().filter(x=>(!c||x.company_name===c)&&(!p||x.part_no===p));modalBody.innerHTML=`<h2>品番履歴</h2>`+(a.length?a.map(x=>`<div class="hist">${esc(x.company_name)} / <b>${esc(x.part_no)}</b><br>納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}</div>`).join(""):'履歴なし');modal.classList.add("show")}
 
+let loadedNoticeIds=[];
+function noticeInputs(){return [...document.querySelectorAll("#noticeRows .notice-input")]}
+function addNoticeInput(value="",id=null){
+  const row=document.createElement("div");row.className="part-row notice-row";
+  row.innerHTML=`<textarea class="notice-input" placeholder="連絡事項を入力" style="min-height:72px"></textarea><button type="button" class="part-remove" onclick="removeNoticeInput(this)">削除</button>`;
+  const ta=row.querySelector("textarea");ta.value=value||"";if(id!=null)ta.dataset.noticeId=String(id);noticeRows.appendChild(row);
+}
+async function removeNoticeInput(btn){
+  const row=btn.closest(".notice-row"),ta=row?.querySelector(".notice-input");if(!row)return;
+  const id=ta?.dataset.noticeId;
+  if(id){if(!confirm("この連絡事項を削除しますか？"))return;try{await del("schedule_notices",Number(id));row.remove();loadedNoticeIds=loadedNoticeIds.filter(x=>x!==Number(id))}catch(e){alert("削除失敗：\n"+e.message);return}}
+  else row.remove();
+  if(!noticeInputs().length)addNoticeInput();
+}
 async function loadNotice(){
+  try{const rows=await get("schedule_notices","?select=*&order=id.asc");noticeRows.innerHTML="";loadedNoticeIds=rows.map(x=>Number(x.id));(rows.length?rows:[{}]).forEach(x=>addNoticeInput(x.notice_text||"",x.id??null))}
+  catch(e){console.error(e);noticeRows.innerHTML="";addNoticeInput();alert("連絡事項読込失敗：\n"+e.message)}
+}
+async function saveNotices(){
+  const vals=noticeInputs().map(el=>({el,id:el.dataset.noticeId?Number(el.dataset.noticeId):null,text:el.value.trim()}));
   try{
-    const rows=await get("schedule_notices","?id=eq.1&select=*");
-    noticeText.value=rows[0]?.notice_text||"";
-  }catch(e){noticeText.value="";console.error(e)}
+    for(const x of vals.filter(x=>x.id&&!x.text))await del("schedule_notices",x.id);
+    for(const x of vals.filter(x=>x.id&&x.text))await patch("schedule_notices",x.id,{notice_text:x.text,updated_at:new Date().toISOString()});
+    let next=Math.max(0,...loadedNoticeIds)+1;
+    for(const x of vals.filter(x=>!x.id&&x.text)){while(loadedNoticeIds.includes(next))next++;await post("schedule_notices",{id:next,notice_text:x.text,updated_at:new Date().toISOString()});loadedNoticeIds.push(next);next++}
+    await loadNotice();alert("連絡事項を保存しました");
+  }catch(e){console.error(e);alert("連絡事項保存失敗：\n"+e.message)}
 }
-async function saveNotice(){
-  const row={id:1,notice_text:noticeText.value.trim(),updated_at:new Date().toISOString()};
-  let r=await fetch(API("schedule_notices")+"?on_conflict=id",{method:"POST",headers:{...H(),"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify([row])});
-  if(!r.ok){alert("連絡事項保存エラー: "+await r.text());return}
-  alert("連絡事項を保存しました");
-}
-
 function drawToday(){let t=new Date(),k=iso(t.getFullYear(),t.getMonth()+1,t.getDate());let d=allJobs.filter(x=>x.due_date===k),e=events.filter(x=>x.event_date===k);todayBox.innerHTML=`<b>納期 ${d.length}件 / 行事・点検 ${e.length}件</b><br>`+[...d.map(x=>esc(x.part_no)),...e.map(x=>"◆ "+esc(x.title))].join("<br>");todayNotes.innerHTML=e.length?e.map(x=>`・${esc(x.title)}`).join("<br>"):"・本日の行事・点検登録なし"}
 initColors("colors","chooseColor");initColors("eventColors","chooseEventColor");setPartInputs([]);load();
 </script></body></html>

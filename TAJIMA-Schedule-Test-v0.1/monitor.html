@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA 工場表示 TEST v0.24</title><script src="config.js"></script>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA 工場表示 TEST v0.25</title><script src="config.js"></script>
 <style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f5f6f8;font-family:"Yu Gothic",sans-serif;color:#111;font-weight:600}.wrap{height:100vh;padding:8px;display:grid;grid-template-columns:4fr 1fr;gap:8px}.board{display:grid;grid-template-rows:auto 1fr 1fr;gap:5px}.title{text-align:center;font-size:24px;font-weight:900}.half{display:grid;gap:3px}.day{border:1px solid #6b7280;background:white;min-width:0;overflow:hidden}.day.holiday{background:#fee2e2}.num{text-align:center;font-weight:900;border-bottom:1px solid #bbb;padding:2px;font-size:13px}.holiday .num{color:#b91c1c}.it{font-size:10px;line-height:1.15;font-weight:800;padding:2px 3px;margin:2px;border:1px solid #aaa;border-radius:3px;overflow:hidden}.stamp{color:#b91c1c;font-weight:900}.memo{font-size:9px;font-weight:600;margin-top:1px;white-space:normal;color:#2563eb}.side{border:1px solid #64748b;background:#fff;padding:10px;overflow:hidden}.side h2{text-align:center;margin:0 0 10px}.notice{padding:7px 4px;border-bottom:1px solid #ddd;font-weight:700}
 
 
@@ -73,19 +73,19 @@ async function load(){
       get("schedule_jobs","?select=*&due_date=not.is.null&order=due_date.asc,id.asc"),
       get("schedule_events","?select=*&order=event_date.asc"),
       get("schedule_holidays","?select=*"),
-      get("schedule_notices","?id=eq.1&select=notice_text,updated_at")
+      get("schedule_notices","?select=id,notice_text,updated_at&order=id.asc")
     ]);
     let j=all.filter(x=>inMonth(x.due_date,Y,M));
     e=e.filter(x=>inMonth(x.event_date,Y,M));
     h=h.filter(x=>inMonth(x.holiday_date,Y,M));
-    draw(j,e,h,noticeRows?.[0]?.notice_text||"");
+    draw(j,e,h,noticeRows||[]);
     if(st)st.textContent=`同期済み ${new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit"})} / 案件 ${j.length}件`;
   }catch(err){
     console.error(err);
     if(st)st.textContent="読込エラー";
   }
 }
-function draw(j,e,h,noticeText){
+function draw(j,e,h,noticeRows){
   const titleEl=document.getElementById("title");
   const topEl=document.getElementById("boardTop");
   const bottomEl=document.getElementById("boardBottom");
@@ -95,13 +95,12 @@ function draw(j,e,h,noticeText){
   let last=new Date(Y,M,0).getDate(),split=Math.ceil(last/2);
   drawHalf(topEl,1,split,j,e,h);
   drawHalf(bottomEl,split+1,last,j,e,h);
-  noticesEl.innerHTML=noticeText
-    ? `<div class="notice">${esc(noticeText).replaceAll("\n","<br>")}</div>`
-    : '<div class="notice">連絡事項なし</div>';
+  const nl=(noticeRows||[]).filter(x=>String(x.notice_text||"").trim());
+  noticesEl.innerHTML=nl.length?nl.map(x=>`<div class="notice">${esc(x.notice_text).replaceAll("\n","<br>")}</div>`).join(""):'<div class="notice">連絡事項なし</div>';
 }
 function groupKey(x){return x.job_group_id?`g:${x.job_group_id}`:`s:${x.id}`}
 function groupedRows(a){const m=new Map();a.forEach(x=>{const k=groupKey(x);if(!m.has(k))m.set(k,[]);m.get(k).push(x)});return [...m.values()].map(g=>g.sort((a,b)=>Number(a.id)-Number(b.id)))}
-function drawHalf(el,a,b,j,e,h){let cnt=b-a+1;el.style.gridTemplateColumns=`repeat(${cnt},1fr)`;let s="";for(let d=a;d<=b;d++){let date=iso(Y,M,d),hol=new Date(Y,M-1,d).getDay()===0||h.some(x=>x.holiday_date===date);s+=`<div class="day ${hol?"holiday":""}"><div class="num">${d}日</div>`;groupedRows(j.filter(x=>x.due_date===date)).forEach(g=>s+=item(g));e.filter(x=>x.event_date===date).forEach(x=>s+=`<div class="it" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}">◆ ${esc(x.title)}</div>`);s+="</div>"}el.innerHTML=s}
+function drawHalf(el,a,b,j,e,h){let cnt=b-a+1;el.style.gridTemplateColumns=`repeat(${cnt},1fr)`;let s="";for(let d=a;d<=b;d++){let date=iso(Y,M,d),hol=new Date(Y,M-1,d).getDay()===0||h.some(x=>x.holiday_date===date);let wd=["日","月","火","水","木","金","土"][new Date(Y,M-1,d).getDay()];s+=`<div class="day ${hol?"holiday":""}"><div class="num">${d}日(${wd})</div>`;groupedRows(j.filter(x=>x.due_date===date)).forEach(g=>s+=item(g));e.filter(x=>x.event_date===date).forEach(x=>s+=`<div class="it" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}">◆ ${esc(x.title)}</div>`);s+="</div>"}el.innerHTML=s}
 function item(g){
   const x=g[0],accentStyle=x.accent_color?`outline:2px solid ${x.accent_color};outline-offset:1px;`:"";
   const parts=g.map(v=>`<div class="part">${esc(v.part_no)}</div>`).join("");
