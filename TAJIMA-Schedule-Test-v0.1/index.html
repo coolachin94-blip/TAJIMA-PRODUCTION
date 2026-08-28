@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 日程管理 TEST v0.11</title><script src="config.js"></script>
+<title>TAJIMA 日程管理 TEST v0.12</title><script src="config.js"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#f3f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
 button,input,textarea,select{font:inherit}
@@ -43,7 +43,7 @@ textarea{min-height:78px;resize:vertical}
 .auto-option:last-child{border-bottom:0}.auto-option:hover{background:#eff6ff}
 
 </style></head><body>
-<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.11</small></div>
+<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.12</small></div>
 <div class="top-actions"><button class="ok" onclick="window.open('penboard.html','_blank')">ペンボードを開く</button></div></div>
 <div class="shell">
 <nav class="sidebar"><div class="title">メニュー</div><div class="menu">
@@ -70,7 +70,7 @@ textarea{min-height:78px;resize:vertical}
 
 <div id="companyPanel" class="panel"><div class="card"><h2>会社管理</h2><div class="hint">登録済み会社と過去案件を確認できます。</div><div id="companies" class="companylist"></div></div></div>
 <div id="machinePanel" class="panel"><div class="card"><h2>機械管理</h2><div class="hint">過去に入力した機械名を一覧表示します。</div><div id="machines" class="machinelist"></div></div></div>
-<div id="eventPanel" class="panel"><div class="card"><h2>行事・点検登録</h2><label>日付</label><input id="eventDate" type="date"><label>内容</label><input id="eventText" placeholder="例：電気設備点検"><label>表示強調</label><div id="eventColors" class="colors"></div><div class="actions"><button class="save" onclick="saveEvent()">登録</button></div></div></div>
+<div id="eventPanel" class="panel"><div class="card"><h2>行事・点検登録</h2><div id="eventEditing" class="editing"></div><label>日付</label><input id="eventDate" type="date"><label>内容</label><input id="eventText" placeholder="例：電気設備点検"><label>表示強調</label><div id="eventColors" class="colors"></div><div class="actions"><button id="eventSaveBtn" class="save" onclick="saveEvent()">登録</button><button id="eventDeleteBtn" class="delete" style="display:none" onclick="deleteEvent()">削除</button><button id="eventCancelBtn" class="cancel" style="display:none" onclick="resetEventForm()">編集解除</button></div></div></div>
 <div id="holidayPanel" class="panel"><div class="card"><h2>休日設定</h2><div class="hint">この画面を開いた状態で、右側カレンダーの日付をクリックすると会社休日をON/OFFできます。日曜日は自動休日です。</div></div></div>
 <div id="noticePanel" class="panel"><div class="card"><h2>連絡事項</h2>
 <label>表示内容</label><textarea id="noticeText" placeholder="工場・事務所で共有する連絡事項"></textarea>
@@ -100,7 +100,7 @@ const iso=(y,m,d)=>`${ym(y,m)}-${String(d).padStart(2,"0")}`;
 const colors=["#ef4444","#eab308","#22c55e","#06b6d4","#8b5cf6","#ec4899"];
 function inMonth(date,y,m){return !!date && String(date).startsWith(`${ym(y,m)}-`)}
 
-let now=new Date(),Y=now.getFullYear(),M=now.getMonth()+1,jobs=[],events=[],holidays=[],allJobs=[],editId=null,accent=null,eventAccent=null,currentPanel="job";
+let now=new Date(),Y=now.getFullYear(),M=now.getMonth()+1,jobs=[],events=[],holidays=[],allJobs=[],editId=null,accent=null,eventAccent=null,eventEditId=null,currentPanel="job";
 
 function showPanel(name){
   currentPanel=name;
@@ -184,7 +184,7 @@ function draw(){
     let date=iso(Y,M,d),dow=new Date(Y,M-1,d).getDay(),isHol=dow===0||holidays.some(h=>h.holiday_date===date);
     let arr=jobs.filter(x=>x.arrival_date===date),duej=jobs.filter(x=>x.due_date===date),ev=events.filter(x=>x.event_date===date);
     s+=`<div class="day ${isHol?"holiday":""}" data-date="${date}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event,'${date}')" onclick="holidayClick(event,'${date}',${dow})"><div class="num">${d}</div>`;
-    arr.forEach(x=>s+=jobItem(x,"arrival")); duej.forEach(x=>s+=jobItem(x,"due")); ev.forEach(x=>s+=`<div class="item event" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}" onclick="event.stopPropagation()">◆ ${esc(x.title)}</div>`);
+    arr.forEach(x=>s+=jobItem(x,"arrival")); duej.forEach(x=>s+=jobItem(x,"due")); ev.forEach(x=>s+=`<div class="item event" draggable="true" data-id="${x.id}" data-type="event" ondragstart="dragStart(event)" ondragend="dragEnd(event)" style="${x.accent_color?`border:2px solid ${x.accent_color}`:""}" onclick="event.stopPropagation();editEvent(${x.id})" title="クリックで編集 / ドラッグで日付変更">◆ ${esc(x.title)}</div>`);
     s+="</div>";
   }
   calendar.innerHTML=s;
@@ -202,6 +202,14 @@ function dragLeave(e){e.currentTarget.classList.remove("drop-target")}
 async function dropItem(e,date){
   e.preventDefault();e.stopPropagation();e.currentTarget.classList.remove("drop-target");
   let d;try{d=JSON.parse(e.dataTransfer.getData("text/plain"))}catch{return}
+  if(d.type==="event"){
+    let x=events.find(j=>Number(j.id)===Number(d.id));if(!x)return;
+    let old=x.event_date;if(old===date)return;
+    if(!confirm(`行事・点検「${x.title}」を ${old||"未定"} → ${date} に変更しますか？`))return;
+    await patch("schedule_events",x.id,{event_date:date,updated_at:new Date().toISOString()});
+    if(Number(eventEditId)===Number(x.id))eventDate.value=date;
+    await load();return;
+  }
   let x=allJobs.find(j=>Number(j.id)===Number(d.id));if(!x)return;
   let old=d.type==="arrival"?x.arrival_date:x.due_date;if(old===date)return;
   let label=d.type==="arrival"?"入荷日":"納期";
@@ -233,7 +241,27 @@ async function saveJob(){
   resetForm();await load()
 }
 async function deleteJob(){if(editId&&confirm("この案件を削除しますか？")){await del("schedule_jobs",editId);resetForm();await load()}}
-async function saveEvent(){if(!eventDate.value||!eventText.value.trim()){alert("日付と内容を入力してください");return}await post("schedule_events",{event_date:eventDate.value,title:eventText.value.trim(),accent_color:eventAccent});eventText.value="";await load()}
+function editEvent(id){
+  let x=events.find(v=>Number(v.id)===Number(id));if(!x)return;
+  showPanel("event");eventEditId=x.id;
+  eventEditing.style.display="block";eventEditing.textContent=`編集中：${x.title}`;
+  eventDate.value=x.event_date||"";eventText.value=x.title||"";eventAccent=x.accent_color||null;setColorUI("eventColors",eventAccent);
+  eventSaveBtn.textContent="更新保存";eventDeleteBtn.style.display="block";eventCancelBtn.style.display="block";eventText.focus();
+}
+function resetEventForm(){
+  eventEditId=null;eventEditing.style.display="none";eventEditing.textContent="";
+  eventDate.value="";eventText.value="";eventAccent=null;setColorUI("eventColors",null);
+  eventSaveBtn.textContent="登録";eventDeleteBtn.style.display=eventCancelBtn.style.display="none";
+}
+async function saveEvent(){
+  if(!eventDate.value||!eventText.value.trim()){alert("日付と内容を入力してください");return}
+  const row={event_date:eventDate.value,title:eventText.value.trim(),accent_color:eventAccent,updated_at:new Date().toISOString()};
+  if(eventEditId)await patch("schedule_events",eventEditId,row);else await post("schedule_events",row);
+  resetEventForm();await load()
+}
+async function deleteEvent(){
+  if(eventEditId&&confirm("この行事・点検を削除しますか？")){await del("schedule_events",eventEditId);resetEventForm();await load()}
+}
 function drawCompanies(){let cs=[...new Set(allJobs.map(x=>x.company_name).filter(Boolean))];companies.innerHTML=cs.map(c=>`<button onclick='companyHistory(${JSON.stringify(c)})'>${esc(c)}　<small>${allJobs.filter(x=>x.company_name===c).length}件</small></button>`).join("")||'<div class="hint">登録済み会社はありません。</div>'}
 function drawMachines(){let ms=[...new Set(allJobs.map(x=>x.machine_name).filter(Boolean))];machines.innerHTML=ms.map(m=>`<button>${esc(m)}　<small>${allJobs.filter(x=>x.machine_name===m).length}件</small></button>`).join("")||'<div class="hint">登録済み機械はありません。</div>'}
 function companyHistory(c){let a=allJobs.filter(x=>x.company_name===c);modalBody.innerHTML=`<h2>${esc(c)}</h2>`+a.map(x=>`<div class="hist"><b>${esc(x.part_no)}</b>　${x.status==="完了"?"過去データ":"進行中"}<br>入荷 ${x.arrival_date||"未定"} ／ 納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}<br>${esc(x.memo||"")}</div>`).join("");modal.classList.add("show")}
