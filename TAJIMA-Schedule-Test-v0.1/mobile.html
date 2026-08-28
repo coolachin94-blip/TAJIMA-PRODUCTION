@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#162338">
+<title>TAJIMA 本社予定 閲覧</title>
+<script src="config.js"></script>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#eef2f7;font-family:"Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;color:#111}
+body{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.top{position:sticky;top:0;z-index:20;background:#162338;color:#fff;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 8px #0002}
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:760px;margin:auto}
+.brand{font-size:16px;font-weight:900;letter-spacing:.3px}
+.readonly{font-size:10px;padding:4px 7px;border:1px solid #ffffff55;border-radius:999px;opacity:.9}
+.wrap{max-width:760px;margin:auto;padding:12px}
+.monthbar{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;background:#fff;border:1px solid #cbd5e1;border-radius:10px;overflow:hidden}
+.monthbar button{height:48px;border:0;background:#fff;font-size:25px;color:#1e3a5f}
+.monthtitle{text-align:center;font-weight:900;font-size:20px}
+.tools{display:grid;grid-template-columns:1fr 1fr auto;gap:7px;margin-top:9px}
+select,.today{height:40px;border:1px solid #b8c2cf;background:#fff;border-radius:8px;padding:0 9px;font-weight:700;min-width:0}
+.today{color:#1d4ed8;border-color:#93c5fd;padding:0 12px}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 2px 7px;color:#64748b;font-size:11px}
+.noticeBox{background:#fff;border:1px solid #cbd5e1;border-radius:10px;margin:10px 0 12px;overflow:hidden}
+.noticeHead{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:#f8fafc;font-weight:900;color:#1e3a5f}
+.noticeHead button{border:0;background:transparent;font-weight:900;color:#64748b}
+.noticeList{padding:3px 11px 8px}
+.notice{font-size:13px;font-weight:700;padding:7px 0;border-bottom:1px solid #e5e7eb;white-space:pre-wrap;overflow-wrap:anywhere}
+.notice:last-child{border-bottom:0}
+.day{margin:0 0 10px}
+.dayhead{display:flex;align-items:baseline;gap:8px;padding:2px 3px 5px;font-weight:900}
+.dayhead .date{font-size:19px}
+.dayhead .weekday{font-size:12px;color:#64748b}
+.dayhead.holiday .date,.dayhead.holiday .weekday{color:#b91c1c}
+.card{background:#fff;border:2px solid #111;border-radius:8px;padding:10px 11px;margin-bottom:7px;box-shadow:0 1px 3px #0000000d}
+.card.accent{border-width:4px;padding:8px 9px}
+.company{font-size:16px;font-weight:900}
+.part{font-size:14px;font-weight:800;margin-top:3px;overflow-wrap:anywhere}
+.machine,.memo{font-size:12px;font-weight:700;color:#2563eb;margin-top:4px;overflow-wrap:anywhere}
+.event{border:2px solid #fb923c;background:#fff7ed;color:#f97316;font-weight:900}
+.event .eventTitle{font-size:15px}
+.empty{background:#fff;border:1px dashed #b8c2cf;border-radius:10px;padding:28px 14px;text-align:center;color:#64748b;font-weight:700}
+.footer{text-align:center;font-size:10px;color:#94a3b8;padding:8px}
+.error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:10px;border-radius:8px;font-weight:700;margin-bottom:10px}
+@media(max-width:430px){
+  .wrap{padding:9px}
+  .tools{grid-template-columns:1fr 1fr}.today{grid-column:1/-1;height:34px}
+  .card{padding:9px 10px}.company{font-size:15px}.part{font-size:13px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="toprow"><div class="brand">TAJIMA　本社予定</div><div class="readonly">閲覧専用</div></div>
+</header>
+
+<main class="wrap">
+  <div class="monthbar">
+    <button type="button" onclick="changeMonth(-1)" aria-label="前月">‹</button>
+    <div id="monthTitle" class="monthtitle"></div>
+    <button type="button" onclick="changeMonth(1)" aria-label="翌月">›</button>
+  </div>
+
+  <div class="tools">
+    <select id="companyFilter" onchange="render()"><option value="">すべての会社</option></select>
+    <select id="machineFilter" onchange="render()"><option value="">すべての機械</option></select>
+    <button type="button" class="today" onclick="goThisMonth()">今月</button>
+  </div>
+
+  <div class="meta"><span id="countText">読込中...</span><span id="syncText"></span></div>
+  <div id="errorBox"></div>
+
+  <section id="noticeBox" class="noticeBox" style="display:none">
+    <div class="noticeHead"><span>備考</span><button type="button" onclick="toggleNotices()" id="noticeToggle">閉じる</button></div>
+    <div id="noticeList" class="noticeList"></div>
+  </section>
+
+  <div id="list"></div>
+  <div class="footer">TAJIMA 本社予定・閲覧専用</div>
+</main>
+
+<script>
+const C=window.TAJIMA_CONFIG||window.CONFIG||{};
+const SUPABASE_URL=C.SUPABASE_URL||"";
+const SUPABASE_KEY=C.SUPABASE_PUBLISHABLE_KEY||C.SUPABASE_ANON_KEY||C.SUPABASE_KEY||"";
+const API=t=>`${SUPABASE_URL}/rest/v1/${t}`;
+const H=()=>({"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`});
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const ym=(y,m)=>`${y}-${String(m).padStart(2,"0")}`;
+const iso=(y,m,d)=>`${ym(y,m)}-${String(d).padStart(2,"0")}`;
+const inMonth=(v,y,m)=>!!v&&String(v).startsWith(`${ym(y,m)}-`);
+const weekdays=["日","月","火","水","木","金","土"];
+
+let now=new Date(),Y=now.getFullYear(),M=now.getMonth()+1;
+let jobs=[],events=[],holidays=[],notices=[],noticesOpen=true;
+
+async function get(t,q=""){
+  const r=await fetch(API(t)+q,{headers:H(),cache:"no-store"});
+  if(!r.ok)throw Error(await r.text());
+  return r.json();
+}
+function groupKey(x){return x.job_group_id?`g:${x.job_group_id}`:`s:${x.id}`}
+function groupRows(rows){
+  const map=new Map();
+  rows.forEach(x=>{const k=groupKey(x);if(!map.has(k))map.set(k,[]);map.get(k).push(x)});
+  return [...map.values()].map(g=>g.sort((a,b)=>Number(a.id)-Number(b.id)));
+}
+function updateMonthTitle(){monthTitle.textContent=`${Y}年 ${M}月`}
+function changeMonth(delta){
+  M+=delta;if(M<1){M=12;Y--}if(M>12){M=1;Y++}
+  updateMonthTitle();load();
+}
+function goThisMonth(){const d=new Date();Y=d.getFullYear();M=d.getMonth()+1;updateMonthTitle();load()}
+function toggleNotices(){noticesOpen=!noticesOpen;noticeList.style.display=noticesOpen?"block":"none";noticeToggle.textContent=noticesOpen?"閉じる":"開く"}
+
+function fillFilters(){
+  const oldC=companyFilter.value,oldM=machineFilter.value;
+  const companies=[...new Set(jobs.map(x=>x.company_name).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
+  const machines=[...new Set(jobs.map(x=>x.machine_name).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
+  companyFilter.innerHTML='<option value="">すべての会社</option>'+companies.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");
+  machineFilter.innerHTML='<option value="">すべての機械</option>'+machines.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");
+  if(companies.includes(oldC))companyFilter.value=oldC;
+  if(machines.includes(oldM))machineFilter.value=oldM;
+}
+
+function cardHtml(g){
+  const x=g[0],style=x.accent_color?`style="border-color:${esc(x.accent_color)}"`:"";
+  const parts=g.map(v=>`<div class="part">${esc(v.part_no)}</div>`).join("");
+  return `<div class="card ${x.accent_color?"accent":""}" ${style}>
+    <div class="company">${esc(x.company_name)}</div>
+    ${parts}
+    ${x.machine_name?`<div class="machine">機械：${esc(x.machine_name)}</div>`:""}
+    ${x.memo?`<div class="memo">メモ：${esc(x.memo)}</div>`:""}
+  </div>`;
+}
+function eventHtml(x){
+  return `<div class="card event"><div class="eventTitle">◆ ${esc(x.title)}</div></div>`;
+}
+function renderNotices(){
+  const rows=notices.filter(x=>String(x.notice_text||"").trim());
+  noticeBox.style.display=rows.length?"block":"none";
+  noticeList.innerHTML=rows.map(x=>`<div class="notice">${esc(x.notice_text)}</div>`).join("");
+}
+function render(){
+  const cf=companyFilter.value,mf=machineFilter.value;
+  const filtered=jobs.filter(x=>(!cf||x.company_name===cf)&&(!mf||x.machine_name===mf));
+  const grouped=groupRows(filtered);
+  let html="",shown=0;
+  const last=new Date(Y,M,0).getDate();
+  for(let d=1;d<=last;d++){
+    const key=iso(Y,M,d);
+    const gj=grouped.filter(g=>g[0].due_date===key);
+    const ev=events.filter(x=>x.event_date===key);
+    if(!gj.length&&!ev.length)continue;
+    const dow=new Date(Y,M-1,d).getDay();
+    const holiday=dow===0||holidays.some(x=>x.holiday_date===key);
+    html+=`<section class="day"><div class="dayhead ${holiday?"holiday":""}"><span class="date">${M}/${d}</span><span class="weekday">(${weekdays[dow]})</span></div>`;
+    gj.forEach(g=>{html+=cardHtml(g);shown++});
+    ev.forEach(x=>{html+=eventHtml(x);shown++});
+    html+="</section>";
+  }
+  list.innerHTML=html||'<div class="empty">この条件の予定はありません。</div>';
+  countText.textContent=`表示 ${shown}件`;
+}
+
+async function load(){
+  errorBox.innerHTML="";
+  if(!SUPABASE_URL||!SUPABASE_KEY){
+    errorBox.innerHTML='<div class="error">接続設定を確認してください。</div>';return;
+  }
+  try{
+    const [allJobs,allEvents,allHolidays,allNotices]=await Promise.all([
+      get("schedule_jobs","?select=*&due_date=not.is.null&order=due_date.asc,id.asc"),
+      get("schedule_events","?select=*&order=event_date.asc"),
+      get("schedule_holidays","?select=*"),
+      get("schedule_notices","?select=id,notice_text,updated_at&order=id.asc")
+    ]);
+    jobs=allJobs.filter(x=>inMonth(x.due_date,Y,M));
+    events=allEvents.filter(x=>inMonth(x.event_date,Y,M));
+    holidays=allHolidays.filter(x=>inMonth(x.holiday_date,Y,M));
+    notices=allNotices||[];
+    fillFilters();renderNotices();render();
+    syncText.textContent=`更新 ${new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"})}`;
+  }catch(e){
+    console.error(e);
+    errorBox.innerHTML=`<div class="error">読込エラー<br><small>${esc(e.message)}</small></div>`;
+    countText.textContent="読込失敗";
+  }
+}
+updateMonthTitle();
+load();
+</script>
+</body>
+</html>
