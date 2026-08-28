@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 日程管理 TEST v0.20</title><script src="config.js"></script>
+<title>TAJIMA 日程管理 TEST v0.21</title><script src="config.js"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#f3f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
 button,input,textarea,select{font:inherit}
@@ -48,9 +48,15 @@ textarea{min-height:78px;resize:vertical}
 .hist.clickable{cursor:pointer;border-radius:7px}.hist.clickable:hover{background:#eff6ff}
 .hist-date{font-size:11px;color:#64748b;font-weight:800;margin-bottom:2px}
 
+
+.manage-check{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 10px}
+.manage-chip{font-size:11px;font-weight:900;padding:6px 8px;border-radius:999px;border:1px solid #d7e0eb;background:#f8fafc}
+.manage-chip.warn{background:#fff7ed;border-color:#fdba74;color:#9a3412}
+.manage-empty{padding:10px;border:1px dashed #cbd5e1;border-radius:7px;color:#64748b;font-size:12px}
+
 </style></head><body>
-<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.20</small></div>
-<div class="top-actions"><button class="ok" onclick="window.open('penboard.html?v=0.20','_blank')">ペンボードを開く</button></div></div>
+<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.21</small></div>
+<div class="top-actions"><button class="ok" onclick="window.open('penboard.html?v=0.21','_blank')">ペンボードを開く</button></div></div>
 <div class="shell">
 <nav class="sidebar"><div class="title">メニュー</div><div class="menu">
 <button id="mJob" class="active" onclick="showPanel('job')">作業登録</button>
@@ -74,9 +80,9 @@ textarea{min-height:78px;resize:vertical}
 <div class="actions"><button id="saveBtn" class="save" onclick="saveJob()">登録</button><button id="deleteBtn" class="delete" style="display:none" onclick="deleteJob()">削除</button><button id="cancelBtn" class="cancel" style="display:none" onclick="resetForm()">編集解除</button></div>
 </div><div class="card"><h2 style="font-size:14px">今日の予定</h2><div id="todayBox" class="todaybox"></div></div></div>
 
-<div id="companyPanel" class="panel"><div class="card"><h2>会社別管理</h2><div class="hint">会社 → 月 → 案件の順で確認できます。</div><div id="companies" class="companylist"></div></div></div>
-<div id="machinePanel" class="panel"><div class="card"><h2>機械別管理</h2><div class="hint">機械 → 月 → 案件の順で確認できます。</div><div id="machines" class="machinelist"></div></div></div>
-<div id="monthPanel" class="panel"><div class="card"><h2>月別管理</h2><div class="hint">月 → 日付順で全案件を確認できます。</div><div id="months" class="companylist"></div></div></div>
+<div id="companyPanel" class="panel"><div class="card"><h2>会社別管理</h2><div class="hint">会社 → 月 → 案件の順で確認できます。</div><div id="manageCheckCompany"></div><div id="companies" class="companylist"></div></div></div>
+<div id="machinePanel" class="panel"><div class="card"><h2>機械別管理</h2><div class="hint">機械 → 月 → 案件の順で確認できます。</div><div id="manageCheckMachine"></div><div id="machines" class="machinelist"></div></div></div>
+<div id="monthPanel" class="panel"><div class="card"><h2>月別管理</h2><div class="hint">月 → 日付順で全案件を確認できます。</div><div id="manageCheckMonth"></div><div id="months" class="companylist"></div></div></div>
 <div id="eventPanel" class="panel"><div class="card"><h2>行事・点検登録</h2><div id="eventEditing" class="editing"></div><label>日付</label><input id="eventDate" type="date"><label>内容</label><input id="eventText" placeholder="例：電気設備点検"><label>表示強調</label><div id="eventColors" class="colors"></div><div class="actions"><button id="eventSaveBtn" class="save" onclick="saveEvent()">登録</button><button id="eventDeleteBtn" class="delete" style="display:none" onclick="deleteEvent()">削除</button><button id="eventCancelBtn" class="cancel" style="display:none" onclick="resetEventForm()">編集解除</button></div></div></div>
 <div id="holidayPanel" class="panel"><div class="card"><h2>休日設定</h2><div class="hint">この画面を開いた状態で、右側カレンダーの日付をクリックすると会社休日をON/OFFできます。日曜日は自動休日です。</div></div></div>
 <div id="noticePanel" class="panel"><div class="card"><h2>連絡事項</h2>
@@ -107,7 +113,7 @@ const iso=(y,m,d)=>`${ym(y,m)}-${String(d).padStart(2,"0")}`;
 const colors=["#ef4444","#eab308","#22c55e","#06b6d4","#8b5cf6","#ec4899"];
 function inMonth(date,y,m){return !!date && String(date).startsWith(`${ym(y,m)}-`)}
 
-let now=new Date(),Y=now.getFullYear(),M=now.getMonth()+1,jobs=[],events=[],holidays=[],allJobs=[],editId=null,accent=null,eventAccent=null,eventEditId=null,currentPanel="job";
+let now=new Date(),Y=now.getFullYear(),M=now.getMonth()+1,jobs=[],events=[],holidays=[],allJobs=[],editId=null,accent=null,eventAccent=null,eventEditId=null,currentPanel="job",manageContext=null;
 
 function showPanel(name){
   currentPanel=name;
@@ -138,10 +144,10 @@ async function load(){
       get("schedule_events","?select=*&order=event_date.asc"),
       get("schedule_holidays","?select=*")
     ]);
-    jobs=allJobs.filter(x=>inMonth(x.arrival_date,Y,M)||inMonth(x.due_date,Y,M));
+    jobs=allJobs.filter(x=>inMonth(x.due_date,Y,M));
     events=events.filter(x=>inMonth(x.event_date,Y,M));
     holidays=holidays.filter(x=>inMonth(x.holiday_date,Y,M));
-    draw();refreshMasters();drawToday();
+    draw();refreshMasters();drawToday();refreshManagementView();
   }catch(e){alert("読込エラー: "+e.message)}
 }
 function refreshMasters(){
@@ -246,7 +252,7 @@ async function saveJob(){
   if(editId)await patch("schedule_jobs",editId,row); else await post("schedule_jobs",row);
   resetForm();await load()
 }
-async function deleteJob(){if(editId&&confirm("この案件を削除しますか？")){await del("schedule_jobs",editId);resetForm();await load()}}
+async function deleteJob(){if(editId&&confirm("この案件を削除しますか？")){await del("schedule_jobs",editId);resetForm();await load();returnToManagementAfterEdit()}}
 function editEvent(id){
   let x=events.find(v=>Number(v.id)===Number(id));if(!x)return;
   showPanel("event");eventEditId=x.id;
@@ -268,43 +274,112 @@ async function saveEvent(){
 async function deleteEvent(){
   if(eventEditId&&confirm("この行事・点検を削除しますか？")){await del("schedule_events",eventEditId);resetEventForm();await load()}
 }
+function clean(v){return String(v??"").trim()}
 function jobMonth(x){return x.due_date?String(x.due_date).slice(0,7):""}
 function monthLabel(k){if(!k)return "納期未設定";let [y,m]=k.split("-");return `${y}.${m}`}
 function sortedMonths(a){return [...new Set(a.map(jobMonth).filter(Boolean))].sort().reverse()}
-function sortDue(a){return [...a].sort((x,y)=>String(x.due_date||"9999-99-99").localeCompare(String(y.due_date||"9999-99-99"))||Number(x.id)-Number(y.id))}
+function sortDue(a){return [...a].sort((x,y)=>String(x.due_date||"9999-99-99").localeCompare(String(y.due_date||"9999-99-99"))||clean(x.company_name).localeCompare(clean(y.company_name),"ja")||clean(x.part_no).localeCompare(clean(y.part_no),"ja")||Number(x.id)-Number(y.id))}
+function machineKey(x){return clean(x.machine_name)||"__UNASSIGNED__"}
+function machineLabel(k){return k==="__UNASSIGNED__"?"未定":k}
+function managementIssues(){
+  return {
+    unassigned:allJobs.filter(x=>!clean(x.machine_name)).length,
+    nodue:allJobs.filter(x=>!x.due_date).length
+  };
+}
+function drawManageCheck(id){
+  const e=document.getElementById(id);if(!e)return;
+  const q=managementIssues();
+  e.innerHTML=`<div class="manage-check"><span class="manage-chip ${q.unassigned?"warn":""}">機械未定 ${q.unassigned}件</span><span class="manage-chip ${q.nodue?"warn":""}">納期未設定 ${q.nodue}件</span></div>`;
+}
 function drawCompanies(){
-  let cs=[...new Set(allJobs.map(x=>x.company_name).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),"ja"));
-  companies.innerHTML=cs.map(c=>`<button class="manage-row" onclick='companyMonths(${JSON.stringify(c)})'><span>${esc(c)}</span><small>${allJobs.filter(x=>x.company_name===c).length}件</small></button>`).join("")||'<div class="hint">登録済み会社はありません。</div>';
+  manageContext={type:"company-list"};
+  drawManageCheck("manageCheckCompany");
+  let cs=[...new Set(allJobs.map(x=>clean(x.company_name)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
+  companies.innerHTML=cs.map(c=>{
+    const a=allJobs.filter(x=>clean(x.company_name)===c), n=sortedMonths(a).length;
+    return `<button class="manage-row" onclick='companyMonths(${JSON.stringify(c)})'><span>${esc(c)}</span><small>${n}ヶ月 / ${a.length}件</small></button>`;
+  }).join("")||'<div class="manage-empty">登録済み会社はありません。</div>';
 }
 function companyMonths(c){
-  let a=allJobs.filter(x=>x.company_name===c), ms=sortedMonths(a);
-  companies.innerHTML=`<button class="manage-back" onclick="drawCompanies()">← 会社一覧</button><div class="manage-title">${esc(c)}</div>`+
-    ms.map(k=>`<button class="manage-row" onclick='showManagedJobs("company",${JSON.stringify(c)},${JSON.stringify(k)})'><span>${monthLabel(k)}</span><small>${a.filter(x=>jobMonth(x)===k).length}件</small></button>`).join("");
+  c=clean(c);manageContext={type:"company-months",key:c};
+  drawManageCheck("manageCheckCompany");
+  let a=allJobs.filter(x=>clean(x.company_name)===c), ms=sortedMonths(a), nodue=a.filter(x=>!x.due_date).length;
+  companies.innerHTML=`<button class="manage-back" onclick="drawCompanies()">← 会社一覧</button><div class="manage-title">${esc(c)}　${a.length}件</div>`+
+    ms.map(k=>`<button class="manage-row" onclick='showManagedJobs("company",${JSON.stringify(c)},${JSON.stringify(k)})'><span>${monthLabel(k)}</span><small>${a.filter(x=>jobMonth(x)===k).length}件</small></button>`).join("")+
+    (nodue?`<button class="manage-row" onclick='showManagedJobs("company",${JSON.stringify(c)},"")'><span>納期未設定</span><small>${nodue}件</small></button>`:"");
 }
 function drawMachines(){
-  let ms=[...new Set(allJobs.map(x=>x.machine_name).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),"ja"));
-  machines.innerHTML=ms.map(m=>`<button class="manage-row" onclick='machineMonths(${JSON.stringify(m)})'><span>${esc(m)}</span><small>${allJobs.filter(x=>x.machine_name===m).length}件</small></button>`).join("")||'<div class="hint">登録済み機械はありません。</div>';
+  manageContext={type:"machine-list"};
+  drawManageCheck("manageCheckMachine");
+  let keys=[...new Set(allJobs.map(machineKey))].sort((a,b)=>{
+    if(a==="__UNASSIGNED__")return -1;if(b==="__UNASSIGNED__")return 1;return a.localeCompare(b,"ja")
+  });
+  machines.innerHTML=keys.map(k=>{
+    const a=allJobs.filter(x=>machineKey(x)===k), n=sortedMonths(a).length;
+    return `<button class="manage-row" onclick='machineMonths(${JSON.stringify(k)})'><span>${esc(machineLabel(k))}</span><small>${n}ヶ月 / ${a.length}件</small></button>`;
+  }).join("")||'<div class="manage-empty">登録済み案件はありません。</div>';
 }
-function machineMonths(m){
-  let a=allJobs.filter(x=>x.machine_name===m), ms=sortedMonths(a);
-  machines.innerHTML=`<button class="manage-back" onclick="drawMachines()">← 機械一覧</button><div class="manage-title">${esc(m)}</div>`+
-    ms.map(k=>`<button class="manage-row" onclick='showManagedJobs("machine",${JSON.stringify(m)},${JSON.stringify(k)})'><span>${monthLabel(k)}</span><small>${a.filter(x=>jobMonth(x)===k).length}件</small></button>`).join("");
+function machineMonths(k){
+  manageContext={type:"machine-months",key:k};
+  drawManageCheck("manageCheckMachine");
+  let a=allJobs.filter(x=>machineKey(x)===k), ms=sortedMonths(a), nodue=a.filter(x=>!x.due_date).length;
+  machines.innerHTML=`<button class="manage-back" onclick="drawMachines()">← 機械一覧</button><div class="manage-title">${esc(machineLabel(k))}　${a.length}件</div>`+
+    ms.map(m=>`<button class="manage-row" onclick='showManagedJobs("machine",${JSON.stringify(k)},${JSON.stringify(m)})'><span>${monthLabel(m)}</span><small>${a.filter(x=>jobMonth(x)===m).length}件</small></button>`).join("")+
+    (nodue?`<button class="manage-row" onclick='showManagedJobs("machine",${JSON.stringify(k)},"")'><span>納期未設定</span><small>${nodue}件</small></button>`:"");
 }
 function drawMonths(){
-  let ms=sortedMonths(allJobs);
-  months.innerHTML=ms.map(k=>`<button class="manage-row" onclick='showManagedJobs("month","",${JSON.stringify(k)})'><span>${monthLabel(k)}</span><small>${allJobs.filter(x=>jobMonth(x)===k).length}件</small></button>`).join("")||'<div class="hint">登録済み案件はありません。</div>';
+  manageContext={type:"month-list"};
+  drawManageCheck("manageCheckMonth");
+  let ms=sortedMonths(allJobs), nodue=allJobs.filter(x=>!x.due_date).length;
+  months.innerHTML=ms.map(k=>`<button class="manage-row" onclick='showManagedJobs("month","",${JSON.stringify(k)})'><span>${monthLabel(k)}</span><small>${allJobs.filter(x=>jobMonth(x)===k).length}件</small></button>`).join("")+
+    (nodue?`<button class="manage-row" onclick='showManagedJobs("month","","")'><span>納期未設定</span><small>${nodue}件</small></button>`:"")||
+    '<div class="manage-empty">登録済み案件はありません。</div>';
+}
+function managedSet(type,key,k){
+  let a=allJobs.filter(x=>jobMonth(x)===k);
+  if(type==="company")a=a.filter(x=>clean(x.company_name)===clean(key));
+  if(type==="machine")a=a.filter(x=>machineKey(x)===key);
+  return sortDue(a);
+}
+function managedTitle(type,key,k){
+  let t=monthLabel(k);
+  if(type==="company")t=`${key} / ${t}`;
+  if(type==="machine")t=`${machineLabel(key)} / ${t}`;
+  return t;
+}
+function renderManagedModal(type,key,k){
+  const a=managedSet(type,key,k), title=managedTitle(type,key,k);
+  modalBody.innerHTML=`<h2>${esc(title)}　<small>${a.length}件</small></h2>`+
+    (a.length?a.map(x=>`<div class="hist clickable" onclick="openManagedJob(${x.id})"><div class="hist-date">${esc(x.due_date||"納期未設定")}</div><b>${esc(x.part_no)}</b><br>会社 ${esc(clean(x.company_name)||"未設定")} ／ 機械 ${esc(clean(x.machine_name)||"未定")}${x.memo?`<br>${esc(x.memo)}`:""}</div>`).join(""):'<div class="manage-empty">該当案件はありません。変更・移動済みの可能性があります。</div>');
 }
 function showManagedJobs(type,key,k){
-  let a=allJobs.filter(x=>jobMonth(x)===k);
-  let title=monthLabel(k);
-  if(type==="company"){a=a.filter(x=>x.company_name===key);title=`${key} / ${title}`}
-  if(type==="machine"){a=a.filter(x=>x.machine_name===key);title=`${key} / ${title}`}
-  a=sortDue(a);
-  modalBody.innerHTML=`<h2>${esc(title)}　<small>${a.length}件</small></h2>`+
-    (a.length?a.map(x=>`<div class="hist clickable" onclick="openManagedJob(${x.id})"><div class="hist-date">${esc(x.due_date||"納期未設定")}</div><b>${esc(x.part_no)}</b><br>会社 ${esc(x.company_name||"")} ／ 機械 ${esc(x.machine_name||"未定")}${x.memo?`<br>${esc(x.memo)}`:""}</div>`).join(""):'<div class="hint">案件はありません。</div>');
+  manageContext={type:"jobs",axis:type,key:key,month:k};
+  renderManagedModal(type,key,k);
   modal.classList.add("show");
 }
-function openManagedJob(id){modal.classList.remove("show");editJob(id)}
+function openManagedJob(id){
+  if(manageContext?.type==="jobs")sessionStorage.setItem("tajimaManageReturn",JSON.stringify(manageContext));
+  modal.classList.remove("show");editJob(id)
+}
+function refreshManagementView(){
+  if(currentPanel==="company"){
+    if(manageContext?.type==="company-months")companyMonths(manageContext.key);else drawCompanies();
+  }else if(currentPanel==="machine"){
+    if(manageContext?.type==="machine-months")machineMonths(manageContext.key);else drawMachines();
+  }else if(currentPanel==="month")drawMonths();
+}
+function returnToManagementAfterEdit(){
+  let raw=sessionStorage.getItem("tajimaManageReturn");if(!raw)return false;
+  sessionStorage.removeItem("tajimaManageReturn");
+  let c;try{c=JSON.parse(raw)}catch{return false}
+  if(!c||c.type!=="jobs")return false;
+  showPanel(c.axis==="company"?"company":c.axis==="machine"?"machine":"month");
+  manageContext=c;
+  renderManagedModal(c.axis,c.key,c.month);
+  modal.classList.add("show");
+  return true;
+}
 function companyHistory(c){companyMonths(c)}
 function openPartHistory(){let c=company.value.trim(),p=part.value.trim();let a=allJobs.filter(x=>(!c||x.company_name===c)&&(!p||x.part_no===p));modalBody.innerHTML=`<h2>品番履歴</h2>`+(a.length?a.map(x=>`<div class="hist">${esc(x.company_name)} / <b>${esc(x.part_no)}</b><br>納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}</div>`).join(""):'履歴なし');modal.classList.add("show")}
 
