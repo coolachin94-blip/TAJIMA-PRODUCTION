@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 日程管理 TEST v0.22</title><script src="config.js"></script>
+<title>TAJIMA 日程管理 TEST v0.23</title><script src="config.js"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#f3f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
 button,input,textarea,select{font:inherit}
@@ -54,9 +54,14 @@ textarea{min-height:78px;resize:vertical}
 .manage-chip.warn{background:#fff7ed;border-color:#fdba74;color:#9a3412}
 .manage-empty{padding:10px;border:1px dashed #cbd5e1;border-radius:7px;color:#64748b;font-size:12px}
 
+
+.auto-with-arrow input{padding-right:38px}
+.auto-arrow{position:absolute;right:4px;top:4px;width:30px;height:calc(100% - 8px);border:0!important;border-left:1px solid #dbe3ee!important;background:#fff!important;border-radius:0 5px 5px 0!important;padding:0!important;font-size:18px;line-height:1;color:#475569;cursor:pointer}
+.auto-arrow:hover{background:#f1f5f9!important}
+
 </style></head><body>
-<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.22</small></div>
-<div class="top-actions"><button class="ok" onclick="window.open('penboard.html?v=0.22','_blank')">ペンボードを開く</button></div></div>
+<div class="topbar"><div class="brand">工場スケジュール管理システム <small>TEST v0.23</small></div>
+<div class="top-actions"><button class="ok" onclick="window.open('penboard.html?v=0.23','_blank')">ペンボードを開く</button></div></div>
 <div class="shell">
 <nav class="sidebar"><div class="title">メニュー</div><div class="menu">
 <button id="mJob" class="active" onclick="showPanel('job')">作業登録</button>
@@ -71,10 +76,10 @@ textarea{min-height:78px;resize:vertical}
 
 <section class="editor-col">
 <div id="jobPanel" class="panel show"><div class="card"><h2>作業登録 / 編集</h2><div id="editing" class="editing"></div>
-<label>会社名 *</label><div class="fieldrow"><div class="auto-wrap"><input id="company" autocomplete="off" placeholder="会社名を入力"><div id="companyMenu" class="auto-menu"></div></div><button onclick="showPanel('company')">管理</button></div>
+<label>会社名 *</label><div class="fieldrow"><div class="auto-wrap auto-with-arrow"><input id="company" autocomplete="off" placeholder="会社名を入力"><button type="button" class="auto-arrow" onclick="toggleAutoMenu(company,companyMenu)">⌄</button><div id="companyMenu" class="auto-menu"></div></div><button onclick="showPanel('company')">管理</button></div>
 <label>品番 *</label><div class="fieldrow"><input id="part" list="partList" placeholder="品番を入力"><button onclick="openPartHistory()">履歴</button></div><datalist id="partList"></datalist>
 <label>納期 *</label><div class="datebox"><input id="due" type="date"></div>
-<label>担当機械</label><div class="machine-row"><div class="auto-wrap"><input id="machine" autocomplete="off" placeholder="選択または入力"><div id="machineMenu" class="auto-menu"></div></div><label class="unknown"><input id="machineUnknown" type="checkbox"> 未定</label></div>
+<label>担当機械</label><div class="machine-row"><div class="auto-wrap auto-with-arrow"><input id="machine" autocomplete="off" placeholder="選択または入力"><button type="button" class="auto-arrow" onclick="toggleAutoMenu(machine,machineMenu)">⌄</button><div id="machineMenu" class="auto-menu"></div></div><label class="unknown"><input id="machineUnknown" type="checkbox"> 未定</label></div>
 <label>表示強調（基本：なし）</label><div id="colors" class="colors"></div>
 <label>メモ <span style="font-weight:500;color:#8a96a8">（管理カレンダーには表示しません）</span></label><textarea id="memo" placeholder="特記事項など"></textarea>
 <div class="actions"><button id="saveBtn" class="save" onclick="saveJob()">登録</button><button id="deleteBtn" class="delete" style="display:none" onclick="deleteJob()">削除</button><button id="cancelBtn" class="cancel" style="display:none" onclick="resetForm()">編集解除</button></div>
@@ -140,7 +145,7 @@ async function load(){
     // v0.3: schedule_jobs は一度取得してブラウザ側で月を絞り込み。
     // 複雑な or クエリをやめ、管理/モニター/ペンボードで同じ結果になるよう統一。
     [allJobs,events,holidays]=await Promise.all([
-      get("schedule_jobs","?select=*&order=created_at.asc"),
+      get("schedule_jobs","?select=*&due_date=not.is.null&order=due_date.asc,id.asc"),
       get("schedule_events","?select=*&order=event_date.asc"),
       get("schedule_holidays","?select=*")
     ]);
@@ -151,34 +156,43 @@ async function load(){
   }catch(e){alert("読込エラー: "+e.message)}
 }
 function refreshMasters(){
-  const cs=[...new Set(allJobs.map(x=>x.company_name).filter(Boolean))];
-  const ms=[...new Set(allJobs.map(x=>x.machine_name).filter(Boolean))];
+  const cs=[...new Set(validJobs().map(x=>x.company_name).filter(Boolean))];
+  const ms=[...new Set(validJobs().map(x=>x.machine_name).filter(Boolean))];
   setupAutoComplete(company,companyMenu,cs,()=>{
     const c=company.value;
-    const ps=[...new Set(allJobs.filter(x=>x.company_name===c).map(x=>x.part_no).filter(Boolean))];
+    const ps=[...new Set(validJobs().filter(x=>x.company_name===c).map(x=>x.part_no).filter(Boolean))];
     partList.innerHTML=ps.map(x=>`<option value="${esc(x)}">`).join("");
   });
   setupAutoComplete(machine,machineMenu,ms);
   const c=company.value;
-  const ps=[...new Set(allJobs.filter(x=>x.company_name===c).map(x=>x.part_no).filter(Boolean))];
+  const ps=[...new Set(validJobs().filter(x=>x.company_name===c).map(x=>x.part_no).filter(Boolean))];
   partList.innerHTML=ps.map(x=>`<option value="${esc(x)}">`).join("");
 }
 function setupAutoComplete(input,menu,items,onPick){
   input._autoItems=items;
   input._autoPick=onPick;
   if(input.dataset.autoReady==="1")return;
-  input.addEventListener("focus",()=>renderAutoMenu(input,menu));
-  input.addEventListener("input",()=>renderAutoMenu(input,menu));
+  input.addEventListener("input",()=>{
+    if(menu.classList.contains("show"))renderAutoMenu(input,menu,true);
+  });
   input.addEventListener("keydown",e=>{if(e.key==="Escape")menu.classList.remove("show")});
   input.dataset.autoReady="1";
 }
-function renderAutoMenu(input,menu){
+function toggleAutoMenu(input,menu){
+  if(menu.classList.contains("show")){menu.classList.remove("show");return}
+  renderAutoMenu(input,menu,false);
+}
+function renderAutoMenu(input,menu,useFilter=true){
   const items=input._autoItems||[];
-  const q=input.value.trim().toLowerCase();
-  const shown=items.filter(x=>!q||String(x).toLowerCase().includes(q)).slice(0,30);
-  if(!shown.length){menu.classList.remove("show");menu.innerHTML="";return}
+  const q=useFilter?input.value.trim().toLowerCase():"";
+  const shown=items.filter(x=>!q||String(x).toLowerCase().includes(q)).slice(0,50);
+  if(!shown.length){
+    menu.innerHTML='<div class="auto-option" style="cursor:default;color:#94a3b8">登録済み候補なし</div>';
+    menu.classList.add("show");
+    return;
+  }
   menu.innerHTML=shown.map(x=>`<button type="button" class="auto-option" data-value="${esc(x)}">${esc(x)}</button>`).join("");
-  menu.querySelectorAll(".auto-option").forEach(b=>b.onclick=()=>{
+  menu.querySelectorAll(".auto-option[data-value]").forEach(b=>b.onclick=()=>{
     input.value=b.dataset.value||"";
     menu.classList.remove("show");
     if(input._autoPick)input._autoPick();
@@ -377,7 +391,7 @@ function returnToManagementAfterEdit(){
   return true;
 }
 function companyHistory(c){companyMonths(c)}
-function openPartHistory(){let c=company.value.trim(),p=part.value.trim();let a=allJobs.filter(x=>(!c||x.company_name===c)&&(!p||x.part_no===p));modalBody.innerHTML=`<h2>品番履歴</h2>`+(a.length?a.map(x=>`<div class="hist">${esc(x.company_name)} / <b>${esc(x.part_no)}</b><br>納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}</div>`).join(""):'履歴なし');modal.classList.add("show")}
+function openPartHistory(){let c=company.value.trim(),p=part.value.trim();let a=validJobs().filter(x=>(!c||x.company_name===c)&&(!p||x.part_no===p));modalBody.innerHTML=`<h2>品番履歴</h2>`+(a.length?a.map(x=>`<div class="hist">${esc(x.company_name)} / <b>${esc(x.part_no)}</b><br>納期 ${x.due_date||"未定"} ／ 機械 ${esc(x.machine_name||"未定")}</div>`).join(""):'履歴なし');modal.classList.add("show")}
 
 async function loadNotice(){
   try{
