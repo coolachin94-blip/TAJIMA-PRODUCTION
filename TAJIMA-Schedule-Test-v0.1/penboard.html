@@ -65,7 +65,7 @@
 <script>
 const C=window.TAJIMA_CONFIG||window.CONFIG||{},SUPABASE_URL=C.SUPABASE_URL||"",SUPABASE_KEY=C.SUPABASE_PUBLISHABLE_KEY||C.SUPABASE_ANON_KEY||C.SUPABASE_KEY||"";
 
-const APP_VERSION="0.23";
+const APP_VERSION="0.24";
 async function checkAppVersion(){
   try{
     const r=await fetch(`version.json?ts=${Date.now()}`,{cache:"no-store"});
@@ -89,7 +89,7 @@ let nowClock=new Date(),boardY=nowClock.getFullYear(),boardM=nowClock.getMonth()
 const c=document.getElementById("drawCanvas"),ctx=c.getContext("2d"),sc=document.getElementById("stampCanvas"),sctx=sc.getContext("2d"),statusEl=document.getElementById("syncStatus"),monitorFrame=document.getElementById("monitorFrame");
 
 function boardMonth(){return `${boardY}-${String(boardM).padStart(2,"0")}`}
-function refreshBoardMonth(){boardMonthLabel.textContent=`${boardM}月`;monitorFrame.src=`monitor.html?v=0.23&penboard=1&year=${boardY}&month=${boardM}`}
+function refreshBoardMonth(){boardMonthLabel.textContent=`${boardM}月`;monitorFrame.src=`monitor.html?v=0.24&penboard=1&year=${boardY}&month=${boardM}`}
 function sizeCanvas(el,context){const r=el.getBoundingClientRect(),dpr=devicePixelRatio||1;el.width=Math.max(1,Math.round(r.width*dpr));el.height=Math.max(1,Math.round(r.height*dpr));context.setTransform(dpr,0,0,dpr,0,0)}
 function resize(){sizeCanvas(c,ctx);sizeCanvas(sc,sctx);redraw();redrawStamps()}
 function xy(e){const r=c.getBoundingClientRect();return [(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]}
