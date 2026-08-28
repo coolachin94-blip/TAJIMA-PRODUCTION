@@ -1,54 +1,71 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA ペンボード TEST v0.16</title><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>TAJIMA ペンボード TEST v0.17</title><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
 *{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;font-family:"Yu Gothic",sans-serif;background:#eef2f7}
-.frame{height:100%;position:relative;background:#fff;padding-right:88px}
-.frame iframe{position:absolute;left:0;top:0;bottom:0;right:88px;border:0;width:calc(100% - 88px);height:100%;z-index:1}
-#drawCanvas,#stampCanvas{position:absolute;left:0;top:0;bottom:0;right:88px;width:calc(100% - 88px);height:100%;z-index:5;touch-action:none}
+.frame{height:100%;position:relative;background:#fff;padding-right:54px}
+.frame iframe{position:absolute;left:0;top:0;bottom:0;right:54px;border:0;width:calc(100% - 54px);height:100%;z-index:1}
+#drawCanvas,#stampCanvas{position:absolute;left:0;top:0;bottom:0;right:54px;width:calc(100% - 54px);height:100%;z-index:5;touch-action:none}
 #stampCanvas{pointer-events:none;z-index:6}
-.toolbar{position:absolute;right:0;top:0;width:88px;height:100%;z-index:100;background:#132033;color:#fff;display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:8px 7px;box-shadow:-2px 0 8px #0004;overflow-y:auto}
-.toolbar .title{font-size:11px;font-weight:900;text-align:center;padding:3px 0 5px}
-.tool{min-height:42px;border:1px solid #40516a;background:#1b2b42;color:#fff;border-radius:8px;font-weight:900;cursor:pointer;padding:5px 4px;font-size:12px}
-.tool.active{background:#2563eb;border-color:#93c5fd}.tool.stamp-active{background:#b91c1c;border-color:#fca5a5}.tool.danger{background:#7f1d1d}
-.month-label{text-align:center;font-size:11px;font-weight:900;padding:2px 0}
-.colors{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}.color{width:30px;height:30px;border-radius:50%;border:2px solid #cbd5e1;cursor:pointer;justify-self:center}.color.sel{outline:3px solid #fff;outline-offset:1px}
-.widths{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.widthbtn{height:34px;border:1px solid #40516a;background:#1b2b42;border-radius:7px;cursor:pointer;display:grid;place-items:center}.widthbtn.sel{outline:2px solid #fff}.dot{background:#fff;border-radius:999px}
-.status{font-size:9px;color:#cbd5e1;text-align:center;margin-top:auto;line-height:1.25}
+
+.toolbar{position:absolute;right:0;top:0;width:54px;height:100%;z-index:100;background:#132033;color:#fff;display:flex;flex-direction:column;align-items:center;gap:7px;padding:7px 5px;box-shadow:-2px 0 8px #0004;overflow:visible}
+.tool{width:42px;height:42px;min-height:42px;border:1px solid #40516a;background:#1b2b42;color:#fff;border-radius:8px;font-weight:900;cursor:pointer;padding:0;font-size:21px;line-height:1;display:grid;place-items:center}
+.tool.active{background:#2563eb;border-color:#93c5fd}.tool.stamp-active{background:#b91c1c;border-color:#fca5a5}
+.month-label{width:42px;text-align:center;font-size:13px;font-weight:900;padding:1px 0;white-space:nowrap}
+.tool-wrap{position:relative;width:42px}
+.pop{display:none;position:absolute;right:49px;top:0;background:#132033;border:1px solid #40516a;border-radius:10px;padding:8px;box-shadow:0 4px 14px #0005;z-index:150}
+.pop.open{display:grid}
+.colors-pop{grid-template-columns:repeat(3,34px);gap:7px}
+.color{width:30px;height:30px;border-radius:50%;border:2px solid #cbd5e1;cursor:pointer;justify-self:center;padding:0}
+.color.sel{outline:3px solid #fff;outline-offset:1px}
+.color-current{width:19px;height:19px;border-radius:50%;background:#111111;border:2px solid #fff;display:block}
+.widths-pop{grid-template-columns:1fr;gap:5px}
+.widthbtn{width:44px;height:32px;border:1px solid #40516a;background:#1b2b42;border-radius:7px;cursor:pointer;display:grid;place-items:center;padding:0}
+.widthbtn.sel{outline:2px solid #fff}
+.width-line{width:27px;background:#fff;border-radius:999px;display:block}
+.width-current{width:25px;height:3px;background:#fff;border-radius:999px;display:block}
+.status{font-size:8px;color:#cbd5e1;text-align:center;margin-top:auto;line-height:1.15;width:44px;overflow:hidden;white-space:nowrap;text-overflow:clip}
 .eraser-cursor{cursor:cell!important}.stamp-cursor{cursor:copy!important}
 </style></head><body><div class="frame">
 <iframe id="monitorFrame" src="about:blank"></iframe>
 <canvas id="drawCanvas"></canvas>
 <canvas id="stampCanvas"></canvas>
 <div class="toolbar">
-  <div class="title">共有ペンボード</div>
-  <button class="tool" onclick="changeBoardMonth(-1)">◀ 前月</button>
+  <button class="tool" onclick="changeBoardMonth(-1)" title="前月" aria-label="前月">‹</button>
   <div id="boardMonthLabel" class="month-label"></div>
-  <button class="tool" onclick="goBoardCurrentMonth()">今月</button>
-  <button class="tool" onclick="changeBoardMonth(1)">次月 ▶</button>
-  <button id="penBtn" class="tool active" onclick="setMode('pen')">✎ ペン</button>
-  <div class="colors">
-    <button class="color sel" style="background:#111111" data-c="#111111" onclick="setColor(this)"></button>
-    <button class="color" style="background:#ef4444" data-c="#ef4444" onclick="setColor(this)"></button>
-    <button class="color" style="background:#2563eb" data-c="#2563eb" onclick="setColor(this)"></button>
-    <button class="color" style="background:#16a34a" data-c="#16a34a" onclick="setColor(this)"></button>
-    <button class="color" style="background:#f59e0b" data-c="#f59e0b" onclick="setColor(this)"></button>
-    <button class="color" style="background:#8b5cf6" data-c="#8b5cf6" onclick="setColor(this)"></button>
+  <button class="tool" onclick="changeBoardMonth(1)" title="次月" aria-label="次月">›</button>
+
+  <button id="penBtn" class="tool active" onclick="setMode('pen')" title="ペン" aria-label="ペン">✎</button>
+
+  <div class="tool-wrap">
+    <button id="colorMenuBtn" class="tool" onclick="toggleColorMenu(event)" title="色" aria-label="色"><span id="colorCurrent" class="color-current"></span></button>
+    <div id="colorMenu" class="pop colors-pop">
+      <button class="color sel" style="background:#111111" data-c="#111111" onclick="setColor(this)"></button>
+      <button class="color" style="background:#ef4444" data-c="#ef4444" onclick="setColor(this)"></button>
+      <button class="color" style="background:#2563eb" data-c="#2563eb" onclick="setColor(this)"></button>
+      <button class="color" style="background:#16a34a" data-c="#16a34a" onclick="setColor(this)"></button>
+      <button class="color" style="background:#f59e0b" data-c="#f59e0b" onclick="setColor(this)"></button>
+      <button class="color" style="background:#8b5cf6" data-c="#8b5cf6" onclick="setColor(this)"></button>
+    </div>
   </div>
-  <div class="widths">
-    <button class="widthbtn" data-w="0.8" onclick="setWidth(this)"><span class="dot" style="width:2px;height:2px"></span></button>
-    <button class="widthbtn sel" data-w="1.3" onclick="setWidth(this)"><span class="dot" style="width:4px;height:4px"></span></button>
-    <button class="widthbtn" data-w="2" onclick="setWidth(this)"><span class="dot" style="width:7px;height:7px"></span></button>
+
+  <div class="tool-wrap">
+    <button id="widthMenuBtn" class="tool" onclick="toggleWidthMenu(event)" title="太さ" aria-label="太さ"><span id="widthCurrent" class="width-current"></span></button>
+    <div id="widthMenu" class="pop widths-pop">
+      <button class="widthbtn" data-w="0.8" onclick="setWidth(this)"><span class="width-line" style="height:1px"></span></button>
+      <button class="widthbtn sel" data-w="1.3" onclick="setWidth(this)"><span class="width-line" style="height:3px"></span></button>
+      <button class="widthbtn" data-w="2" onclick="setWidth(this)"><span class="width-line" style="height:5px"></span></button>
+    </div>
   </div>
-  <button id="eraserBtn" class="tool" onclick="setMode('eraser')">⌫ 消しゴム</button>
-  <button class="tool" onclick="undoLast()">↶ 戻す</button>
-  <button id="stampBtn" class="tool" onclick="setMode('stamp')">印鑑</button>
-  <button class="tool danger" onclick="clearAllBoard()">全消去</button>
-  <button class="tool" onclick="window.open('index.html','_blank')">管理</button>
+
+  <button id="eraserBtn" class="tool" onclick="setMode('eraser')" title="消しゴム" aria-label="消しゴム">◇</button>
+  <button class="tool" onclick="undoLast()" title="戻す" aria-label="戻す">↶</button>
+  <button id="stampBtn" class="tool" onclick="setMode('stamp')" title="スタンプ" aria-label="スタンプ">♙</button>
+
   <div id="syncStatus" class="status">接続準備中</div>
 </div>
 </div>
 <script>
 const C=window.TAJIMA_CONFIG||window.CONFIG||{},SUPABASE_URL=C.SUPABASE_URL||"",SUPABASE_KEY=C.SUPABASE_PUBLISHABLE_KEY||C.SUPABASE_ANON_KEY||C.SUPABASE_KEY||"";
 
-const APP_VERSION="0.16";
+const APP_VERSION="0.17";
 async function checkAppVersion(){
   try{
     const r=await fetch(`version.json?ts=${Date.now()}`,{cache:"no-store"});
@@ -72,7 +89,7 @@ let nowClock=new Date(),boardY=nowClock.getFullYear(),boardM=nowClock.getMonth()
 const c=document.getElementById("drawCanvas"),ctx=c.getContext("2d"),sc=document.getElementById("stampCanvas"),sctx=sc.getContext("2d"),statusEl=document.getElementById("syncStatus"),monitorFrame=document.getElementById("monitorFrame");
 
 function boardMonth(){return `${boardY}-${String(boardM).padStart(2,"0")}`}
-function refreshBoardMonth(){boardMonthLabel.textContent=`${boardY}年${boardM}月`;monitorFrame.src=`monitor.html?v=0.16&penboard=1&year=${boardY}&month=${boardM}`}
+function refreshBoardMonth(){boardMonthLabel.textContent=`${boardM}月`;monitorFrame.src=`monitor.html?v=0.17&penboard=1&year=${boardY}&month=${boardM}`}
 function sizeCanvas(el,context){const r=el.getBoundingClientRect(),dpr=devicePixelRatio||1;el.width=Math.max(1,Math.round(r.width*dpr));el.height=Math.max(1,Math.round(r.height*dpr));context.setTransform(dpr,0,0,dpr,0,0)}
 function resize(){sizeCanvas(c,ctx);sizeCanvas(sc,sctx);redraw();redrawStamps()}
 function xy(e){const r=c.getBoundingClientRect();return [(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]}
@@ -80,9 +97,15 @@ function screenPoint(p){const r=c.getBoundingClientRect();return [p[0]*r.width,p
 function drawStroke(s){const pts=s.points||[];if(pts.length<2)return;ctx.save();ctx.strokeStyle=s.stroke_color||"#111";ctx.lineWidth=Number(s.stroke_width)||1.3;ctx.lineCap="round";ctx.lineJoin="round";ctx.beginPath();let [x0,y0]=screenPoint(pts[0]);ctx.moveTo(x0,y0);if(pts.length===2){let [x,y]=screenPoint(pts[1]);ctx.lineTo(x,y)}else{for(let i=1;i<pts.length-1;i++){let [x,y]=screenPoint(pts[i]),[nx,ny]=screenPoint(pts[i+1]);ctx.quadraticCurveTo(x,y,(x+nx)/2,(y+ny)/2)}let [lx,ly]=screenPoint(pts[pts.length-1]);ctx.lineTo(lx,ly)}ctx.stroke();ctx.restore()}
 function redraw(extra=null){const r=c.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);strokes.filter(s=>!s.deleted).forEach(drawStroke);if(extra&&extra.length>1)drawStroke({points:extra,stroke_color:color,stroke_width:width})}
 function redrawStamps(){const r=sc.getBoundingClientRect();sctx.clearRect(0,0,r.width,r.height);stamps.filter(x=>!x.deleted).forEach(st=>{const x=st.x_norm*r.width,y=st.y_norm*r.height;sctx.save();sctx.translate(x,y);sctx.rotate(-0.12);sctx.strokeStyle="#b91c1c";sctx.fillStyle="rgba(255,255,255,.76)";sctx.lineWidth=2;sctx.beginPath();sctx.arc(0,0,24,0,Math.PI*2);sctx.fill();sctx.stroke();sctx.fillStyle="#b91c1c";sctx.font="900 15px Yu Gothic";sctx.textAlign="center";sctx.textBaseline="middle";sctx.fillText("出荷",0,0);sctx.restore()})}
-function setMode(v){mode=v;penBtn.classList.toggle("active",v==="pen");eraserBtn.classList.toggle("active",v==="eraser");stampBtn.classList.toggle("stamp-active",v==="stamp");c.classList.toggle("eraser-cursor",v==="eraser");c.classList.toggle("stamp-cursor",v==="stamp")}
-function setColor(el){color=el.dataset.c;document.querySelectorAll(".color").forEach(x=>x.classList.toggle("sel",x===el));setMode("pen")}
-function setWidth(el){width=Number(el.dataset.w);document.querySelectorAll(".widthbtn").forEach(x=>x.classList.toggle("sel",x===el));setMode("pen")}
+function closeToolMenus(){colorMenu.classList.remove("open");widthMenu.classList.remove("open")}
+function toggleColorMenu(e){e.stopPropagation();widthMenu.classList.remove("open");colorMenu.classList.toggle("open")}
+function toggleWidthMenu(e){e.stopPropagation();colorMenu.classList.remove("open");widthMenu.classList.toggle("open")}
+document.addEventListener("click",closeToolMenus);
+colorMenu.addEventListener("click",e=>e.stopPropagation());
+widthMenu.addEventListener("click",e=>e.stopPropagation());
+function setMode(v){mode=v;closeToolMenus();penBtn.classList.toggle("active",v==="pen");eraserBtn.classList.toggle("active",v==="eraser");stampBtn.classList.toggle("stamp-active",v==="stamp");c.classList.toggle("eraser-cursor",v==="eraser");c.classList.toggle("stamp-cursor",v==="stamp")}
+function setColor(el){color=el.dataset.c;document.querySelectorAll(".color").forEach(x=>x.classList.toggle("sel",x===el));colorCurrent.style.background=color;setMode("pen")}
+function setWidth(el){width=Number(el.dataset.w);document.querySelectorAll(".widthbtn").forEach(x=>x.classList.toggle("sel",x===el));widthCurrent.style.height=width===0.8?"1px":width===1.3?"3px":"5px";setMode("pen")}
 function distToSeg(px,py,x1,y1,x2,y2){const A=px-x1,B=py-y1,C=x2-x1,D=y2-y1,den=C*C+D*D;let t=den?Math.max(0,Math.min(1,(A*C+B*D)/den)):0;const x=x1+t*C,y=y1+t*D,dx=px-x,dy=py-y;return Math.sqrt(dx*dx+dy*dy)}
 function hitStroke(p){const [px,py]=screenPoint(p);for(let si=strokes.length-1;si>=0;si--){const s=strokes[si];if(s.deleted)continue;const pts=s.points||[];for(let i=0;i<pts.length-1;i++){const [x1,y1]=screenPoint(pts[i]),[x2,y2]=screenPoint(pts[i+1]);if(distToSeg(px,py,x1,y1,x2,y2)<10)return s}}return null}
 function hitStamp(p){const r=c.getBoundingClientRect(),px=p[0]*r.width,py=p[1]*r.height;for(let i=stamps.length-1;i>=0;i--){const st=stamps[i];if(st.deleted)continue;const x=st.x_norm*r.width,y=st.y_norm*r.height;if(Math.hypot(px-x,py-y)<30)return st}return null}
