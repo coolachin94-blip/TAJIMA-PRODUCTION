@@ -1,20 +1,205 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TAJIMA 一号機</title><link rel="stylesheet" href="common.css"><style>
-.home{grid-template-columns:1fr 1fr}.big{min-height:95px;font-size:19px}.tools{grid-template-columns:repeat(4,1fr)}.tool{text-align:left;min-height:65px}.attn{outline:3px solid #f97316}.away{background:#fff7ed}.actions{display:flex;gap:7px;flex-wrap:wrap}.jobs .btn{width:100%;text-align:left;margin-top:7px}select,input{width:100%;padding:11px;margin:6px 0;border:1px solid #ccd5e1;border-radius:9px}@media(max-width:650px){.home{grid-template-columns:1fr}.tools{grid-template-columns:1fr 1fr}}
-</style></head><body><div class="top"><b>TAJIMA 第2工場　1号機</b><span>PILOT v0.1</span></div><div class="wrap">
-<div id="err" class="card alert hidden"></div><div id="home" class="grid home"><button class="card btn big" onclick="openPanel('tools')">🔧 工具管理 <b id="ta"></b></button><button class="card btn primary big" onclick="openPanel('process')">▶ 生産・工程登録</button></div>
-<section id="tools" class="hidden"><div class="card"><div class="title">1号機 工具一覧</div><div class="muted">T番号を押して行動ボタンを押すだけ</div><input id="search" placeholder="T番号 / 工具名" oninput="renderTools()"><button class="btn" onclick="openPanel('home')">戻る</button></div><div id="toolList" class="grid tools"></div></section>
-<section id="process" class="hidden"><div class="card"><div class="title">生産・工程登録</div><div class="muted">2工程以降は前工程が完了した品番だけ表示</div><button class="btn" onclick="openPanel('home')">戻る</button></div><div class="card"><label>製品<select id="product" onchange="candidates()"></select></label><label>工程<select id="step" onchange="candidates()"><option value="1">1工程</option><option value="2">2工程</option><option value="3">3工程</option></select></label><div id="cand" class="jobs"></div><label><input style="width:auto" type="checkbox" id="variation"> ⚠ 変動事項あり</label></div></section>
-<div id="modal" class="card hidden" style="position:fixed;bottom:8px;left:8px;right:8px;max-width:650px;margin:auto;z-index:20;border:2px solid #102b4e"><div id="mt" class="title"></div><div id="ms" class="muted"></div><div class="actions" style="margin-top:10px"><button class="btn primary" onclick="toolAction('工具交換')">工具交換</button><button class="btn primary" onclick="toolAction('チップ交換')">チップ交換</button><button class="btn warn" onclick="toolAction('注意事項')">⚠ 注意事項</button><button class="btn" onclick="moveTool()">他機械へ移動</button><button class="btn" onclick="modal.classList.add('hidden')">閉じる</button></div></div>
-</div><script src="config.js"></script><script>
-const M=1,U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY,H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};let tools=[],sel=null,products=[];
-async function api(p,o={}){let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...o.headers}});if(!r.ok)throw Error(await r.text());let t=await r.text();return t?JSON.parse(t):[]}
-function esc(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}function fail(e){err.textContent="通信エラー: "+e.message;err.classList.remove("hidden")}
-function openPanel(x){home.classList.toggle("hidden",x!=="home");tools.classList.toggle("hidden",x!=="tools");process.classList.toggle("hidden",x!=="process")}
-async function load(){try{tools=await api("f2_tools?machine_no=eq.1&order=t_no.asc");products=await api("f2_products?active=eq.true&order=product_name.asc");product.innerHTML=products.map(x=>`<option value="${x.id}">${esc(x.product_name)}</option>`).join("");renderTools();await candidates()}catch(e){fail(e)}}
-function renderTools(){let q=search.value.toLowerCase();toolList.innerHTML=tools.filter(x=>(`t${x.t_no} ${x.tool_name||""}`).toLowerCase().includes(q)).map(x=>`<button class="btn tool ${x.attention?'attn':''} ${x.current_machine_no!=1?'away':''}" onclick="openTool(${x.id})"><b>T${String(x.t_no).padStart(2,"0")}</b><br>${esc(x.tool_name||"未登録")} ${x.attention?'⚠':''}<br><span class="muted">${x.current_machine_no!=1?x.current_machine_no+"号機で使用中":""}</span></button>`).join("");ta.textContent=tools.some(x=>x.attention||x.current_machine_no!=1)?"❗":""}
-function openTool(id){sel=tools.find(x=>x.id==id);mt.textContent=`T${String(sel.t_no).padStart(2,"0")} ${sel.tool_name||"未登録"}`;ms.textContent=sel.current_machine_no==1?"1号機":sel.current_machine_no+"号機で使用中";modal.classList.remove("hidden")}
-async function toolAction(a){try{await api("f2_tool_logs",{method:"POST",body:JSON.stringify({tool_id:sel.id,machine_no:M,action:a})});if(a==="注意事項"){await api(`f2_tools?id=eq.${sel.id}`,{method:"PATCH",body:JSON.stringify({attention:true})});sel.attention=true}modal.classList.add("hidden");renderTools()}catch(e){fail(e)}}
-async function moveTool(){let n=Number(prompt("移動先 2〜5号機"));if(![2,3,4,5].includes(n))return;try{await api("f2_tool_logs",{method:"POST",body:JSON.stringify({tool_id:sel.id,machine_no:M,action:"他機械へ移動",target_machine_no:n})});await api(`f2_tools?id=eq.${sel.id}`,{method:"PATCH",body:JSON.stringify({current_machine_no:n})});sel.current_machine_no=n;modal.classList.add("hidden");renderTools()}catch(e){fail(e)}}
-async function candidates(){if(!product.value)return;let s=Number(step.value);try{let a=await api(`f2_items?product_id=eq.${product.value}&current_step=eq.${s-1}&shipped=eq.false&order=part_no.asc`);cand.innerHTML=a.length?a.map(x=>`<button class="btn ${x.attention?'warn':''}" onclick="reg(${x.id},${s})"><b>${esc(x.part_no)}</b> ${x.attention?'⚠ 前工程の変動事項':''}</button>`).join(""):'<div class="muted">候補なし</div>'}catch(e){fail(e)}}
-async function reg(id,s){try{let a=variation.checked;await api("f2_process_logs",{method:"POST",body:JSON.stringify({item_id:id,machine_no:M,step_no:s,attention:a})});await api(`f2_items?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({current_step:s,attention:a})});variation.checked=false;await candidates()}catch(e){fail(e)}}load();
-</script></body></html>
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TAJIMA 第2工場 一号機</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  .home{grid-template-columns:1fr 1fr}
+  .big{min-height:110px;font-size:20px}
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .toolbar input{flex:1;min-width:180px}
+  .tool-table{width:100%;border-collapse:separate;border-spacing:0 7px}
+  .tool-table th{font-size:12px;color:#64748b;text-align:left;padding:0 8px 3px}
+  .tool-row td{background:#fff;border-top:1px solid #d7e0eb;border-bottom:1px solid #d7e0eb;padding:6px 8px}
+  .tool-row td:first-child{border-left:1px solid #d7e0eb;border-radius:10px 0 0 10px;width:86px}
+  .tool-row td:last-child{border-right:1px solid #d7e0eb;border-radius:0 10px 10px 0;width:120px}
+  .tbtn{width:68px;padding:10px 6px;background:#102b4e;color:#fff}
+  .tool-name{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}
+  .tool-name:focus{outline:2px solid #93c5fd;border-color:#2563eb}
+  .status{font-size:12px;font-weight:800}
+  .status.warn{color:#c2410c}
+  .status.ok{color:#15803d}
+  .tool-row.attn td{background:#fff7ed}
+  .tool-row.away td{background:#fffbea}
+  .actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+  .action-btn{min-height:54px;font-size:16px}
+  .jobs .btn{width:100%;text-align:left;margin-top:7px}
+  select,input{font:inherit}
+  .form-control{width:100%;padding:11px;margin:6px 0;border:1px solid #ccd5e1;border-radius:9px}
+  #modal{position:fixed;bottom:8px;left:8px;right:8px;max-width:680px;margin:auto;z-index:20;border:2px solid #102b4e;box-shadow:0 10px 30px #0003}
+  @media(max-width:650px){
+    .home{grid-template-columns:1fr}
+    .big{min-height:88px}
+    .tool-row td:first-child{width:76px}
+    .tool-row td:last-child{width:88px}
+    .tbtn{width:60px}
+    .actions{grid-template-columns:1fr 1fr}
+    .wrap{padding:8px}
+  }
+</style>
+</head>
+<body>
+<div class="top">
+  <div><b>TAJIMA 第2工場　1号機</b><div class="muted" style="color:#cbd5e1">現場タブレット</div></div>
+  <span>PILOT v0.2</span>
+</div>
+
+<div class="wrap">
+  <div id="err" class="card alert hidden"></div>
+
+  <div id="home" class="grid home">
+    <button class="card btn big" onclick="openPanel('tools')">🔧 工具管理 <b id="ta"></b></button>
+    <button class="card btn primary big" onclick="openPanel('process')">▶ 作業登録</button>
+  </div>
+
+  <section id="tools" class="hidden">
+    <div class="card">
+      <div class="title">1号機 工具管理　T1〜T80</div>
+      <div class="muted">工具名はその場で入力・変更。T番号を押すと交換・移動などのクイック登録が開きます。</div>
+      <div class="toolbar" style="margin-top:10px">
+        <input id="search" class="form-control" placeholder="T番号 / 工具名で検索" oninput="renderTools()">
+        <button class="btn" onclick="openPanel('home')">戻る</button>
+      </div>
+    </div>
+
+    <div style="overflow:auto">
+      <table class="tool-table">
+        <thead><tr><th>T番号</th><th>工具名</th><th>状態</th></tr></thead>
+        <tbody id="toolList"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="process" class="hidden">
+    <div class="card">
+      <div class="title">作業登録</div>
+      <div class="muted">製品 → 工程 → 品番を選択。2工程以降は前工程完了品だけ表示。</div>
+      <button class="btn" style="margin-top:10px" onclick="openPanel('home')">戻る</button>
+    </div>
+    <div class="card">
+      <label>製品<select id="product" class="form-control" onchange="candidates()"></select></label>
+      <label>工程<select id="step" class="form-control" onchange="candidates()">
+        <option value="1">1工程</option><option value="2">2工程</option><option value="3">3工程</option>
+      </select></label>
+      <div id="cand" class="jobs"></div>
+      <label style="display:block;margin-top:12px"><input style="width:auto" type="checkbox" id="variation"> ⚠ 変動事項あり</label>
+    </div>
+  </section>
+
+  <div id="modal" class="card hidden">
+    <div id="mt" class="title" style="font-size:18px"></div>
+    <div id="ms" class="muted"></div>
+    <div class="actions">
+      <button class="btn primary action-btn" onclick="toolAction('工具交換')">🔄 工具交換</button>
+      <button class="btn primary action-btn" onclick="toolAction('チップ交換')">🧩 チップ交換</button>
+      <button class="btn warn action-btn" onclick="toolAction('注意事項')">⚠ 注意事項</button>
+      <button class="btn action-btn" onclick="moveTool()">↗ 他機械へ移動</button>
+      <button class="btn action-btn" onclick="clearAttention()">✓ 注意解除</button>
+      <button class="btn action-btn" onclick="modal.classList.add('hidden')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+const M=1,U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY;
+const H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
+let tools=[],sel=null,products=[];
+
+async function api(p,o={}){
+  let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});
+  if(!r.ok) throw Error(await r.text());
+  let t=await r.text(); return t?JSON.parse(t):[];
+}
+function esc(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
+function fail(e){err.textContent="通信エラー: "+e.message;err.classList.remove("hidden")}
+function openPanel(x){
+  home.classList.toggle("hidden",x!=="home");
+  tools.classList.toggle("hidden",x!=="tools");
+  process.classList.toggle("hidden",x!=="process");
+}
+async function load(){
+  try{
+    tools=await api("f2_tools?machine_no=eq.1&order=t_no.asc");
+    products=await api("f2_products?active=eq.true&order=product_name.asc");
+    product.innerHTML=products.map(x=>`<option value="${x.id}">${esc(x.product_name)}</option>`).join("");
+    renderTools(); await candidates();
+  }catch(e){fail(e)}
+}
+function renderTools(){
+  let q=search.value.trim().toLowerCase();
+  let rows=tools.filter(x=>(`t${x.t_no} ${x.tool_name||""}`).toLowerCase().includes(q));
+  toolList.innerHTML=rows.map(x=>{
+    let away=x.current_machine_no!=1;
+    let status=x.attention?"⚠ 注意あり":away?`${x.current_machine_no}号機で使用中`:"正常";
+    let cls=x.attention?"attn":away?"away":"";
+    let sc=x.attention||away?"warn":"ok";
+    return `<tr class="tool-row ${cls}">
+      <td><button class="btn tbtn" onclick="openTool(${x.id})">T${x.t_no}</button></td>
+      <td><input class="tool-name" value="${esc(x.tool_name||"")}" placeholder="工具名を入力" onchange="saveToolName(${x.id},this.value)"></td>
+      <td><span class="status ${sc}">${esc(status)}</span></td>
+    </tr>`;
+  }).join("");
+  ta.textContent=tools.some(x=>x.attention||x.current_machine_no!=1)?"❗":"";
+}
+async function saveToolName(id,name){
+  try{
+    await api(`f2_tools?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({tool_name:name.trim()||null})});
+    let x=tools.find(v=>v.id==id); if(x)x.tool_name=name.trim()||null;
+  }catch(e){fail(e)}
+}
+function openTool(id){
+  sel=tools.find(x=>x.id==id);
+  mt.textContent=`T${sel.t_no}　${sel.tool_name||"工具名未登録"}`;
+  ms.textContent=sel.current_machine_no==1?"1号機にセット":"現在 "+sel.current_machine_no+"号機で使用中";
+  modal.classList.remove("hidden");
+}
+async function toolAction(a){
+  try{
+    await api("f2_tool_logs",{method:"POST",body:JSON.stringify({tool_id:sel.id,machine_no:M,action:a})});
+    if(a==="注意事項"){
+      await api(`f2_tools?id=eq.${sel.id}`,{method:"PATCH",body:JSON.stringify({attention:true})});
+      sel.attention=true;
+    }
+    modal.classList.add("hidden"); renderTools();
+  }catch(e){fail(e)}
+}
+async function clearAttention(){
+  if(!sel)return;
+  try{
+    await api("f2_tool_logs",{method:"POST",body:JSON.stringify({tool_id:sel.id,machine_no:M,action:"注意解除"})});
+    await api(`f2_tools?id=eq.${sel.id}`,{method:"PATCH",body:JSON.stringify({attention:false})});
+    sel.attention=false; modal.classList.add("hidden"); renderTools();
+  }catch(e){fail(e)}
+}
+async function moveTool(){
+  let n=Number(prompt("移動先の号機を入力してください (2〜5)"));
+  if(![2,3,4,5].includes(n))return;
+  try{
+    await api("f2_tool_logs",{method:"POST",body:JSON.stringify({tool_id:sel.id,machine_no:M,action:"他機械へ移動",target_machine_no:n})});
+    await api(`f2_tools?id=eq.${sel.id}`,{method:"PATCH",body:JSON.stringify({current_machine_no:n})});
+    sel.current_machine_no=n; modal.classList.add("hidden"); renderTools();
+  }catch(e){fail(e)}
+}
+async function candidates(){
+  if(!product.value)return;
+  let s=Number(step.value);
+  try{
+    let a=await api(`f2_items?product_id=eq.${product.value}&current_step=eq.${s-1}&shipped=eq.false&order=part_no.asc`);
+    cand.innerHTML=a.length?a.map(x=>`<button class="btn ${x.attention?'warn':''}" onclick="reg(${x.id},${s})"><b>${esc(x.part_no)}</b> ${x.attention?'⚠ 前工程の変動事項':''}</button>`).join(""):'<div class="muted">候補なし</div>';
+  }catch(e){fail(e)}
+}
+async function reg(id,s){
+  try{
+    let a=variation.checked;
+    await api("f2_process_logs",{method:"POST",body:JSON.stringify({item_id:id,machine_no:M,step_no:s,attention:a})});
+    await api(`f2_items?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({current_step:s,attention:a})});
+    variation.checked=false; await candidates();
+  }catch(e){fail(e)}
+}
+load();
+</script>
+</body>
+</html>
