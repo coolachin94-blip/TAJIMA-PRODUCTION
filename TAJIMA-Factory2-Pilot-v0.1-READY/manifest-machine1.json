@@ -1,0 +1,10 @@
+{
+  "name": "TAJIMA 第2工場 1号機",
+  "short_name": "TAJIMA 1号機",
+  "start_url": "./machine1.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f6fb",
+  "theme_color": "#102b4e",
+  "orientation": "any"
+}

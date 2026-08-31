@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>TAJIMA 第2工場 一号機</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TAJIMA 1号機">
+<meta name="theme-color" content="#102b4e">
+<link rel="manifest" href="manifest-machine1.json">
+
 <link rel="stylesheet" href="common.css">
 <style>
   .home{grid-template-columns:1fr 1fr}
@@ -66,12 +74,22 @@
     .action-btn{min-height:68px;font-size:19px}.back-big{min-width:130px}
   }
 
+
+  /* v0.5 dedicated iPad terminal feel */
+  html,body{overscroll-behavior:none}
+  body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  input,select,textarea{ -webkit-user-select:text; user-select:text }
+  @media (display-mode: standalone){
+    .top{padding-top:calc(14px + env(safe-area-inset-top))}
+    .wrap{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  }
+
 </style>
 </head>
 <body>
 <div class="top">
   <div><b>TAJIMA 第2工場　1号機</b><div class="muted" style="color:#cbd5e1">現場タブレット</div></div>
-  <span>PILOT v0.4</span>
+  <span>PILOT v0.5</span>
 </div>
 
 <div class="wrap">
