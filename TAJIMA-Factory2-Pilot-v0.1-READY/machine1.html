@@ -38,12 +38,40 @@
     .actions{grid-template-columns:1fr 1fr}
     .wrap{padding:8px}
   }
+
+  body{font-size:18px}
+  .wrap{max-width:1200px;padding:16px}
+  .big{min-height:132px;font-size:26px;border-radius:16px}
+  .btn{font-size:18px;padding:16px 18px;border-radius:14px}
+  .toolbar{gap:12px}
+  .form-control{min-height:58px;font-size:20px;padding:14px 16px}
+  .tool-table{border-spacing:0 11px}
+  .tool-table th{font-size:15px;padding:0 10px 5px}
+  .tool-row td{padding:10px 12px}
+  .tool-row td:first-child{width:120px}
+  .tool-row td:last-child{width:170px}
+  .tbtn{width:96px;min-height:64px;font-size:22px}
+  .tool-name{min-height:60px;font-size:20px;padding:14px}
+  .status{font-size:16px}
+  .actions{gap:12px}
+  .action-btn{min-height:72px;font-size:20px}
+  .panel-head{display:flex;gap:12px;align-items:center;justify-content:space-between;position:sticky;top:56px;z-index:4;background:#f3f6fb;padding:8px 0 10px}
+  .back-big{min-width:150px;min-height:58px;background:#102b4e;color:white;font-size:19px}
+  .jobs .btn{min-height:62px;font-size:20px;padding:16px}
+  .jobs{display:grid;gap:10px}
+  @media(max-width:700px){
+    body{font-size:17px}.wrap{padding:10px}.big{min-height:112px;font-size:23px}
+    .tool-row td:first-child{width:105px}.tool-row td:last-child{width:135px}
+    .tbtn{width:84px;min-height:62px;font-size:21px}.tool-name{min-height:58px;font-size:19px}
+    .action-btn{min-height:68px;font-size:19px}.back-big{min-width:130px}
+  }
+
 </style>
 </head>
 <body>
 <div class="top">
   <div><b>TAJIMA 第2工場　1号機</b><div class="muted" style="color:#cbd5e1">現場タブレット</div></div>
-  <span>PILOT v0.3</span>
+  <span>PILOT v0.4</span>
 </div>
 
 <div class="wrap">
@@ -55,12 +83,15 @@
   </div>
 
   <section id="tools" class="hidden">
+    <div class="panel-head">
+      <button class="btn back-big" onclick="openPanel('home')">← 戻る</button>
+      <div class="title" style="font-size:22px">1号機 工具管理</div>
+    </div>
     <div class="card">
-      <div class="title">1号機 工具管理　T1〜T80</div>
+      <div class="title">T1〜T80 工具一覧</div>
       <div class="muted">工具名はその場で入力・変更。T番号を押すと交換・移動などのクイック登録が開きます。</div>
-      <div class="toolbar" style="margin-top:10px">
+      <div class="toolbar" style="margin-top:12px">
         <input id="search" class="form-control" placeholder="T番号 / 工具名で検索" oninput="renderTools()">
-        <button class="btn" onclick="openPanel('home')">戻る</button>
       </div>
     </div>
 
@@ -73,10 +104,13 @@
   </section>
 
   <section id="process" class="hidden">
+    <div class="panel-head">
+      <button class="btn back-big" onclick="openPanel('home')">← 戻る</button>
+      <div class="title" style="font-size:22px">1号機 作業登録</div>
+    </div>
     <div class="card">
       <div class="title">作業登録</div>
       <div class="muted">製品 → 工程 → 品番を選択。2工程以降は前工程完了品だけ表示。</div>
-      <button class="btn" style="margin-top:10px" onclick="openPanel('home')">戻る</button>
     </div>
     <div class="card">
       <label>製品<select id="product" class="form-control" onchange="candidates()"></select></label>
@@ -97,7 +131,7 @@
       <button class="btn warn action-btn" onclick="toolAction('注意事項')">⚠ 注意事項</button>
       <button class="btn action-btn" onclick="moveTool()">↗ 他機械へ移動</button>
       <button class="btn action-btn" onclick="clearAttention()">✓ 注意解除</button>
-      <button class="btn action-btn" onclick="modal.classList.add('hidden')">閉じる</button>
+      <button class="btn action-btn" onclick="modal.classList.add('hidden')">✕ 閉じる</button>
     </div>
   </div>
 </div>
