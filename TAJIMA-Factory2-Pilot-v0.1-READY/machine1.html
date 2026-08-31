@@ -43,7 +43,7 @@
 <body>
 <div class="top">
   <div><b>TAJIMA 第2工場　1号機</b><div class="muted" style="color:#cbd5e1">現場タブレット</div></div>
-  <span>PILOT v0.2</span>
+  <span>PILOT v0.3</span>
 </div>
 
 <div class="wrap">
@@ -106,7 +106,7 @@
 <script>
 const M=1,U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY;
 const H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
-let tools=[],sel=null,products=[];
+let toolData=[],sel=null,products=[];
 
 async function api(p,o={}){
   let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});
@@ -114,24 +114,24 @@ async function api(p,o={}){
   let t=await r.text(); return t?JSON.parse(t):[];
 }
 function esc(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
-function fail(e){err.textContent="通信エラー: "+e.message;err.classList.remove("hidden")}
+function fail(e){const box=document.getElementById("err");box.textContent="通信エラー: "+e.message;box.classList.remove("hidden")}
 function openPanel(x){
-  home.classList.toggle("hidden",x!=="home");
-  tools.classList.toggle("hidden",x!=="tools");
-  process.classList.toggle("hidden",x!=="process");
+  document.getElementById("home").classList.toggle("hidden",x!=="home");
+  document.getElementById("tools").classList.toggle("hidden",x!=="tools");
+  document.getElementById("process").classList.toggle("hidden",x!=="process");
 }
 async function load(){
   try{
-    tools=await api("f2_tools?machine_no=eq.1&order=t_no.asc");
+    toolData=await api("f2_tools?machine_no=eq.1&order=t_no.asc");
     products=await api("f2_products?active=eq.true&order=product_name.asc");
-    product.innerHTML=products.map(x=>`<option value="${x.id}">${esc(x.product_name)}</option>`).join("");
+    document.getElementById("product").innerHTML=products.map(x=>`<option value="${x.id}">${esc(x.product_name)}</option>`).join("");
     renderTools(); await candidates();
   }catch(e){fail(e)}
 }
 function renderTools(){
-  let q=search.value.trim().toLowerCase();
-  let rows=tools.filter(x=>(`t${x.t_no} ${x.tool_name||""}`).toLowerCase().includes(q));
-  toolList.innerHTML=rows.map(x=>{
+  let q=document.getElementById("search").value.trim().toLowerCase();
+  let rows=toolData.filter(x=>(`t${x.t_no} ${x.tool_name||""}`).toLowerCase().includes(q));
+  document.getElementById("toolList").innerHTML=rows.map(x=>{
     let away=x.current_machine_no!=1;
     let status=x.attention?"⚠ 注意あり":away?`${x.current_machine_no}号機で使用中`:"正常";
     let cls=x.attention?"attn":away?"away":"";
@@ -142,19 +142,19 @@ function renderTools(){
       <td><span class="status ${sc}">${esc(status)}</span></td>
     </tr>`;
   }).join("");
-  ta.textContent=tools.some(x=>x.attention||x.current_machine_no!=1)?"❗":"";
+  document.getElementById("ta").textContent=toolData.some(x=>x.attention||x.current_machine_no!=1)?"❗":"";
 }
 async function saveToolName(id,name){
   try{
     await api(`f2_tools?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({tool_name:name.trim()||null})});
-    let x=tools.find(v=>v.id==id); if(x)x.tool_name=name.trim()||null;
+    let x=toolData.find(v=>v.id==id); if(x)x.tool_name=name.trim()||null;
   }catch(e){fail(e)}
 }
 function openTool(id){
-  sel=tools.find(x=>x.id==id);
-  mt.textContent=`T${sel.t_no}　${sel.tool_name||"工具名未登録"}`;
-  ms.textContent=sel.current_machine_no==1?"1号機にセット":"現在 "+sel.current_machine_no+"号機で使用中";
-  modal.classList.remove("hidden");
+  sel=toolData.find(x=>x.id==id);
+  document.getElementById("mt").textContent=`T${sel.t_no}　${sel.tool_name||"工具名未登録"}`;
+  document.getElementById("ms").textContent=sel.current_machine_no==1?"1号機にセット":"現在 "+sel.current_machine_no+"号機で使用中";
+  document.getElementById("modal").classList.remove("hidden");
 }
 async function toolAction(a){
   try{
@@ -163,7 +163,7 @@ async function toolAction(a){
       await api(`f2_tools?id=eq.${sel.id}`,{method:"PATCH",body:JSON.stringify({attention:true})});
       sel.attention=true;
     }
-    modal.classList.add("hidden"); renderTools();
+    document.getElementById("modal").classList.add("hidden"); renderTools();
   }catch(e){fail(e)}
 }
 async function clearAttention(){
@@ -171,7 +171,7 @@ async function clearAttention(){
   try{
     await api("f2_tool_logs",{method:"POST",body:JSON.stringify({tool_id:sel.id,machine_no:M,action:"注意解除"})});
     await api(`f2_tools?id=eq.${sel.id}`,{method:"PATCH",body:JSON.stringify({attention:false})});
-    sel.attention=false; modal.classList.add("hidden"); renderTools();
+    sel.attention=false; document.getElementById("modal").classList.add("hidden"); renderTools();
   }catch(e){fail(e)}
 }
 async function moveTool(){
@@ -180,23 +180,23 @@ async function moveTool(){
   try{
     await api("f2_tool_logs",{method:"POST",body:JSON.stringify({tool_id:sel.id,machine_no:M,action:"他機械へ移動",target_machine_no:n})});
     await api(`f2_tools?id=eq.${sel.id}`,{method:"PATCH",body:JSON.stringify({current_machine_no:n})});
-    sel.current_machine_no=n; modal.classList.add("hidden"); renderTools();
+    sel.current_machine_no=n; document.getElementById("modal").classList.add("hidden"); renderTools();
   }catch(e){fail(e)}
 }
 async function candidates(){
-  if(!product.value)return;
-  let s=Number(step.value);
+  const productEl=document.getElementById("product"); if(!productEl.value)return;
+  let s=Number(document.getElementById("step").value);
   try{
-    let a=await api(`f2_items?product_id=eq.${product.value}&current_step=eq.${s-1}&shipped=eq.false&order=part_no.asc`);
-    cand.innerHTML=a.length?a.map(x=>`<button class="btn ${x.attention?'warn':''}" onclick="reg(${x.id},${s})"><b>${esc(x.part_no)}</b> ${x.attention?'⚠ 前工程の変動事項':''}</button>`).join(""):'<div class="muted">候補なし</div>';
+    let a=await api(`f2_items?product_id=eq.${productEl.value}&current_step=eq.${s-1}&shipped=eq.false&order=part_no.asc`);
+    document.getElementById("cand").innerHTML=a.length?a.map(x=>`<button class="btn ${x.attention?'warn':''}" onclick="reg(${x.id},${s})"><b>${esc(x.part_no)}</b> ${x.attention?'⚠ 前工程の変動事項':''}</button>`).join(""):'<div class="muted">候補なし</div>';
   }catch(e){fail(e)}
 }
 async function reg(id,s){
   try{
-    let a=variation.checked;
+    let a=document.getElementById("variation").checked;
     await api("f2_process_logs",{method:"POST",body:JSON.stringify({item_id:id,machine_no:M,step_no:s,attention:a})});
     await api(`f2_items?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({current_step:s,attention:a})});
-    variation.checked=false; await candidates();
+    document.getElementById("variation").checked=false; await candidates();
   }catch(e){fail(e)}
 }
 load();
