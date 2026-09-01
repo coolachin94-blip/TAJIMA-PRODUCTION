@@ -106,12 +106,18 @@
   .usage-input:focus{outline:3px solid #bfdbfe;border-color:#2563eb}
   .usage-help{font-size:13px;color:#64748b;margin-top:6px}
   .usage-saved{font-size:13px;color:#15803d;font-weight:800;margin-top:4px;min-height:18px}
+
+  .process-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .process-choice{min-height:100px;font-size:24px;font-weight:900}
+  .process-choice.warn{border:2px solid #f59e0b}
+  .register-big{width:100%;min-height:88px;font-size:26px}
+  @media(max-width:800px){.process-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 <div class="top">
   <div><b>TAJIMA 第2工場　1号機</b><div class="muted" style="color:#cbd5e1">現場タブレット</div></div>
-  <span>PILOT v0.8</span>
+  <span>PILOT v0.9</span>
 </div>
 
 <div class="wrap">
@@ -145,20 +151,15 @@
 
   <section id="process" class="hidden">
     <div class="panel-head">
-      <button class="btn back-big" onclick="openPanel('home')">← 戻る</button>
+      <button class="btn back-big" onclick="processBack()">← 戻る</button>
       <div class="title" style="font-size:22px">1号機 作業登録</div>
     </div>
-    <div class="card">
-      <div class="title">作業登録</div>
-      <div class="muted">製品 → 工程 → 品番を選択。2工程以降は前工程完了品だけ表示。</div>
-    </div>
-    <div class="card">
-      <label>製品<select id="product" class="form-control" onchange="candidates()"></select></label>
-      <label>工程<select id="step" class="form-control" onchange="candidates()">
-        <option value="1">1工程</option><option value="2">2工程</option><option value="3">3工程</option>
-      </select></label>
-      <div id="cand" class="jobs"></div>
-      <label style="display:block;margin-top:12px"><input style="width:auto" type="checkbox" id="variation"> ⚠ 変動事項あり</label>
+    <div class="card"><div class="title" id="processTitle">製品を選択</div><div class="muted" id="processGuide">管理ページで登録された製品だけ表示します。</div></div>
+    <div id="processButtons" class="process-grid"></div>
+    <div id="registerCard" class="card hidden">
+      <div id="registerSummary" class="title"></div>
+      <label style="display:block;margin:14px 0"><input style="width:auto;transform:scale(1.5);margin-right:10px" type="checkbox" id="variation"> ⚠ 変動事項あり</label>
+      <button class="btn primary register-big" onclick="registerWork()">この作業を登録</button>
     </div>
   </section>
 
@@ -186,7 +187,7 @@
 <script>
 const M=1,U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY;
 const H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
-let toolData=[],toolLogs=[],sel=null,products=[],usageSaveTimer=null;
+let toolData=[],toolLogs=[],sel=null,products=[],processMaster=[],processRoutes=[],processItems=[],processLogs=[],chosenProduct=null,chosenProcess=null,chosenItem=null,usageSaveTimer=null;
 
 async function api(p,o={}){
   let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});
@@ -215,9 +216,14 @@ async function load(){
       api("f2_tools?machine_no=eq.1&order=t_no.asc"),
       api("f2_tool_logs?machine_no=eq.1&select=id,tool_id,action,created_at&action=in.(工具交換,チップ交換)&order=created_at.desc")
     ]);
-    products=await api("f2_products?active=eq.true&order=product_name.asc");
-    document.getElementById("product").innerHTML=products.map(x=>`<option value="${x.id}">${esc(x.product_name)}</option>`).join("");
-    renderTools(); await candidates();
+    [products,processMaster,processRoutes,processItems,processLogs]=await Promise.all([
+      api("f2_products?active=eq.true&order=product_name.asc"),
+      api("f2_process_master?active=eq.true&order=product_id,sort_order,id"),
+      api("f2_process_routes?select=*"),
+      api("f2_items?shipped=eq.false&order=part_no.asc"),
+      api("f2_process_logs?select=id,item_id,process_id,attention,created_at")
+    ]);
+    renderTools(); renderProductButtons();
   }catch(e){fail(e)}
 }
 function renderTools(){
@@ -305,22 +311,70 @@ async function moveTool(){
     sel.current_machine_no=n; document.getElementById("modal").classList.add("hidden"); renderTools();
   }catch(e){fail(e)}
 }
-async function candidates(){
-  const productEl=document.getElementById("product"); if(!productEl.value)return;
-  let s=Number(document.getElementById("step").value);
-  try{
-    let a=await api(`f2_items?product_id=eq.${productEl.value}&current_step=eq.${s-1}&shipped=eq.false&order=part_no.asc`);
-    document.getElementById("cand").innerHTML=a.length?a.map(x=>`<button class="btn ${x.attention?'warn':''}" onclick="reg(${x.id},${s})"><b>${esc(x.part_no)}</b> ${x.attention?'⚠ 前工程の変動事項':''}</button>`).join(""):'<div class="muted">候補なし</div>';
-  }catch(e){fail(e)}
+
+function processBack(){
+  if(chosenItem){chosenItem=null;showItemButtons();return}
+  if(chosenProcess){chosenProcess=null;showProcessButtons();return}
+  if(chosenProduct){chosenProduct=null;renderProductButtons();return}
+  openPanel("home");
 }
-async function reg(id,s){
-  try{
-    let a=document.getElementById("variation").checked;
-    await api("f2_process_logs",{method:"POST",body:JSON.stringify({item_id:id,machine_no:M,step_no:s,attention:a})});
-    await api(`f2_items?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({current_step:s,attention:a})});
-    document.getElementById("variation").checked=false; await candidates();
-  }catch(e){fail(e)}
+function renderProductButtons(){
+  chosenProduct=chosenProcess=chosenItem=null;
+  document.getElementById("processTitle").textContent="製品を選択";
+  document.getElementById("processGuide").textContent="管理ページで登録された製品だけ表示します。";
+  document.getElementById("registerCard").classList.add("hidden");
+  document.getElementById("processButtons").innerHTML=products.map(p=>`<button class="btn process-choice" onclick="chooseProduct(${p.id})">${esc(p.product_name)}</button>`).join("")||'<div class="card muted">製品マスタなし</div>';
 }
+function chooseProduct(id){chosenProduct=products.find(x=>x.id==id);showProcessButtons()}
+function showProcessButtons(){
+  chosenProcess=chosenItem=null;
+  const ps=processMaster.filter(x=>x.product_id==chosenProduct.id);
+  document.getElementById("processTitle").textContent=chosenProduct.product_name+"　工程を選択";
+  document.getElementById("processGuide").textContent="この製品に登録された工程だけ表示します。";
+  document.getElementById("registerCard").classList.add("hidden");
+  document.getElementById("processButtons").innerHTML=ps.map(p=>`<button class="btn process-choice" onclick="chooseProcess(${p.id})">${esc(p.process_name)}</button>`).join("")||'<div class="card muted">工程マスタなし</div>';
+}
+function chooseProcess(id){chosenProcess=processMaster.find(x=>x.id==id);showItemButtons()}
+function hasDone(itemId,pid){return processLogs.some(l=>l.item_id==itemId&&l.process_id==pid)}
+function eligible(item){
+  if(hasDone(item.id,chosenProcess.id))return false;
+  const pres=processRoutes.filter(r=>r.process_id==chosenProcess.id).map(r=>r.prerequisite_process_id).filter(Boolean);
+  if(!pres.length)return true;
+  return pres.some(pid=>hasDone(item.id,pid));
+}
+function showItemButtons(){
+  chosenItem=null;
+  document.getElementById("processTitle").textContent=`${chosenProduct.product_name} / ${chosenProcess.process_name}　品番を選択`;
+  document.getElementById("processGuide").textContent="この工程に進める品番だけ表示しています。";
+  document.getElementById("registerCard").classList.add("hidden");
+  let a=processItems.filter(x=>x.product_id==chosenProduct.id&&eligible(x));
+  document.getElementById("processButtons").innerHTML=a.map(x=>`<button class="btn process-choice ${x.attention?'warn':''}" onclick="chooseItem(${x.id})">${esc(x.part_no)}${x.attention?'<br>⚠ 注意あり':''}</button>`).join("")||'<div class="card muted">現在この工程に進める品番はありません</div>';
+}
+function chooseItem(id){
+  chosenItem=processItems.find(x=>x.id==id);
+  document.getElementById("registerSummary").textContent=`${chosenProduct.product_name} / ${chosenItem.part_no} / ${chosenProcess.process_name}`;
+  document.getElementById("registerCard").classList.remove("hidden");
+  document.getElementById("processButtons").innerHTML="";
+  document.getElementById("processTitle").textContent="登録内容を確認";
+  document.getElementById("processGuide").textContent="間違いなければ下の登録ボタンを押してください。";
+}
+async function registerWork(){
+  if(!chosenItem||!chosenProcess)return;
+  const btn=document.querySelector(".register-big");btn.disabled=true;
+  try{
+    const attention=document.getElementById("variation").checked;
+    const saved=await api("f2_process_logs",{method:"POST",body:JSON.stringify({item_id:chosenItem.id,machine_no:M,step_no:1,process_id:chosenProcess.id,attention})});
+    if(saved?.[0])processLogs.unshift(saved[0]);
+    if(attention && !chosenItem.attention){
+      await api(`f2_items?id=eq.${chosenItem.id}`,{method:"PATCH",body:JSON.stringify({attention:true})});
+      chosenItem.attention=true;
+    }
+    document.getElementById("variation").checked=false;
+    alert("作業登録しました");
+    chosenItem=null;showItemButtons();
+  }catch(e){fail(e)}finally{btn.disabled=false}
+}
+
 load();
 </script>
 </body>
