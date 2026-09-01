@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>TAJIMA 第2工場</title><link rel="stylesheet" href="common.css">
+<style>
+body{min-height:100vh}.wrap{max-width:1000px;margin:auto;padding:18px}.hero{text-align:center;margin:25px 0}.hero h1{font-size:34px;margin:0}.hero p{font-size:17px;color:#64748b}
+.machine-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:24px}
+.machine-btn{min-height:150px;border:3px solid #2563eb;border-radius:24px;background:#fff;color:#102b4e;font-size:32px;font-weight:900;box-shadow:0 8px 24px rgba(37,99,235,.12)}
+.machine-btn:active{transform:scale(.98)}.empty{padding:35px;text-align:center;background:#fff;border-radius:18px;color:#64748b}
+@media(max-width:650px){.machine-grid{grid-template-columns:1fr}.machine-btn{min-height:125px}}
+</style></head><body><div class="wrap"><div class="hero"><h1>TAJIMA 第2工場</h1><p>使用する機械を選択してください</p></div><div id="grid" class="machine-grid"></div></div>
+<script src="config.js"></script><script>
+const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY,H={"apikey":K,"Authorization":"Bearer "+K};
+async function load(){
+ try{
+  const r=await fetch(U+"/rest/v1/f2_machines?active=eq.true&order=machine_no",{headers:H});
+  if(!r.ok)throw Error(await r.text());
+  const a=await r.json();
+  document.getElementById("grid").innerHTML=a.length?a.map(m=>`<button class="machine-btn" onclick="location.href='machine.html?machine=${m.machine_no}'">${String(m.machine_name).replace(/[&<>"]/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[s]))}</button>`).join(""):'<div class="empty">登録機械がありません。管理ページで機械を登録してください。</div>';
+ }catch(e){document.getElementById("grid").innerHTML='<div class="empty">機械一覧を読み込めませんでした。</div>'}
+}
+load();
+</script></body></html>
