@@ -10,7 +10,12 @@
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.day{min-height:78px;border:1px solid #dbe3ec;border-radius:8px;padding:5px;background:#fff}.day b{display:block}.dot{font-size:12px;margin-top:3px}
 @media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}.cal{grid-template-columns:repeat(7,1fr);font-size:12px}}
 @media print{.top,.nav,.no-print,#err{display:none!important}.wrap{max-width:none}.card{box-shadow:none;border:0}}
-</style></head><body><div class="top"><b>TAJIMA 第2工場 管理</b><span>PILOT v1.0</span></div>
+
+.machine-launch-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:0;border-radius:12px;background:#2563eb;color:#fff;font-weight:900;text-decoration:none;cursor:pointer}
+.machine-launch-btn:hover{filter:brightness(.96)}
+
+</style></head><body>
+<div style="max-width:1180px;margin:12px auto 0;padding:0 14px;text-align:right"><a class="machine-launch-btn" href="index.html">各号機 タブレット画面へ</a></div><div class="top"><b>TAJIMA 第2工場 管理</b><span>PILOT v1.0</span></div>
 <div class="wrap"><div id="err" class="card alert hidden"></div>
 <div class="nav no-print">
 <button class="btn primary" onclick="view('dash')">ダッシュボード</button><button class="btn" onclick="view('machines')">機械・工具管理</button>
