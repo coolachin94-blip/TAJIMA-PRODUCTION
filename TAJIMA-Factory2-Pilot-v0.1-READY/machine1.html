@@ -84,12 +84,22 @@
     .wrap{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
   }
 
+
+  .last-change{font-size:15px;font-weight:700;line-height:1.35;white-space:nowrap}
+  .last-change .kind{display:block;color:#334155}
+  .last-change .when{display:block;color:#64748b;font-size:14px;margin-top:2px}
+  .last-change.none{color:#94a3b8;font-weight:600}
+  .tool-table th:nth-child(3),.tool-row td:nth-child(3){width:190px}
+  @media(max-width:700px){
+    .tool-table th:nth-child(3),.tool-row td:nth-child(3){width:160px}
+    .last-change{font-size:14px}.last-change .when{font-size:13px}
+  }
 </style>
 </head>
 <body>
 <div class="top">
   <div><b>TAJIMA 第2工場　1号機</b><div class="muted" style="color:#cbd5e1">現場タブレット</div></div>
-  <span>PILOT v0.6</span>
+  <span>PILOT v0.7</span>
 </div>
 
 <div class="wrap">
@@ -115,7 +125,7 @@
 
     <div style="overflow:auto">
       <table class="tool-table">
-        <thead><tr><th>T番号</th><th>工具名</th><th>状態</th></tr></thead>
+        <thead><tr><th>T番号</th><th>工具名</th><th>最終交換</th><th>状態</th></tr></thead>
         <tbody id="toolList"></tbody>
       </table>
     </div>
@@ -158,7 +168,7 @@
 <script>
 const M=1,U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY;
 const H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
-let toolData=[],sel=null,products=[];
+let toolData=[],toolLogs=[],sel=null,products=[];
 
 async function api(p,o={}){
   let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});
@@ -167,6 +177,15 @@ async function api(p,o={}){
 }
 function esc(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
 function fail(e){const box=document.getElementById("err");box.textContent="通信エラー: "+e.message;box.classList.remove("hidden")}
+function fmtToolTime(v){
+  if(!v)return "";
+  const d=new Date(v);
+  const p=n=>String(n).padStart(2,"0");
+  return `${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function lastChangeFor(toolId){
+  return toolLogs.find(x=>x.tool_id==toolId && (x.action==="工具交換" || x.action==="チップ交換")) || null;
+}
 function openPanel(x){
   document.getElementById("home").classList.toggle("hidden",x!=="home");
   document.getElementById("tools").classList.toggle("hidden",x!=="tools");
@@ -174,7 +193,10 @@ function openPanel(x){
 }
 async function load(){
   try{
-    toolData=await api("f2_tools?machine_no=eq.1&order=t_no.asc");
+    [toolData,toolLogs]=await Promise.all([
+      api("f2_tools?machine_no=eq.1&order=t_no.asc"),
+      api("f2_tool_logs?machine_no=eq.1&select=id,tool_id,action,created_at&action=in.(工具交換,チップ交換)&order=created_at.desc")
+    ]);
     products=await api("f2_products?active=eq.true&order=product_name.asc");
     document.getElementById("product").innerHTML=products.map(x=>`<option value="${x.id}">${esc(x.product_name)}</option>`).join("");
     renderTools(); await candidates();
@@ -188,9 +210,14 @@ function renderTools(){
     let status=x.attention?"⚠ 注意あり":away?`${x.current_machine_no}号機で使用中`:"正常";
     let cls=x.attention?"attn":away?"away":"";
     let sc=x.attention||away?"warn":"ok";
+    let lc=lastChangeFor(x.id);
+    let lastHtml=lc
+      ? `<span class="last-change"><span class="kind">${esc(lc.action)}</span><span class="when">${fmtToolTime(lc.created_at)}</span></span>`
+      : `<span class="last-change none">交換記録なし</span>`;
     return `<tr class="tool-row ${cls}">
       <td><button class="btn tbtn" onclick="openTool(${x.id})">T${x.t_no}</button></td>
       <td><input class="tool-name" value="${esc(x.tool_name||"")}" placeholder="工具名を入力" onchange="saveToolName(${x.id},this.value)"></td>
+      <td>${lastHtml}</td>
       <td><span class="status ${sc}">${esc(status)}</span></td>
     </tr>`;
   }).join("");
@@ -210,7 +237,10 @@ function openTool(id){
 }
 async function toolAction(a){
   try{
-    await api("f2_tool_logs",{method:"POST",body:JSON.stringify({tool_id:sel.id,machine_no:M,action:a})});
+    const saved=await api("f2_tool_logs",{method:"POST",body:JSON.stringify({tool_id:sel.id,machine_no:M,action:a})});
+    if((a==="工具交換"||a==="チップ交換") && saved?.[0]){
+      toolLogs.unshift(saved[0]);
+    }
     if(a==="注意事項"){
       await api(`f2_tools?id=eq.${sel.id}`,{method:"PATCH",body:JSON.stringify({attention:true})});
       sel.attention=true;
