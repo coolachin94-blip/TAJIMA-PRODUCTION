@@ -1548,13 +1548,13 @@ function drawMaterialOrders(){
 
 // ===== 工場モニター TEST 入口 =====
 let boardPin="";
-function scheduleAdminOpen(){const pw=prompt("日程管理パスワード");if(pw===null)return;if(pw!=="234223"){alert("パスワードが違います");return;}location.href="TAJIMA-Schedule-Test-v0.1/";}
-let factory2Mode=false;
-function factory2OpenPin(){factory2Mode=true;boardPin="";boardPinView.textContent="○○○○○○";const t=boardOverlay.querySelector(".att-box > div");if(t)t.textContent="第2工場 管理者認証";boardOverlay.style.display="flex"}
-function boardOpenPin(){factory2Mode=false;boardPin="";boardPinView.textContent="○○○○○○";boardOverlay.style.display="flex"}
-function boardClosePin(){boardOverlay.style.display="none";boardPin="";factory2Mode=false;const t=boardOverlay.querySelector(".att-box > div");if(t)t.textContent="TEST 管理者認証"}
+let boardMode="board";
+function scheduleAdminOpen(){boardMode="schedule";boardPin="";boardPinView.textContent="○○○○○○";const t=boardOverlay.querySelector(".att-box > div");if(t)t.textContent="日程管理 管理者認証";boardOverlay.style.display="flex"}
+function factory2OpenPin(){boardMode="factory2";boardPin="";boardPinView.textContent="○○○○○○";const t=boardOverlay.querySelector(".att-box > div");if(t)t.textContent="第2工場 管理者認証";boardOverlay.style.display="flex"}
+function boardOpenPin(){boardMode="board";boardPin="";boardPinView.textContent="○○○○○○";const t=boardOverlay.querySelector(".att-box > div");if(t)t.textContent="TEST 管理者認証";boardOverlay.style.display="flex"}
+function boardClosePin(){boardOverlay.style.display="none";boardPin="";boardMode="board";const t=boardOverlay.querySelector(".att-box > div");if(t)t.textContent="TEST 管理者認証"}
 function boardClear(){boardPin="";boardPinView.textContent="○○○○○○"}
-function boardKey(n){if(boardPin.length>=6)return;boardPin+=n;boardPinView.textContent="●".repeat(boardPin.length)+"○".repeat(6-boardPin.length);if(boardPin.length===6){if(boardPin==="234223"){if(factory2Mode){boardClosePin();location.href="TAJIMA-Factory2-Pilot-v0.1-READY/admin.html"}else{boardClosePin();location.href="board-test-admin.html?v=1124"}}else{alert("パスワードが違います");boardClear()}}}
+function boardKey(n){if(boardPin.length>=6)return;boardPin+=n;boardPinView.textContent="●".repeat(boardPin.length)+"○".repeat(6-boardPin.length);if(boardPin.length===6){if(boardPin==="234223"){const mode=boardMode;boardClosePin();if(mode==="schedule")location.href="TAJIMA-Schedule-Test-v0.1/";else if(mode==="factory2")location.href="TAJIMA-Factory2-Pilot-v0.1-READY/admin.html";else location.href="board-test-admin.html?v=1124"}else{alert("パスワードが違います");boardClear()}}}
 // ===== v11.1 勤怠集計補助 =====
 let attPin="",attEmployees=[],attCalRows=[],attPunches=[];
 function attCurrentPayrollPeriod(){
