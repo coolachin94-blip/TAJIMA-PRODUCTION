@@ -185,7 +185,7 @@
 
 <script src="config.js"></script>
 <script>
-const Q=new URLSearchParams(location.search),M=Number(1);
+const Q=new URLSearchParams(location.search),M=Number(Q.get("machine")||1);
 const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY;
 let MACHINE_NAME=M+"号機";
 const H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
