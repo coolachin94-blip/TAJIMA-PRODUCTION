@@ -11,11 +11,29 @@
 @media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}.cal{grid-template-columns:repeat(7,1fr);font-size:12px}}
 @media print{.top,.nav,.no-print,#err{display:none!important}.wrap{max-width:none}.card{box-shadow:none;border:0}}
 
-.machine-launch-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:0;border-radius:12px;background:#2563eb;color:#fff;font-weight:900;text-decoration:none;cursor:pointer}
-.machine-launch-btn:hover{filter:brightness(.96)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.top-actions{display:flex;align-items:center;gap:14px}
+.machine-launch-btn{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 13px;border:1px solid rgba(255,255,255,.28);border-radius:9px;background:#2563eb;color:#fff;font-size:13px;font-weight:900;text-decoration:none;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.machine-launch-btn:hover{filter:brightness(.97)}
+.ship-layout{display:grid;grid-template-columns:minmax(360px,.9fr) minmax(520px,1.35fr);gap:12px}
+.ship-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.ship-month-nav{display:flex;align-items:center;gap:7px}
+.ship-month-title{min-width:120px;text-align:center;font-weight:900;color:#102b4e}
+.ship-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.ship-dow{text-align:center;font-size:12px;font-weight:900;color:#64748b;padding:4px 0}
+.ship-day{min-height:68px;border:1px solid #dbe3ec;border-radius:9px;background:#fff;padding:6px;text-align:left;cursor:pointer;position:relative}
+.ship-day:hover{border-color:#93c5fd;background:#f8fbff}
+.ship-day.selected{border:2px solid #2563eb;background:#eff6ff}
+.ship-day.empty{border-color:transparent;background:transparent;cursor:default}
+.ship-day .num{font-weight:900;font-size:13px}
+.ship-day .count{margin-top:7px;font-size:12px;color:#2563eb;font-weight:900}
+.ship-day.sun .num{color:#dc2626}.ship-day.sat .num{color:#2563eb}
+.ship-day-list .box{margin:6px 0}
+.ship-day-summary{font-weight:900;color:#102b4e;margin-bottom:7px}
+@media(max-width:900px){.ship-layout{grid-template-columns:1fr}.top{align-items:flex-start}.top-actions{gap:7px;flex-wrap:wrap;justify-content:flex-end}.machine-launch-btn{font-size:12px}}
 
 </style></head><body>
-<div style="max-width:1180px;margin:12px auto 0;padding:0 14px;text-align:right"><a class="machine-launch-btn" href="index.html">各号機 タブレット画面へ</a></div><div class="top"><b>TAJIMA 第2工場 管理</b><span>PILOT v1.0</span></div>
+<div class="top"><b>TAJIMA 第2工場 管理</b><div class="top-actions"><a class="machine-launch-btn" href="index.html">各号機 タブレット画面へ</a><span>PILOT v1.0</span></div></div>
 <div class="wrap"><div id="err" class="card alert hidden"></div>
 <div class="nav no-print">
 <button class="btn primary" onclick="view('dash')">ダッシュボード</button><button class="btn" onclick="view('machines')">機械・工具管理</button>
@@ -38,7 +56,30 @@
 
 <section id="records" class="hidden"><div class="card"><div class="title">工程記録の追加・修正</div><div class="row"><select id="recProduct" class="fc" onchange="fillRecordItems()"></select><select id="recItem" class="fc"></select><select id="recProcess" class="fc"></select><select id="recMachine" class="fc"></select><input id="recTime" type="datetime-local" class="fc"><button class="btn primary" onclick="manualLog()">記録追加</button></div></div><div class="card"><div id="recordList"></div></div></section>
 
-<section id="shipping" class="hidden"><div class="card"><div class="title">出荷登録</div><div id="shipList"></div></div></section>
+<section id="shipping" class="hidden">
+<div class="ship-layout">
+  <div class="card">
+    <div class="title">出荷登録</div>
+    <div class="muted" style="margin-bottom:8px">最終工程が完了した品番を出荷登録します。登録日時は自動保存されます。</div>
+    <div id="shipList"></div>
+  </div>
+  <div class="card">
+    <div class="ship-head">
+      <div class="title" style="margin:0">出荷履歴（日別）</div>
+      <div class="ship-month-nav">
+        <button class="btn" onclick="changeShipMonth(-1)">◀</button>
+        <div id="shipMonthTitle" class="ship-month-title"></div>
+        <button class="btn" onclick="changeShipMonth(1)">▶</button>
+        <button class="btn" onclick="shipToday()">今日</button>
+      </div>
+    </div>
+    <div id="shipCalendar" class="ship-cal"></div>
+    <div style="height:12px"></div>
+    <div id="shipDayTitle" class="ship-day-summary"></div>
+    <div id="shipDayList" class="ship-day-list"></div>
+  </div>
+</div>
+</section>
 
 <section id="history" class="hidden"><div class="card no-print"><div class="title">工場履歴</div><div class="row"><select id="hy" class="fc" onchange="renderHistory()"></select><select id="hm" class="fc" onchange="renderHistory()"></select><select id="hMachine" class="fc" onchange="renderHistory()"></select><select id="hType" class="fc" onchange="renderHistory()"><option value="all">すべて</option><option value="work">作業</option><option value="tool">工具</option><option value="arrival">入荷</option><option value="ship">出荷</option></select><select id="hView" class="fc" onchange="renderHistory()"><option value="list">月別一覧</option><option value="calendar">日別カレンダー</option></select></div></div><div class="card"><div id="historyBody"></div></div></section>
 
@@ -48,9 +89,10 @@
 const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY,H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])),dt=s=>s?new Date(s).toLocaleString("ja-JP"):"";
 let machines=[],products=[],processes=[],routes=[],items=[],logs=[],tools=[],toolLogs=[],shipments=[],importRows=[];
+let shipViewDate=new Date(),shipSelectedDate=new Date();
 async function api(p,o={}){let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});if(!r.ok)throw Error(await r.text());let t=await r.text();return t?JSON.parse(t):[]}
 function fail(e){$("err").textContent="通信エラー: "+e.message;$("err").classList.remove("hidden")}
-function view(id){["dash","machines","master","arrival","records","shipping","history","trace"].forEach(x=>$(x).classList.toggle("hidden",x!==id));if(id==="history")renderHistory();if(id==="trace")fillTraceItems()}
+function view(id){["dash","machines","master","arrival","records","shipping","history","trace"].forEach(x=>$(x).classList.toggle("hidden",x!==id));if(id==="shipping")renderShippingHistory();if(id==="history")renderHistory();if(id==="trace")fillTraceItems()}
 function opt(el,a,label,val="id",all=false){el.innerHTML=(all?'<option value="all">すべて</option>':'')+a.map(x=>`<option value="${x[val]}">${esc(label(x))}</option>`).join("")}
 async function load(){
  try{
@@ -58,7 +100,7 @@ async function load(){
  api("f2_machines?active=eq.true&order=machine_no"),api("f2_products?active=eq.true&order=product_name"),api("f2_process_master?active=eq.true&order=product_id,sort_order,id"),api("f2_process_routes?select=*"),
  api("f2_items?select=*,f2_products(product_name)&order=arrival_at.desc"),api("f2_process_logs?select=*,f2_items(part_no,product_id,f2_products(product_name)),f2_process_master(process_name,is_final)&order=created_at.desc&limit=1000"),
  api("f2_tools?select=*&order=machine_no,t_no"),api("f2_tool_logs?select=*&order=created_at.desc&limit=1000"),api("f2_shipments?select=*&order=shipped_at.desc")]);
- fill();renderDash();renderMachines();renderLedger();renderProducts();renderProcesses();renderArrivals();fillRecordItems();renderRecords();renderShipping();initHistory();
+ fill();renderDash();renderMachines();renderLedger();renderProducts();renderProcesses();renderArrivals();fillRecordItems();renderRecords();renderShipping();renderShippingHistory();initHistory();
  }catch(e){fail(e)}
 }
 function fill(){for(const id of ["masterProduct","arrProduct","recProduct","traceProduct"])opt($(id),products,x=>x.product_name);for(const id of ["toolMachine","ledgerMachine","recMachine"])opt($(id),machines,x=>x.machine_name,"machine_no");opt($("hMachine"),machines,x=>x.machine_name,"machine_no",true)}
@@ -102,6 +144,43 @@ async function delLog(id){if(!confirm("削除しますか？"))return;try{await 
 function done(i,p){return logs.some(x=>x.item_id==i&&x.process_id==p)}
 function renderShipping(){let finals=processes.filter(x=>x.is_final);$("shipList").innerHTML=items.filter(i=>!i.shipped&&finals.some(p=>p.product_id==i.product_id&&done(i.id,p.id))).map(i=>`<div class="box row"><b>${esc(i.f2_products?.product_name)} / ${esc(i.part_no)}</b><button class="btn primary" onclick="ship(${i.id})">出荷登録</button></div>`).join("")||"出荷可能品なし"}
 async function ship(id){if(!confirm("出荷登録しますか？"))return;try{let n=new Date().toISOString();await api("f2_shipments",{method:"POST",body:JSON.stringify({item_id:id,shipped_at:n})});await api(`f2_items?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({shipped:true})});await load()}catch(e){fail(e)}}
+
+function shipDateKey(v){let d=new Date(v);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function shipToday(){shipViewDate=new Date();shipSelectedDate=new Date();renderShippingHistory()}
+function changeShipMonth(n){
+ shipViewDate=new Date(shipViewDate.getFullYear(),shipViewDate.getMonth()+n,1);
+ shipSelectedDate=new Date(shipViewDate.getFullYear(),shipViewDate.getMonth(),1);
+ renderShippingHistory();
+}
+function selectShipDay(y,m,d){shipSelectedDate=new Date(y,m-1,d);renderShippingHistory()}
+function renderShippingHistory(){
+ if(!$("shipCalendar"))return;
+ const y=shipViewDate.getFullYear(),m=shipViewDate.getMonth()+1;
+ $("shipMonthTitle").textContent=`${y}年 ${m}月`;
+ const first=new Date(y,m-1,1).getDay(),days=new Date(y,m,0).getDate();
+ let html=["日","月","火","水","木","金","土"].map(x=>`<div class="ship-dow">${x}</div>`).join("");
+ for(let i=0;i<first;i++)html+='<div class="ship-day empty"></div>';
+ for(let d=1;d<=days;d++){
+   const key=`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+   const count=shipments.filter(x=>shipDateKey(x.shipped_at)===key).length;
+   const selected=shipSelectedDate.getFullYear()===y&&shipSelectedDate.getMonth()+1===m&&shipSelectedDate.getDate()===d;
+   const dow=new Date(y,m-1,d).getDay();
+   html+=`<button class="ship-day ${selected?"selected":""} ${dow===0?"sun":dow===6?"sat":""}" onclick="selectShipDay(${y},${m},${d})"><span class="num">${d}</span>${count?`<div class="count">${count}件</div>`:""}</button>`;
+ }
+ $("shipCalendar").innerHTML=html;
+ renderShipDayList();
+}
+function renderShipDayList(){
+ const key=shipDateKey(shipSelectedDate);
+ const a=shipments.filter(x=>shipDateKey(x.shipped_at)===key).sort((x,y)=>new Date(x.shipped_at)-new Date(y.shipped_at));
+ $("shipDayTitle").textContent=`${shipSelectedDate.getFullYear()}年${shipSelectedDate.getMonth()+1}月${shipSelectedDate.getDate()}日　出荷 ${a.length}件`;
+ $("shipDayList").innerHTML=a.map(x=>{
+   const i=items.find(z=>z.id==x.item_id);
+   const t=new Date(x.shipped_at).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
+   return `<div class="box row"><div><b>${t}</b>　${esc(i?.f2_products?.product_name||"")} / ${esc(i?.part_no||"")}</div></div>`;
+ }).join("")||'<div class="muted">この日の出荷登録はありません。</div>';
+}
+
 function initHistory(){let y=new Date().getFullYear();$("hy").innerHTML=Array.from({length:7},(_,i)=>`<option ${y-i==y?"selected":""}>${y-i}</option>`).join("");$("hm").innerHTML=Array.from({length:12},(_,i)=>`<option value="${i+1}" ${i+1==new Date().getMonth()+1?"selected":""}>${i+1}月</option>`).join("");renderHistory()}
 function histEvents(){
  let y=Number($("hy").value),m=Number($("hm").value),mn=$("hMachine").value,type=$("hType").value,a=[];
