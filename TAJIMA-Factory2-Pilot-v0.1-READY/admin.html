@@ -1,4 +1,297 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TAJIMA 第2工場 管理</title><link rel="stylesheet" href="common.css"><style>.machines{grid-template-columns:repeat(5,1fr)}.cols{grid-template-columns:1fr 1fr}@media(max-width:800px){.machines,.cols{grid-template-columns:1fr 1fr}}</style></head><body><div class="top"><b>TAJIMA 第2工場 管理</b><span>PILOT v0.1</span></div><div class="wrap"><div id="err" class="card alert" style="display:none"></div><div class="card"><div class="title">機械状況</div><div class="muted">現在は1号機タブレットのみ連動する実験版</div></div><div id="machines" class="grid machines"></div><div class="grid cols"><div class="card"><div class="title">生産・工程履歴</div><div id="pl"></div></div><div class="card"><div class="title">工具履歴</div><div id="tl"></div></div></div><div class="card"><div class="title">⚠ 未解決の注意事項</div><div id="alerts"></div></div></div><script src="config.js"></script><script>
-const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY,H={"apikey":K,"Authorization":"Bearer "+K};async function api(p){let r=await fetch(U+"/rest/v1/"+p,{headers:H});if(!r.ok)throw Error(await r.text());return r.json()}function e(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}function d(s){return new Date(s).toLocaleString("ja-JP")}
-async function load(){try{let [p,t,i,o]=await Promise.all([api("f2_process_logs?select=*,f2_items(part_no,f2_products(product_name))&order=created_at.desc&limit=50"),api("f2_tool_logs?select=*,f2_tools(t_no,tool_name)&order=created_at.desc&limit=50"),api("f2_items?select=*,f2_products(product_name)&shipped=eq.false"),api("f2_tools?select=*&order=machine_no.asc,t_no.asc")]);let latest={};p.forEach(x=>latest[x.machine_no]??=x);machines.innerHTML=[1,2,3,4,5].map(n=>{let x=latest[n];return `<div class="card"><b>${n}号機</b><br>${x?`${e(x.f2_items?.f2_products?.product_name)} / ${e(x.f2_items?.part_no)}<br><span class="pill">${x.step_no}工程</span><br><span class="muted">${d(x.created_at)}</span>`:'<span class="muted">記録なし</span>'}</div>`}).join("");pl.innerHTML=p.map(x=>`<div class="log">${d(x.created_at)} <b>${x.machine_no}号機</b> ${e(x.f2_items?.f2_products?.product_name)} / ${e(x.f2_items?.part_no)} ${x.step_no}工程 ${x.attention?'⚠':''}</div>`).join("")||"記録なし";tl.innerHTML=t.map(x=>`<div class="log">${d(x.created_at)} <b>${x.machine_no}号機</b> T${String(x.f2_tools?.t_no??"").padStart(2,"0")} ${e(x.f2_tools?.tool_name)} ${e(x.action)} ${x.target_machine_no?'→'+x.target_machine_no+'号機':''}</div>`).join("")||"記録なし";let a=[...i.filter(x=>x.attention).map(x=>`⚠ ${e(x.f2_products?.product_name)} / ${e(x.part_no)} 変動事項`),...o.filter(x=>x.attention||x.current_machine_no!=x.machine_no).map(x=>`⚠ ${x.machine_no}号機 T${String(x.t_no).padStart(2,"0")} ${e(x.tool_name)} ${x.current_machine_no!=x.machine_no?'→'+x.current_machine_no+'号機':''}`)];alerts.innerHTML=a.map(x=>`<div class="log">${x}</div>`).join("")||"現在なし"}catch(x){err.style.display="block";err.textContent="通信エラー: "+x.message}}load();setInterval(load,10000);
-</script></body></html>
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TAJIMA 第2工場 管理</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  .machines{grid-template-columns:repeat(5,1fr)}
+  .cols{grid-template-columns:1fr 1fr}
+  .top-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .menu-btn{min-height:54px;padding:12px 18px;font-size:17px}
+  .hidden{display:none!important}
+  .import-grid{display:grid;grid-template-columns:220px 1fr;gap:14px}
+  .form-control{width:100%;min-height:48px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;font:inherit;background:#fff}
+  .file-box{border:2px dashed #94a3b8;border-radius:14px;padding:18px;background:#f8fafc}
+  .file-box input{width:100%;font-size:16px}
+  .paste{min-height:130px;resize:vertical}
+  .preview-wrap{max-height:520px;overflow:auto;border:1px solid #d7e0eb;border-radius:12px;background:#fff}
+  .preview-table{width:100%;border-collapse:collapse}
+  .preview-table th,.preview-table td{padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:left}
+  .preview-table th{position:sticky;top:0;background:#102b4e;color:white;z-index:1}
+  .preview-table td:first-child{width:110px;font-weight:800}
+  .preview-table tr.blank td{color:#94a3b8}
+  .summary{font-size:18px;font-weight:800;margin:10px 0}
+  .success{background:#ecfdf5;border:1px solid #86efac;color:#166534;padding:12px;border-radius:10px}
+  .danger{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;padding:12px;border-radius:10px}
+  .apply-btn{min-height:58px;font-size:18px;padding:14px 24px}
+  @media(max-width:800px){
+    .machines,.cols{grid-template-columns:1fr 1fr}
+    .import-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="top">
+  <b>TAJIMA 第2工場 管理</b>
+  <span>PILOT v0.6</span>
+</div>
+
+<div class="wrap">
+  <div id="err" class="card alert" style="display:none"></div>
+
+  <div class="top-actions">
+    <button class="btn primary menu-btn" onclick="showView('dashboard')">管理ダッシュボード</button>
+    <button class="btn menu-btn" onclick="showView('toolImport')">🔧 工具表 一括登録</button>
+  </div>
+
+  <section id="dashboard">
+    <div class="card">
+      <div class="title">機械状況</div>
+      <div class="muted">各タブレットの作業登録・工具履歴をまとめて表示</div>
+    </div>
+
+    <div id="machines" class="grid machines"></div>
+
+    <div class="grid cols">
+      <div class="card">
+        <div class="title">生産・工程履歴</div>
+        <div id="pl"></div>
+      </div>
+      <div class="card">
+        <div class="title">工具履歴</div>
+        <div id="tl"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">⚠ 未解決の注意事項</div>
+      <div id="alerts"></div>
+    </div>
+  </section>
+
+  <section id="toolImport" class="hidden">
+    <div class="card">
+      <div class="title">🔧 工具表 一括登録</div>
+      <div class="muted">
+        TAJIMA標準の「T番号 / 名称」Excelを読み込み、対象号機へそのまま反映します。
+        反映前に必ずプレビューと対象号機を確認します。
+      </div>
+    </div>
+
+    <div class="card import-grid">
+      <div>
+        <label><b>対象機械</b>
+          <select id="targetMachine" class="form-control">
+            <option value="1">1号機</option>
+            <option value="2">2号機</option>
+            <option value="3">3号機</option>
+            <option value="4">4号機</option>
+            <option value="5">5号機</option>
+          </select>
+        </label>
+      </div>
+      <div class="file-box">
+        <b>Excelファイルを選択</b>
+        <div class="muted" style="margin:6px 0 12px">.xlsx / .xls / .csv　先頭2列を「T番号」「名称」として読み込みます。</div>
+        <input id="toolFile" type="file" accept=".xlsx,.xls,.csv">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">Excelから直接コピーして貼り付けてもOK</div>
+      <div class="muted">ファイル選択が使えない場合、Excelの T番号・名称 の2列をコピーして下へ貼り付け → 「貼り付けを読込」。</div>
+      <textarea id="pasteData" class="form-control paste" placeholder="T番号&#9;名称&#10;T1&#9;ケガキ&#10;T2&#9;..."></textarea>
+      <button class="btn" style="margin-top:10px" onclick="parsePaste()">貼り付けを読込</button>
+    </div>
+
+    <div id="importStatus" class="card hidden"></div>
+
+    <div id="previewCard" class="card hidden">
+      <div class="title">反映前プレビュー</div>
+      <div id="importSummary" class="summary"></div>
+      <div class="danger">
+        「反映」を押すと、プレビューにあるT番号の名称を選択した号機へ登録します。
+        既存の注意事項・他機械へ移動中の状態は消さずに保持します。
+      </div>
+      <div class="preview-wrap" style="margin-top:12px">
+        <table class="preview-table">
+          <thead><tr><th>T番号</th><th>名称</th></tr></thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+      <button class="btn primary apply-btn" style="margin-top:14px" onclick="applyImport()">この工具表を反映</button>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="config.js"></script>
+<script>
+const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY;
+const H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
+let importRows=[];
+
+async function api(p,o={}){
+  const r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});
+  if(!r.ok) throw Error(await r.text());
+  const t=await r.text();
+  return t?JSON.parse(t):[];
+}
+function e(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
+function d(s){return new Date(s).toLocaleString("ja-JP")}
+function el(id){return document.getElementById(id)}
+function showError(msg){el("err").style.display="block";el("err").textContent=msg}
+function clearError(){el("err").style.display="none";el("err").textContent=""}
+
+function showView(id){
+  el("dashboard").classList.toggle("hidden",id!=="dashboard");
+  el("toolImport").classList.toggle("hidden",id!=="toolImport");
+}
+
+async function load(){
+  try{
+    clearError();
+    const [p,t,i,o]=await Promise.all([
+      api("f2_process_logs?select=*,f2_items(part_no,f2_products(product_name))&order=created_at.desc&limit=50"),
+      api("f2_tool_logs?select=*,f2_tools(t_no,tool_name)&order=created_at.desc&limit=50"),
+      api("f2_items?select=*,f2_products(product_name)&shipped=eq.false"),
+      api("f2_tools?select=*&order=machine_no.asc,t_no.asc")
+    ]);
+
+    const latest={};
+    p.forEach(x=>latest[x.machine_no]??=x);
+
+    el("machines").innerHTML=[1,2,3,4,5].map(n=>{
+      const x=latest[n];
+      return `<div class="card"><b>${n}号機</b><br>${
+        x?`${e(x.f2_items?.f2_products?.product_name)} / ${e(x.f2_items?.part_no)}
+        <br><span class="pill">${x.step_no}工程</span>
+        <br><span class="muted">${d(x.created_at)}</span>`
+        :'<span class="muted">記録なし</span>'
+      }</div>`;
+    }).join("");
+
+    el("pl").innerHTML=p.map(x=>`<div class="log">${d(x.created_at)} <b>${x.machine_no}号機</b> ${e(x.f2_items?.f2_products?.product_name)} / ${e(x.f2_items?.part_no)} ${x.step_no}工程 ${x.attention?'⚠':''}</div>`).join("")||"記録なし";
+
+    el("tl").innerHTML=t.map(x=>`<div class="log">${d(x.created_at)} <b>${x.machine_no}号機</b> T${String(x.f2_tools?.t_no??"").padStart(2,"0")} ${e(x.f2_tools?.tool_name)} ${e(x.action)} ${x.target_machine_no?'→'+x.target_machine_no+'号機':''}</div>`).join("")||"記録なし";
+
+    const a=[
+      ...i.filter(x=>x.attention).map(x=>`⚠ ${e(x.f2_products?.product_name)} / ${e(x.part_no)} 変動事項`),
+      ...o.filter(x=>x.attention||x.current_machine_no!=x.machine_no).map(x=>`⚠ ${x.machine_no}号機 T${String(x.t_no).padStart(2,"0")} ${e(x.tool_name)} ${x.current_machine_no!=x.machine_no?'→'+x.current_machine_no+'号機':''}`)
+    ];
+    el("alerts").innerHTML=a.map(x=>`<div class="log">${x}</div>`).join("")||"現在なし";
+  }catch(x){
+    showError("通信エラー: "+x.message);
+  }
+}
+
+function normalizeRows(rows){
+  const map=new Map();
+  for(const row of rows){
+    if(!row || row.length<1) continue;
+    const rawT=String(row[0]??"").trim();
+    const m=rawT.match(/^T\s*0*(\d{1,2})$/i);
+    if(!m) continue;
+    const t=Number(m[1]);
+    if(t<1||t>80) continue;
+    const name=String(row[1]??"").trim();
+    map.set(t,{t_no:t,tool_name:name});
+  }
+  return [...map.values()].sort((a,b)=>a.t_no-b.t_no);
+}
+
+function showPreview(rows){
+  importRows=rows;
+  const machine=Number(el("targetMachine").value);
+  const named=rows.filter(x=>x.tool_name).length;
+  el("importSummary").textContent=`対象：${machine}号機　/　読込：${rows.length}件　/　名称あり：${named}件`;
+  el("previewBody").innerHTML=rows.map(x=>`<tr class="${x.tool_name?'':'blank'}"><td>T${x.t_no}</td><td>${e(x.tool_name||"（空欄）")}</td></tr>`).join("");
+  el("previewCard").classList.remove("hidden");
+  el("importStatus").classList.add("hidden");
+}
+
+function parsePaste(){
+  const text=el("pasteData").value.trim();
+  if(!text){alert("貼り付けデータがありません");return;}
+  const rows=text.split(/\r?\n/).map(line=>line.split(/\t|,/));
+  const parsed=normalizeRows(rows);
+  if(!parsed.length){alert("T1〜T80を読み取れませんでした");return;}
+  showPreview(parsed);
+}
+
+el("toolFile").addEventListener("change",async ev=>{
+  const file=ev.target.files?.[0];
+  if(!file)return;
+  try{
+    if(typeof XLSX==="undefined") throw Error("Excel読込ライブラリを読み込めませんでした。貼り付け方式を使用してください。");
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:"array"});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+    const parsed=normalizeRows(rows);
+    if(!parsed.length) throw Error("T1〜T80のデータを読み取れませんでした");
+    showPreview(parsed);
+  }catch(err){
+    el("importStatus").className="card danger";
+    el("importStatus").textContent="読込エラー: "+err.message;
+  }
+});
+
+el("targetMachine").addEventListener("change",()=>{
+  if(importRows.length) showPreview(importRows);
+});
+
+async function applyImport(){
+  if(!importRows.length){alert("先に工具表を読み込んでください");return;}
+  const machine=Number(el("targetMachine").value);
+  const named=importRows.filter(x=>x.tool_name).length;
+  if(!confirm(`${machine}号機へ工具表を反映します。\n読込 ${importRows.length}件 / 名称あり ${named}件\nよろしいですか？`)) return;
+
+  const btn=document.querySelector(".apply-btn");
+  btn.disabled=true;
+  btn.textContent="反映中…";
+
+  try{
+    const existing=await api(`f2_tools?machine_no=eq.${machine}&select=id,t_no,current_machine_no,attention`);
+    const byT=new Map(existing.map(x=>[Number(x.t_no),x]));
+    const payload=importRows.map(r=>{
+      const old=byT.get(r.t_no);
+      const row={
+        machine_no:machine,
+        t_no:r.t_no,
+        tool_name:r.tool_name||null,
+        current_machine_no:old?.current_machine_no ?? machine,
+        attention:old?.attention ?? false
+      };
+      if(old?.id) row.id=old.id;
+      return row;
+    });
+
+    await api("f2_tools?on_conflict=machine_no,t_no",{
+      method:"POST",
+      headers:{"Prefer":"resolution=merge-duplicates,return=representation"},
+      body:JSON.stringify(payload)
+    });
+
+    el("importStatus").className="card success";
+    el("importStatus").textContent=`✓ ${machine}号機へ ${importRows.length}件を反映しました。`;
+    el("importStatus").classList.remove("hidden");
+    await load();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }catch(err){
+    el("importStatus").className="card danger";
+    el("importStatus").textContent="反映エラー: "+err.message;
+    el("importStatus").classList.remove("hidden");
+  }finally{
+    btn.disabled=false;
+    btn.textContent="この工具表を反映";
+  }
+}
+
+load();
+setInterval(load,10000);
+</script>
+</body>
+</html>
