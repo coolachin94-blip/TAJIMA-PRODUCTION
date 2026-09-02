@@ -120,7 +120,7 @@ async function load(){
  fill();renderDash();renderMachines();renderLedger();renderProducts();renderProcesses();renderArrivals();fillRecordItems();renderRecords();renderShipping();renderShippingHistory();initHistory();setNavActive(currentView==="history"?`history-${historyType}`:currentView);
  }catch(e){fail(e)}
 }
-function fill(){for(const id of ["masterProduct","arrProduct","recProduct","traceProduct"])opt($(id),products,x=>x.product_name);for(const id of ["toolMachine","ledgerMachine","recMachine"])opt($(id),machines,x=>x.machine_name,"machine_no");renderArrivalShapes();renderHistoryMachines()}
+function fill(){const selectedMasterProduct=$("masterProduct").value;for(const id of ["masterProduct","arrProduct","recProduct","traceProduct"])opt($(id),products,x=>x.product_name);if(products.some(x=>String(x.id)===String(selectedMasterProduct)))$("masterProduct").value=selectedMasterProduct;for(const id of ["toolMachine","ledgerMachine","recMachine"])opt($(id),machines,x=>x.machine_name,"machine_no");renderArrivalShapes();renderHistoryMachines()}
 function mname(n){return machines.find(x=>x.machine_no==n)?.machine_name||n+"号機"}
 function renderDash(){
  let today=new Date().toDateString();$("dMachines").textContent=machines.length;$("dWarnings").textContent=tools.filter(x=>x.attention||x.current_machine_no!=x.machine_no).length;$("dToday").textContent=logs.filter(x=>new Date(x.created_at).toDateString()==today).length;
