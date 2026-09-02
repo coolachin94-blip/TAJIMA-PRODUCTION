@@ -231,7 +231,7 @@ async function load(){
       api("f2_products?active=eq.true&order=product_name.asc"),
       api("f2_process_master?active=eq.true&order=product_id,sort_order,id"),
       api("f2_process_routes?select=*"),
-      api("f2_items?select=*,f2_shapes(shape_name)&shipped=eq.false&order=part_no.asc"),
+      api("f2_items?select=*,f2_shapes(shape_name)&shipped=eq.false&arrival_cancelled_at=is.null&order=part_no.asc"),
       api("f2_process_logs?select=id,item_id,process_id,attention,created_at")
     ]);
     renderTools(); renderProductButtons();
