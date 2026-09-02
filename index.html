@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
-<title>TAJIMA 生産管理 v11.25</title>
+<title>TAJIMA 生産管理 v11.28</title>
 <style>
 :root{--blue:#2563eb;--deep:#1e3a8a;--soft:#eff6ff;--line:#bfdbfe;--red:#ef4444;--green:#16a34a;--text:#0f172a;--yellow:#fef3c7;--purple:#7c3aed}
 *{box-sizing:border-box}
@@ -201,14 +201,8 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .move-top-btn,.order-move-top{min-height:40px;border:1px solid #93c5fd;background:#fff;color:#1d4ed8;border-radius:9px;padding:7px 10px;font-weight:900;white-space:nowrap}
 
 /* v11.1 勤怠補助 */
-.secret-launchers{display:flex;justify-content:center;gap:8px;margin:42px auto 0}
-.att-secret,.schedule-secret,.factory2-secret{width:34px;height:22px;border:0;border-radius:5px;opacity:.78;margin:0;display:block;cursor:pointer}
-.att-secret{background:#16a34a}
-.schedule-secret{background:#f59e0b}
-.mobile-secret{background:#2563eb}
-.factory2-secret{background:#dc2626}
-.mobile-secret{width:auto;min-width:92px;height:22px;padding:0 9px;border:0;border-radius:5px;opacity:.82;margin:0;display:block;cursor:pointer;background:#2563eb;color:#fff;font-size:11px;font-weight:800;line-height:22px}
-.att-secret:hover,.schedule-secret:hover,.mobile-secret:hover,.factory2-secret:hover{opacity:1}
+.secret-launchers{display:flex;justify-content:center;gap:8px;margin:42px auto 0}.att-secret{width:34px;height:22px;border:0;border-radius:5px;background:#16a34a;opacity:.72;margin:0;display:block;cursor:pointer}.board-secret{width:34px;height:22px;border:0;border-radius:5px;background:#dc2626;opacity:.72;margin:0;display:block;cursor:pointer}.board-secret:hover{opacity:1}
+.att-secret:hover{opacity:1}
 .att-overlay{position:fixed;inset:0;background:rgba(15,23,42,.62);z-index:99999;display:none;align-items:center;justify-content:center;padding:16px}
 .att-box{width:min(390px,100%);background:#fff;border-radius:22px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.28)}
 .att-pin{height:52px;border:2px solid #bbf7d0;border-radius:14px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;font-size:24px;letter-spacing:.25em;font-weight:900;margin:10px 0 14px}
@@ -316,7 +310,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 </style>
 </head>
 <body>
-<div id="homeScreen" class="home-screen"><div class="home-title">TAJIMA</div><div class="home-card"><button class="btn-purple" onclick="showHeadOffice()">本社</button></div><div class="home-card"><button class="btn-blue" onclick="showFactory2()">第二工場</button></div><div class="home-card"><button class="btn-green" onclick="showMaterialOrders()">材料発注管理</button></div><div class="secret-launchers"><button class="att-secret" onclick="attOpenPin()" aria-label="勤怠管理" title="勤怠管理"></button><button class="schedule-secret" onclick="scheduleAdminOpen()" aria-label="日程管理" title="日程管理"></button><button class="mobile-secret" onclick="location.href='TAJIMA-Schedule-Test-v0.1/mobile.html'" aria-label="モバイル閲覧" title="モバイル閲覧">モバイル閲覧</button><button class="factory2-secret" onclick="factory2OpenPin()" aria-label="第2工場 管理" title="第2工場 管理"></button></div></div>
+<div id="homeScreen" class="home-screen"><div class="home-title">TAJIMA</div><div class="home-card"><button class="btn-purple" onclick="showHeadOffice()">本社</button></div><div class="home-card"><button class="btn-blue" onclick="showFactory2()">第二工場</button></div><div class="home-card"><button class="btn-green" onclick="showMaterialOrders()">材料発注管理</button></div><div class="secret-launchers"><button class="att-secret" onclick="attOpenPin()" aria-label=" "></button><button class="board-secret" onclick="boardOpenPin()" aria-label=" "></button></div></div>
 <div id="updateBanner" class="update-banner"><b>新しいバージョンがあります</b><br><span id="updateText">更新できます</span><button class="btn-green" onclick="applyAppUpdate()">更新する</button></div>
 <div id="pullIndicator" class="pull-indicator">↓ 更新</div>
 <div id="factoryApp" class="app" style="display:none">
@@ -518,7 +512,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.25";
+const APP_VERSION="11.28";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -1548,13 +1542,10 @@ function drawMaterialOrders(){
 
 // ===== 工場モニター TEST 入口 =====
 let boardPin="";
-let boardMode="board";
-function scheduleAdminOpen(){boardMode="schedule";boardPin="";boardPinView.textContent="○○○○○○";const t=boardOverlay.querySelector(".att-box > div");if(t)t.textContent="日程管理 管理者認証";boardOverlay.style.display="flex"}
-function factory2OpenPin(){boardMode="factory2";boardPin="";boardPinView.textContent="○○○○○○";const t=boardOverlay.querySelector(".att-box > div");if(t)t.textContent="第2工場 管理者認証";boardOverlay.style.display="flex"}
-function boardOpenPin(){boardMode="board";boardPin="";boardPinView.textContent="○○○○○○";const t=boardOverlay.querySelector(".att-box > div");if(t)t.textContent="TEST 管理者認証";boardOverlay.style.display="flex"}
-function boardClosePin(){boardOverlay.style.display="none";boardPin="";boardMode="board";const t=boardOverlay.querySelector(".att-box > div");if(t)t.textContent="TEST 管理者認証"}
+function boardOpenPin(){boardPin="";boardPinView.textContent="○○○○○○";boardOverlay.style.display="flex"}
+function boardClosePin(){boardOverlay.style.display="none";boardPin=""}
 function boardClear(){boardPin="";boardPinView.textContent="○○○○○○"}
-function boardKey(n){if(boardPin.length>=6)return;boardPin+=n;boardPinView.textContent="●".repeat(boardPin.length)+"○".repeat(6-boardPin.length);if(boardPin.length===6){if(boardPin==="234223"){const mode=boardMode;boardClosePin();if(mode==="schedule")location.href="TAJIMA-Schedule-Test-v0.1/";else if(mode==="factory2")location.href="TAJIMA-Factory2-Pilot-v0.1-READY/admin.html";else location.href="board-test-admin.html?v=1124"}else{alert("パスワードが違います");boardClear()}}}
+function boardKey(n){if(boardPin.length>=6)return;boardPin+=n;boardPinView.textContent="●".repeat(boardPin.length)+"○".repeat(6-boardPin.length);if(boardPin.length===6){if(boardPin==="234223"){boardClosePin();location.href="board-test-admin.html?v=1127"}else{alert("パスワードが違います");boardClear()}}}
 // ===== v11.1 勤怠集計補助 =====
 let attPin="",attEmployees=[],attCalRows=[],attPunches=[];
 function attCurrentPayrollPeriod(){
@@ -1902,7 +1893,7 @@ window.addEventListener("touchend",async()=>{if(!isPulling)return;const ok=pullD
 
 window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
-if(currentSection==="factory2")showFactory2();else if(currentSection==="hq")showHeadOffice();else if(currentSection==="materials")showMaterialOrders();else showHome();checkAppVersion();setInterval(()=>{if(currentSection==="factory2"&&!dirty&&!loading&&checkConfig())loadAll(); if(currentSection==="hq"&&checkConfig()&&canHqAutoRefresh())loadHqSchedules(); if(currentSection==="materials"&&checkConfig())loadMaterialPage();},15000);setInterval(checkAppVersion,60000);
+if(currentSection==="factory2")showFactory2();else if(currentSection==="hq")showHeadOffice();else if(currentSection==="materials")showMaterialOrders();else showHome();checkAppVersion();setInterval(()=>{if(currentSection==="factory2"&&!dirty&&!loading&&checkConfig())loadAll(); if(currentSection==="hq"&&checkConfig()&&canHqAutoRefresh())loadHqSchedules(); /* 材料発注管理は入力内容保護のため自動再読込しない */},60000);setInterval(checkAppVersion,60000);
 </script>
 </body>
 </html>
