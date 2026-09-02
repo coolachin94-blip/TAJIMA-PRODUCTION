@@ -117,7 +117,7 @@
 <body>
 <div class="top">
   <div><b>TAJIMA 第2工場　<span id="machineNameTop">1号機</span></b><div class="muted" style="color:#cbd5e1">現場タブレット</div></div>
-  <span>PILOT v1.1</span>
+  <span>PILOT v1.0</span>
 </div>
 
 <div class="wrap">
@@ -231,7 +231,7 @@ async function load(){
       api("f2_products?active=eq.true&order=product_name.asc"),
       api("f2_process_master?active=eq.true&order=product_id,sort_order,id"),
       api("f2_process_routes?select=*"),
-      api("f2_items?shipped=eq.false&order=part_no.asc"),
+      api("f2_items?select=*,f2_shapes(shape_name)&shipped=eq.false&order=part_no.asc"),
       api("f2_process_logs?select=id,item_id,process_id,attention,created_at")
     ]);
     renderTools(); renderProductButtons();
@@ -359,7 +359,7 @@ function showItemButtons(){
   document.getElementById("processGuide").textContent="この工程に進める品番だけ表示しています。";
   document.getElementById("registerCard").classList.add("hidden");
   let a=processItems.filter(x=>x.product_id==chosenProduct.id&&eligible(x));
-  document.getElementById("processButtons").innerHTML=a.map(x=>`<button class="btn process-choice ${x.attention?'warn':''}" onclick="chooseItem(${x.id})">${esc(x.part_no)}${x.attention?'<br>⚠ 注意あり':''}</button>`).join("")||'<div class="card muted">現在この工程に進める品番はありません</div>';
+  document.getElementById("processButtons").innerHTML=a.map(x=>`<button class="btn process-choice ${x.attention?'warn':''}" style="position:relative" onclick="chooseItem(${x.id})">${x.f2_shapes?.shape_name?`<span style="position:absolute;left:7px;top:6px;font-size:11px;font-weight:900;background:#102b4e;color:white;border-radius:6px;padding:2px 6px">${esc(x.f2_shapes.shape_name)}</span>`:""}${esc(x.part_no)}${x.attention?'<br>⚠ 注意あり':''}</button>`).join("")||'<div class="card muted">現在この工程に進める品番はありません</div>';
 }
 function chooseItem(id){
   chosenItem=processItems.find(x=>x.id==id);
