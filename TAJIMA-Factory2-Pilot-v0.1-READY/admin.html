@@ -34,15 +34,17 @@
 .process-box{position:relative;padding-top:30px}.process-badge{position:absolute;left:8px;top:7px;font-size:12px;font-weight:900;background:#102b4e;color:#fff;border-radius:7px;padding:3px 8px}.order-btns{display:flex;gap:5px;flex:0 0 auto}.order-btns .btn{min-width:42px;padding:7px}
 .shape-row{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.shape-btn{flex:0 0 auto}.shape-btn.selected{background:#102b4e;color:#fff;border-color:#102b4e}.history-machines{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.history-machines .btn.active{background:#102b4e;color:#fff;border-color:#102b4e}
 .ship-products{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0 12px}.ship-products .btn.active{background:#102b4e;color:#fff;border-color:#102b4e}.cancel-btn{border-color:#fca5a5!important;color:#b91c1c!important;background:#fff7f7!important}
+.nav .btn.active-nav{background:#2563eb!important;color:#fff!important;border-color:#2563eb!important;box-shadow:0 2px 8px rgba(37,99,235,.22)}
+.selectable-row{cursor:pointer;transition:.12s ease;border:2px solid #dbe3ec}.selectable-row:hover{border-color:#93c5fd;background:#f8fbff}.selectable-row.selected{border-color:#2563eb;background:#eff6ff;box-shadow:inset 0 0 0 1px #2563eb}.select-mark{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-width:24px;border:2px solid #94a3b8;border-radius:6px;font-weight:900;color:transparent;background:#fff}.selectable-row.selected .select-mark{border-color:#2563eb;background:#2563eb;color:#fff}.bulk-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:10px 0}.bulk-count{font-weight:900;color:#1e3a8a}.bulk-danger{background:#dc2626!important;color:#fff!important;border-color:#dc2626!important}.bulk-danger:disabled,.bulk-primary:disabled{opacity:.45;cursor:not-allowed}.bulk-primary{background:#2563eb!important;color:#fff!important;border-color:#2563eb!important}
 
 </style></head><body>
 <div class="top"><b>TAJIMA 第2工場 管理</b><div class="top-actions"><a class="machine-launch-btn" href="index.html">各号機 タブレット画面へ</a><span>PILOT v1.0</span></div></div>
 <div class="wrap"><div id="err" class="card alert hidden"></div>
 <div class="nav no-print">
-<button class="btn primary" onclick="view('dash')">ダッシュボード</button><button class="btn" onclick="view('machines')">機械・工具管理</button>
-<button class="btn" onclick="view('master')">製品・工程マスタ</button><button class="btn" onclick="view('arrival')">一括入荷</button>
-<button class="btn" onclick="view('records')">工程記録 修正</button><button class="btn" onclick="view('shipping')">出荷登録</button>
-<button class="btn" onclick="openHistory('work')">作業履歴</button><button class="btn" onclick="openHistory('tool')">工具履歴</button><button class="btn" onclick="view('trace')">品番履歴・印刷</button></div>
+<button class="btn" data-nav="dash" onclick="view('dash')">ダッシュボード</button><button class="btn" data-nav="machines" onclick="view('machines')">機械・工具管理</button>
+<button class="btn" data-nav="master" onclick="view('master')">製品・工程マスタ</button><button class="btn" data-nav="arrival" onclick="view('arrival')">一括入荷</button>
+<button class="btn" data-nav="records" onclick="view('records')">工程記録 修正</button><button class="btn" data-nav="shipping" onclick="view('shipping')">出荷登録</button>
+<button class="btn" data-nav="history-work" onclick="openHistory('work')">作業履歴</button><button class="btn" data-nav="history-tool" onclick="openHistory('tool')">工具履歴</button><button class="btn" data-nav="trace" onclick="view('trace')">品番履歴・印刷</button></div>
 
 <section id="dash"><div class="grid3"><div class="card"><div class="muted">稼働機械</div><div id="dMachines" class="stat">-</div></div><div class="card"><div class="muted">工具注意</div><div id="dWarnings" class="stat">-</div></div><div class="card"><div class="muted">本日の作業登録</div><div id="dToday" class="stat">-</div></div></div>
 <div class="card"><div class="title">機械状況・工具情報</div><div id="machineDash" class="grid3"></div></div>
@@ -60,7 +62,7 @@
 <div class="row" style="margin-top:10px"><select id="arrProduct" class="fc" onchange="renderArrivalShapes()"></select></div>
 <div class="shape-row" id="arrShapes"></div>
 <div class="row"><input id="arrFrom" class="fc" inputmode="numeric" placeholder="開始 443"><input id="arrTo" class="fc" inputmode="numeric" placeholder="終了 470"><button class="btn primary big" onclick="batchArrival()">一括登録</button></div>
-</div><div class="card"><div id="arrivalList"></div></div></section>
+</div><div class="card"><div class="bulk-bar"><div id="arrivalSelectedCount" class="bulk-count">選択 0件</div><div><button class="btn" onclick="clearArrivalSelection()">選択解除</button> <button id="bulkArrivalCancelBtn" class="btn bulk-danger" onclick="cancelSelectedArrivals()" disabled>選択した入荷を取消</button></div></div><div id="arrivalList"></div></div></section>
 
 <section id="records" class="hidden"><div class="card"><div class="title">工程記録の追加・修正</div><div class="row"><select id="recProduct" class="fc" onchange="fillRecordItems()"></select><select id="recItem" class="fc"></select><select id="recProcess" class="fc"></select><select id="recMachine" class="fc"></select><input id="recTime" type="datetime-local" class="fc"><button class="btn primary" onclick="manualLog()">記録追加</button></div></div><div class="card"><div id="recordList"></div></div></section>
 
@@ -70,6 +72,7 @@
     <div class="title">出荷登録</div>
     <div class="muted" style="margin-bottom:8px">最終工程が完了した品番を出荷登録します。登録日時は自動保存されます。</div>
     <div id="shipProducts" class="ship-products"></div>
+    <div class="bulk-bar"><div id="shipSelectedCount" class="bulk-count">選択 0件</div><div><button class="btn" onclick="clearShipSelection()">選択解除</button> <button id="bulkShipBtn" class="btn bulk-primary" onclick="shipSelected()" disabled>選択した品番を出荷</button></div></div>
     <div id="shipList"></div>
   </div>
   <div class="card">
@@ -100,9 +103,11 @@ const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,m
 let machines=[],products=[],processes=[],routes=[],items=[],logs=[],tools=[],toolLogs=[],shipments=[],shapes=[],importRows=[];
 let selectedArrivalShape=null,historyType="work",historyMachine="all";
 let shipViewDate=new Date(),shipSelectedDate=new Date(),shipProduct="all";
+let selectedArrivalIds=new Set(),selectedShipItemIds=new Set(),currentView="dash";
 async function api(p,o={}){let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});if(!r.ok)throw Error(await r.text());let t=await r.text();return t?JSON.parse(t):[]}
 function fail(e){$("err").textContent="通信エラー: "+e.message;$("err").classList.remove("hidden")}
-function view(id){["dash","machines","master","arrival","records","shipping","history","trace"].forEach(x=>$(x).classList.toggle("hidden",x!==id));if(id==="shipping"){renderShippingFilters();renderShipping();renderShippingHistory()}if(id==="history")renderHistory();if(id==="trace")fillTraceItems()}
+function setNavActive(key){document.querySelectorAll(".nav .btn[data-nav]").forEach(b=>b.classList.toggle("active-nav",b.dataset.nav===key))}
+function view(id){currentView=id;["dash","machines","master","arrival","records","shipping","history","trace"].forEach(x=>$(x).classList.toggle("hidden",x!==id));setNavActive(id==="history"?`history-${historyType}`:id);if(id==="shipping"){renderShippingFilters();renderShipping();renderShippingHistory()}if(id==="arrival")renderArrivals();if(id==="history")renderHistory();if(id==="trace")fillTraceItems()}
 function opt(el,a,label,val="id",all=false){el.innerHTML=(all?'<option value="all">すべて</option>':'')+a.map(x=>`<option value="${x[val]}">${esc(label(x))}</option>`).join("")}
 async function load(){
  try{
@@ -110,7 +115,9 @@ async function load(){
  api("f2_machines?active=eq.true&order=machine_no"),api("f2_products?active=eq.true&order=product_name"),api("f2_process_master?active=eq.true&order=product_id,sort_order,id"),api("f2_process_routes?select=*"),
  api("f2_items?select=*,f2_products(product_name),f2_shapes(shape_name)&order=arrival_at.desc"),api("f2_process_logs?select=*,f2_items(part_no,product_id,f2_products(product_name)),f2_process_master(process_name,is_final)&order=created_at.desc&limit=1000"),
  api("f2_tools?select=*&order=machine_no,t_no"),api("f2_tool_logs?select=*&order=created_at.desc&limit=1000"),api("f2_shipments?select=*&order=shipped_at.desc"),api("f2_shapes?active=eq.true&order=product_id,sort_order,id")]);
- fill();renderDash();renderMachines();renderLedger();renderProducts();renderProcesses();renderArrivals();fillRecordItems();renderRecords();renderShipping();renderShippingHistory();initHistory();
+ selectedArrivalIds=new Set([...selectedArrivalIds].filter(id=>items.some(x=>x.id==id&&!x.arrival_cancelled_at)));
+ selectedShipItemIds=new Set([...selectedShipItemIds].filter(id=>items.some(x=>x.id==id&&!x.arrival_cancelled_at&&!x.shipped)));
+ fill();renderDash();renderMachines();renderLedger();renderProducts();renderProcesses();renderArrivals();fillRecordItems();renderRecords();renderShipping();renderShippingHistory();initHistory();setNavActive(currentView==="history"?`history-${historyType}`:currentView);
  }catch(e){fail(e)}
 }
 function fill(){for(const id of ["masterProduct","arrProduct","recProduct","traceProduct"])opt($(id),products,x=>x.product_name);for(const id of ["toolMachine","ledgerMachine","recMachine"])opt($(id),machines,x=>x.machine_name,"machine_no");renderArrivalShapes();renderHistoryMachines()}
@@ -171,7 +178,23 @@ async function batchArrival(){
 function activeItems(){return items.filter(x=>!x.arrival_cancelled_at)}
 function activeShipments(){return shipments.filter(x=>!x.cancelled_at)}
 function renderArrivals(){
- $("arrivalList").innerHTML=activeItems().slice(0,100).map(x=>`<div class="box row"><div>${dt(x.arrival_at||x.created_at)}　<b>${esc(x.f2_products?.product_name)} / ${x.f2_shapes?.shape_name?`<span class="tag">${esc(x.f2_shapes.shape_name)}型</span> `:""}${esc(x.part_no)}</b></div><button class="btn cancel-btn" onclick="cancelArrival(${x.id})">入荷取消</button></div>`).join("")||'<div class="muted">入荷登録なし</div>'
+ const a=activeItems().slice(0,100);
+ $("arrivalList").innerHTML=a.map(x=>{const sel=selectedArrivalIds.has(x.id);return `<div class="box row selectable-row ${sel?'selected':''}" onclick="toggleArrivalSelection(${x.id})"><span class="select-mark">✓</span><div>${dt(x.arrival_at||x.created_at)}　<b>${esc(x.f2_products?.product_name)} / ${x.f2_shapes?.shape_name?`<span class="tag">${esc(x.f2_shapes.shape_name)}型</span> `:""}${esc(x.part_no)}</b></div></div>`}).join("")||'<div class="muted">入荷登録なし</div>';
+ updateArrivalBulkBar();
+}
+function toggleArrivalSelection(id){selectedArrivalIds.has(id)?selectedArrivalIds.delete(id):selectedArrivalIds.add(id);renderArrivals()}
+function clearArrivalSelection(){selectedArrivalIds.clear();renderArrivals()}
+function updateArrivalBulkBar(){if($("arrivalSelectedCount"))$("arrivalSelectedCount").textContent=`選択 ${selectedArrivalIds.size}件`;if($("bulkArrivalCancelBtn"))$("bulkArrivalCancelBtn").disabled=selectedArrivalIds.size===0}
+async function cancelSelectedArrivals(){
+ const ids=[...selectedArrivalIds],targets=ids.map(id=>items.find(x=>x.id==id)).filter(Boolean);
+ if(!targets.length)return;
+ const blocked=targets.filter(i=>logs.some(x=>x.item_id==i.id)||activeShipments().some(x=>x.item_id==i.id));
+ const ok=targets.filter(i=>!blocked.includes(i));
+ if(!ok.length)return alert("選択した品番は作業履歴または出荷履歴があるため入荷取消できません。");
+ let msg=`選択した ${ok.length}件の入荷を取消しますか？\n記録は削除せず、取消済みとして保存します。`;
+ if(blocked.length)msg+=`\n\n※ ${blocked.length}件は作業履歴または出荷履歴があるため対象外です。`;
+ if(!confirm(msg))return;
+ try{const now=new Date().toISOString();for(const i of ok)await api(`f2_items?id=eq.${i.id}`,{method:"PATCH",body:JSON.stringify({arrival_cancelled_at:now,shipped:false})});selectedArrivalIds.clear();await load();if(blocked.length)alert(`${ok.length}件を取消しました。\n${blocked.length}件は履歴保護のため取消していません。`)}catch(e){fail(e)}
 }
 async function cancelArrival(id){
  const i=items.find(x=>x.id==id);if(!i||i.arrival_cancelled_at)return;
@@ -193,12 +216,24 @@ function renderShippingFilters(){
 }
 function setShipProduct(v){shipProduct=v;renderShippingFilters();renderShipping();renderShippingHistory()}
 function shipProductMatch(item){return shipProduct==='all'||Number(item?.product_id)===Number(shipProduct)}
+function shippingReadyItems(){let finals=processes.filter(x=>x.is_final);return activeItems().filter(i=>shipProductMatch(i)&&!i.shipped&&finals.some(p=>p.product_id==i.product_id&&done(i.id,p.id)))}
 function renderShipping(){
  renderShippingFilters();
- let finals=processes.filter(x=>x.is_final),a=activeItems().filter(i=>shipProductMatch(i)&&!i.shipped&&finals.some(p=>p.product_id==i.product_id&&done(i.id,p.id)));
- $("shipList").innerHTML=a.map(i=>`<div class="box row"><b>${esc(i.f2_products?.product_name)} / ${i.f2_shapes?.shape_name?`<span class="tag">${esc(i.f2_shapes.shape_name)}型</span> `:""}${esc(i.part_no)}</b><button class="btn primary" onclick="ship(${i.id})">出荷登録</button></div>`).join("")||"出荷可能品なし";
+ let a=shippingReadyItems();
+ selectedShipItemIds=new Set([...selectedShipItemIds].filter(id=>a.some(i=>i.id==id)));
+ $("shipList").innerHTML=a.map(i=>{const sel=selectedShipItemIds.has(i.id);return `<div class="box row selectable-row ${sel?'selected':''}" onclick="toggleShipSelection(${i.id})"><span class="select-mark">✓</span><b>${esc(i.f2_products?.product_name)} / ${i.f2_shapes?.shape_name?`<span class="tag">${esc(i.f2_shapes.shape_name)}型</span> `:""}${esc(i.part_no)}</b></div>`}).join("")||"出荷可能品なし";
+ updateShipBulkBar();
 }
-async function ship(id){if(!confirm("出荷登録しますか？"))return;try{let n=new Date().toISOString();await api("f2_shipments",{method:"POST",body:JSON.stringify({item_id:id,shipped_at:n})});await api(`f2_items?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({shipped:true})});await load()}catch(e){fail(e)}}
+function toggleShipSelection(id){selectedShipItemIds.has(id)?selectedShipItemIds.delete(id):selectedShipItemIds.add(id);renderShipping()}
+function clearShipSelection(){selectedShipItemIds.clear();renderShipping()}
+function updateShipBulkBar(){if($("shipSelectedCount"))$("shipSelectedCount").textContent=`選択 ${selectedShipItemIds.size}件`;if($("bulkShipBtn"))$("bulkShipBtn").disabled=selectedShipItemIds.size===0}
+async function shipSelected(){
+ const ids=[...selectedShipItemIds],ready=shippingReadyItems(),targets=ids.map(id=>ready.find(i=>i.id==id)).filter(Boolean);
+ if(!targets.length)return alert("出荷する品番を選択してください。");
+ if(!confirm(`選択した ${targets.length}件を出荷登録しますか？`))return;
+ try{let n=new Date().toISOString();await api("f2_shipments",{method:"POST",body:JSON.stringify(targets.map(i=>({item_id:i.id,shipped_at:n})))});for(const i of targets)await api(`f2_items?id=eq.${i.id}`,{method:"PATCH",body:JSON.stringify({shipped:true})});selectedShipItemIds.clear();await load()}catch(e){fail(e)}
+}
+async function ship(id){selectedShipItemIds=new Set([id]);return shipSelected()}
 async function cancelShipment(id){
  const s=shipments.find(x=>x.id==id);if(!s||s.cancelled_at)return;
  const i=items.find(x=>x.id==s.item_id);
@@ -243,7 +278,7 @@ function renderShipDayList(){
  }).join("")||'<div class="muted">この日の出荷登録はありません。</div>';
 }
 
-function openHistory(type){historyType=type;view("history");renderHistoryMachines();renderHistory()}
+function openHistory(type){historyType=type;view("history");setNavActive(`history-${type}`);renderHistoryMachines();renderHistory()}
 function renderHistoryMachines(){if(!$("historyMachines"))return;$("historyTitle").textContent=historyType==="work"?"作業履歴":"工具履歴";$("historyMachines").innerHTML=`<button class="btn ${historyMachine==='all'?'active':''}" onclick="setHistoryMachine('all')">すべて</button>`+machines.map(m=>`<button class="btn ${String(historyMachine)===String(m.machine_no)?'active':''}" onclick="setHistoryMachine(${m.machine_no})">${esc(m.machine_name)}</button>`).join("")}
 function setHistoryMachine(v){historyMachine=v;renderHistoryMachines();renderHistory()}
 function initHistory(){let y=new Date().getFullYear();$("hy").innerHTML=Array.from({length:7},(_,i)=>`<option ${y-i==y?"selected":""}>${y-i}</option>`).join("");$("hm").innerHTML=Array.from({length:12},(_,i)=>`<option value="${i+1}" ${i+1==new Date().getMonth()+1?"selected":""}>${i+1}月</option>`).join("");renderHistoryMachines();renderHistory()}
@@ -251,5 +286,5 @@ function histEvents(){let y=Number($("hy").value),m=Number($("hm").value),a=[];i
 function renderHistory(){if(!$("hy").value)return;renderHistoryMachines();let a=histEvents();if($("hView").value==="list"){$("historyBody").innerHTML=a.map(e=>`<div class="box">${dt(e.date)}　<span class="tag">${esc(e.type)}</span>　<b>${esc(mname(e.machine))}</b>　${esc(e.text)}</div>`).join("")||"記録なし";return}let y=Number($("hy").value),m=Number($("hm").value),days=new Date(y,m,0).getDate(),first=new Date(y,m-1,1).getDay(),h=["日","月","火","水","木","金","土"].map(x=>`<div><b>${x}</b></div>`).join("")+Array(first).fill("<div></div>").join("");for(let d=1;d<=days;d++){let ev=a.filter(e=>new Date(e.date).getDate()==d);h+=`<div class="day"><b>${d}</b>${ev.slice(0,5).map(e=>`<div class="dot">${esc(mname(e.machine))} ${esc(e.text)}</div>`).join("")}${ev.length>5?`<div class="dot">+${ev.length-5}</div>`:""}</div>`}$("historyBody").innerHTML=`<div class="cal">${h}</div>`}
 function fillTraceItems(){let pid=Number($("traceProduct").value);opt($("traceItem"),activeItems().filter(x=>x.product_id==pid),x=>x.part_no)}
 async function showTrace(){let id=Number($("traceItem").value),i=items.find(x=>x.id==id);if(!i)return;let a=logs.filter(x=>x.item_id==id).sort((x,y)=>new Date(x.created_at)-new Date(y.created_at)),s=activeShipments().find(x=>x.item_id==id);$("tracePaper").innerHTML=`<h2>TAJIMA 第2工場 加工履歴票</h2><table class="table"><tr><th>製品</th><td>${esc(i.f2_products?.product_name)}</td><th>品番</th><td>${i.f2_shapes?.shape_name?esc(i.f2_shapes.shape_name)+"型 / ":""}${esc(i.part_no)}</td></tr><tr><th>入荷</th><td>${dt(i.arrival_at||i.created_at)}</td><th>出荷</th><td>${s?dt(s.shipped_at):"未出荷"}</td></tr></table><h3>工程履歴</h3><div class="timeline">${a.map(x=>`<div class="event"><b>${dt(x.created_at)}</b><br>${esc(x.f2_process_master?.process_name||"工程")} / ${esc(mname(x.machine_no))}${x.attention?" ⚠変動事項あり":""}</div>`).join("")||"工程記録なし"}</div>`}
-load();
+setNavActive("dash");load();
 </script></body></html>
