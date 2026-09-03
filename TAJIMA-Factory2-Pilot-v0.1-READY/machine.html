@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>TAJIMA 第2工場 一号機</title>
+<title>TAJIMA 第2工場 現場タブレット v1.1</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -117,7 +117,7 @@
 <body>
 <div class="top">
   <div><b>TAJIMA 第2工場　<span id="machineNameTop">1号機</span></b><div class="muted" style="color:#cbd5e1">現場タブレット</div></div>
-  <span>PILOT v1.0</span>
+  <span>PILOT v1.1</span>
 </div>
 
 <div class="wrap">
@@ -189,7 +189,7 @@ const Q=new URLSearchParams(location.search),M=Number(Q.get("machine")||1);
 const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY;
 let MACHINE_NAME=M+"号機";
 const H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
-let toolData=[],toolLogs=[],sel=null,products=[],processMaster=[],processRoutes=[],processItems=[],processLogs=[],chosenProduct=null,chosenProcess=null,chosenItem=null,usageSaveTimer=null;
+let toolData=[],toolLogs=[],sel=null,products=[],processMaster=[],processRoutes=[],processItems=[],processLogs=[],machineProcessAssignments=[],chosenProduct=null,chosenProcess=null,chosenItem=null,usageSaveTimer=null;
 
 async function api(p,o={}){
   let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});
@@ -227,13 +227,15 @@ async function load(){
       api(`f2_tools?machine_no=eq.${M}&order=t_no.asc`),
       api(`f2_tool_logs?machine_no=eq.${M}&select=id,tool_id,action,created_at&action=in.(工具交換,チップ交換)&order=created_at.desc`)
     ]);
-    [products,processMaster,processRoutes,processItems,processLogs]=await Promise.all([
+    [products,processMaster,processRoutes,processItems,processLogs,machineProcessAssignments]=await Promise.all([
       api("f2_products?active=eq.true&order=product_name.asc"),
       api("f2_process_master?active=eq.true&order=product_id,sort_order,id"),
       api("f2_process_routes?select=*"),
       api("f2_items?select=*,f2_shapes(shape_name)&shipped=eq.false&arrival_cancelled_at=is.null&order=part_no.asc"),
-      api("f2_process_logs?select=id,item_id,process_id,attention,created_at")
+      api("f2_process_logs?select=id,item_id,process_id,attention,created_at"),
+      api(`f2_machine_process_assignments?machine_no=eq.${M}&select=process_id`).catch(()=>[])
     ]);
+    if(machineProcessAssignments.length){const assigned=new Set(machineProcessAssignments.map(x=>Number(x.process_id)));processMaster=processMaster.filter(x=>assigned.has(Number(x.id)));products=products.filter(x=>processMaster.some(p=>p.product_id==x.id))}
     renderTools(); renderProductButtons();
   }catch(e){fail(e)}
 }
