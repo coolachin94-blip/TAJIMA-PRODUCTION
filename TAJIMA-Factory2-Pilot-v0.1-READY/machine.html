@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>TAJIMA 第2工場 現場タブレット v1.2</title>
+<title>TAJIMA 第2工場 現場タブレット v1.3</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -99,14 +99,7 @@
     margin-top:14px;padding:14px;border:1px solid #cbd5e1;border-radius:14px;background:#f8fafc
   }
   .usage-label{font-size:17px;font-weight:900;margin-bottom:8px;color:#102b4e}
-  .usage-input{
-    width:100%;min-height:88px;resize:vertical;border:2px solid #cbd5e1;border-radius:12px;
-    padding:14px 16px;font-size:19px;line-height:1.45;background:#fff
-  }
-  .usage-input:focus{outline:3px solid #bfdbfe;border-color:#2563eb}
-  .usage-help{font-size:13px;color:#64748b;margin-top:6px}
-  .usage-saved{font-size:13px;color:#15803d;font-weight:800;margin-top:4px;min-height:18px}
-  .auto-usage{margin:0 0 12px;padding:12px;border:1px solid #bfdbfe;border-radius:10px;background:#eff6ff}.auto-usage-list{margin-top:6px;font-weight:800;line-height:1.6}.usage-count{font-size:22px;font-weight:900;color:#1d4ed8}
+  .auto-usage{padding:16px;border:1px solid #bfdbfe;border-radius:14px;background:linear-gradient(145deg,#f8fbff,#eff6ff)}.usage-tags{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 16px}.usage-tag{display:inline-flex;padding:8px 11px;border-radius:10px;background:#fff;border:1px solid #bfdbfe;color:#102b4e;font-weight:900}.usage-meter-head{display:flex;align-items:end;justify-content:space-between;gap:10px;margin-bottom:8px}.usage-count{font-size:28px;font-weight:900;color:#102b4e}.usage-target{font-size:14px;color:#64748b;font-weight:800}.usage-meter{height:18px;background:#dbe5f1;border-radius:999px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(15,23,42,.12)}.usage-meter-fill{height:100%;width:0;border-radius:999px;transition:width .25s ease,background .25s ease}
 
   .process-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   .process-choice{min-height:100px;font-size:24px;font-weight:900}
@@ -118,7 +111,7 @@
 <body>
 <div class="top">
   <div><b>TAJIMA 第2工場　<span id="machineNameTop">1号機</span></b><div class="muted" style="color:#cbd5e1">現場タブレット</div></div>
-  <span>PILOT v1.2</span>
+  <span>PILOT v1.3</span>
 </div>
 
 <div class="wrap">
@@ -176,12 +169,7 @@
       <button class="btn action-btn" onclick="document.getElementById('modal').classList.add('hidden')">✕ 閉じる</button>
     </div>
     <div class="usage-box">
-      <div class="usage-label">使用製品・工程</div>
-      <div class="auto-usage"><div class="usage-label">管理ページ設定</div><div id="autoUsageList" class="auto-usage-list">未設定</div><div style="margin-top:8px">工具交換後 <span id="toolUseCount" class="usage-count">0回</span></div></div>
-      <div class="usage-label">従来メモ</div>
-      <textarea id="usageNote" class="usage-input" placeholder="例：KMG 1工程 / KMX 2工程"></textarea>
-      <div class="usage-help">入力後、ほかの場所をタップすると自動保存</div>
-      <div id="usageSaved" class="usage-saved"></div>
+      <div class="auto-usage"><div class="usage-label">使用対象</div><div id="autoUsageList" class="usage-tags"><span class="usage-tag">未設定</span></div><div class="usage-meter-head"><div><span id="toolUseCount" class="usage-count">0</span><span class="usage-target"> 回 / 目標 <span id="toolUseTarget">50</span>回</span></div><span id="toolUsePercent" class="usage-target">0%</span></div><div class="usage-meter"><div id="toolUseMeter" class="usage-meter-fill"></div></div></div>
     </div>
   </div>
 </div>
@@ -192,7 +180,7 @@ const Q=new URLSearchParams(location.search),M=Number(Q.get("machine")||1);
 const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY;
 let MACHINE_NAME=M+"号機";
 const H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
-let toolData=[],toolLogs=[],sel=null,products=[],processMaster=[],processRoutes=[],processItems=[],processLogs=[],machineProcessAssignments=[],toolProcessAssignments=[],toolUsageLogs=[],chosenProduct=null,chosenProcess=null,chosenItem=null,usageSaveTimer=null;
+let toolData=[],toolLogs=[],sel=null,products=[],processMaster=[],processRoutes=[],processItems=[],processLogs=[],machineProcessAssignments=[],toolProcessAssignments=[],toolUsageLogs=[],chosenProduct=null,chosenProcess=null,chosenItem=null;
 
 async function api(p,o={}){
   let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});
@@ -276,33 +264,13 @@ function openTool(id){
   sel=toolData.find(x=>x.id==id);
   document.getElementById("mt").textContent=`T${sel.t_no}　${sel.tool_name||"工具名未登録"}`;
   document.getElementById("ms").textContent=sel.current_machine_no==M?MACHINE_NAME+"にセット":"現在 "+sel.current_machine_no+"号機で使用中";
-  document.getElementById("usageNote").value=sel.usage_note||"";
   const linked=toolProcessAssignments.filter(x=>x.tool_id==sel.id).map(x=>{const p=processMaster.find(z=>z.id==x.process_id),product=products.find(z=>z.id==p?.product_id);return p&&product?`${product.product_name} / ${p.process_name}`:""}).filter(Boolean);
-  const lastExchange=toolLogs.find(x=>x.tool_id==sel.id&&x.action==="工具交換"),since=lastExchange?new Date(lastExchange.created_at).getTime():0,count=toolUsageLogs.filter(x=>x.tool_id==sel.id&&new Date(x.created_at).getTime()>since).length;
-  document.getElementById("autoUsageList").textContent=linked.join("、")||"未設定";
-  document.getElementById("toolUseCount").textContent=count+"回";
-  document.getElementById("usageSaved").textContent="";
+  const lastExchange=toolLogs.find(x=>x.tool_id==sel.id&&(x.action==="工具交換"||x.action==="チップ交換")),since=lastExchange?new Date(lastExchange.created_at).getTime():0,count=toolUsageLogs.filter(x=>x.tool_id==sel.id&&new Date(x.created_at).getTime()>since).length;
+  const target=Number(sel.usage_target)||50,percent=Math.min(100,Math.round(count/target*100)),color=`hsl(${Math.max(0,210-percent*2.1)} 82% 47%)`;
+  document.getElementById("autoUsageList").innerHTML=linked.length?linked.map(x=>`<span class="usage-tag">${esc(x)}</span>`).join(""):'<span class="usage-tag">未設定</span>';
+  document.getElementById("toolUseCount").textContent=count;document.getElementById("toolUseTarget").textContent=target;document.getElementById("toolUsePercent").textContent=Math.round(count/target*100)+"%";document.getElementById("toolUseMeter").style.cssText=`width:${percent}%;background:${color}`;
   document.getElementById("modal").classList.remove("hidden");
 }
-
-async function saveUsageNote(){
-  if(!sel)return;
-  const box=document.getElementById("usageNote");
-  const value=box.value.trim();
-  if(value===(sel.usage_note||""))return;
-  try{
-    await api(`f2_tools?id=eq.${sel.id}`,{
-      method:"PATCH",
-      body:JSON.stringify({usage_note:value||null})
-    });
-    sel.usage_note=value||null;
-    const saved=document.getElementById("usageSaved");
-    saved.textContent="✓ 保存しました";
-    clearTimeout(usageSaveTimer);
-    usageSaveTimer=setTimeout(()=>{saved.textContent=""},1600);
-  }catch(e){fail(e)}
-}
-document.getElementById("usageNote").addEventListener("blur",saveUsageNote);
 
 async function toolAction(a){
   try{
