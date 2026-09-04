@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>TAJIMA 第2工場 一号機 v1.3</title>
+<title>TAJIMA 第2工場 一号機 v1.4</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -105,14 +105,16 @@
   .process-choice{min-height:100px;font-size:24px;font-weight:900}
   .process-choice.warn{border:2px solid #f59e0b}
   .register-big{width:100%;min-height:88px;font-size:26px}
-  @media(max-width:800px){.process-grid{grid-template-columns:repeat(2,1fr)}}
+  .worker-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}.worker-btn{min-height:62px;font-size:19px;font-weight:900}.worker-btn.selected{background:#2563eb;color:#fff;border-color:#2563eb}.pull-indicator{position:fixed;top:8px;left:50%;transform:translate(-50%,-70px);z-index:50;background:#102b4e;color:#fff;border-radius:999px;padding:10px 18px;font-weight:900;transition:transform .18s}.pull-indicator.show{transform:translate(-50%,0)}.undo-bar{position:fixed;left:10px;right:10px;bottom:10px;max-width:760px;margin:auto;z-index:25;background:#fff;border:2px solid #2563eb;border-radius:15px;padding:13px;box-shadow:0 10px 30px #0004}.undo-row{display:flex;gap:10px;align-items:center}.undo-row>div{flex:1}.daily-overlay{position:fixed;inset:0;z-index:40;background:rgba(15,23,42,.72);display:flex;align-items:center;justify-content:center;padding:16px}.daily-card{width:min(720px,100%);background:#fff;border-radius:20px;padding:22px;box-shadow:0 20px 55px #0006}.daily-title{font-size:28px;font-weight:900;color:#102b4e;text-align:center}.daily-worker-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.daily-confirm{width:100%;min-height:76px;font-size:23px}
+  @media(max-width:800px){.process-grid{grid-template-columns:repeat(2,1fr)}.worker-grid,.daily-worker-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 <div class="top">
   <div><b>TAJIMA 第2工場　<span id="machineNameTop">1号機</span></b><div class="muted" style="color:#cbd5e1">現場タブレット</div></div>
-  <span>PILOT v1.3</span>
+  <span>PILOT v1.4</span>
 </div>
+<div id="pullIndicator" class="pull-indicator">↓ 引っ張って更新</div>
 
 <div class="wrap">
   <div id="err" class="card alert hidden"></div>
@@ -152,8 +154,9 @@
     <div id="processButtons" class="process-grid"></div>
     <div id="registerCard" class="card hidden">
       <div id="registerSummary" class="title"></div>
+      <div class="usage-label" style="margin-top:14px">作業者を選択</div><div id="workWorkerButtons" class="worker-grid"></div>
       <label style="display:block;margin:14px 0"><input style="width:auto;transform:scale(1.5);margin-right:10px" type="checkbox" id="variation"> ⚠ 変動事項あり</label>
-      <button class="btn primary register-big" onclick="registerWork()">この作業を登録</button>
+      <button class="btn primary register-big" onclick="registerWork()" disabled>この作業を登録</button>
     </div>
   </section>
 
@@ -172,7 +175,10 @@
       <div class="auto-usage"><div class="usage-label">使用対象</div><div id="autoUsageList" class="usage-tags"><span class="usage-tag">未設定</span></div><div class="usage-meter-head"><div><span id="toolUseCount" class="usage-count">0</span><span class="usage-target"> 回 / 目標 <span id="toolUseTarget">50</span>回</span></div><span id="toolUsePercent" class="usage-target">0%</span></div><div class="usage-meter"><div id="toolUseMeter" class="usage-meter-fill"></div></div></div>
     </div>
   </div>
+  <div id="undoBar" class="undo-bar hidden"><div class="undo-row"><div><b>作業を登録しました</b><div id="undoSummary" class="muted"></div></div><button class="btn warn" onclick="cancelLastWork()">直前の登録を取消</button></div></div>
 </div>
+
+<div id="dailyCheckModal" class="daily-overlay hidden"><div class="daily-card"><div class="daily-title">本日の工具を確認しましたか？</div><div class="muted" style="text-align:center;margin-top:7px">確認した作業者を選択してください</div><div id="dailyWorkerButtons" class="daily-worker-grid"></div><button id="dailyConfirmBtn" class="btn primary daily-confirm" onclick="confirmDailyToolCheck()" disabled>本日の工具確認を登録</button></div></div>
 
 <script src="config.js"></script>
 <script>
@@ -180,7 +186,7 @@ const Q=new URLSearchParams(location.search),M=Number(1);
 const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY;
 let MACHINE_NAME=M+"号機";
 const H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
-let toolData=[],toolLogs=[],sel=null,products=[],processMaster=[],processRoutes=[],processItems=[],processLogs=[],machineProcessAssignments=[],toolProcessAssignments=[],toolUsageLogs=[],chosenProduct=null,chosenProcess=null,chosenItem=null;
+let toolData=[],toolLogs=[],sel=null,products=[],processMaster=[],processRoutes=[],processItems=[],processLogs=[],machineProcessAssignments=[],toolProcessAssignments=[],toolUsageLogs=[],workers=[],toolCheckSetting=null,dailyToolChecks=[],chosenProduct=null,chosenProcess=null,chosenItem=null,selectedWorkWorker=null,selectedDailyWorker=null,lastRegistered=null,undoTimer=null,pullStart=null;
 
 async function api(p,o={}){
   let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});
@@ -219,18 +225,21 @@ async function load(){
       api(`f2_tools?machine_no=eq.${M}&order=t_no.asc`),
       api(`f2_tool_logs?machine_no=eq.${M}&select=id,tool_id,action,created_at&action=in.(工具交換,チップ交換)&order=created_at.desc`)
     ]);
-    [products,processMaster,processRoutes,processItems,processLogs,machineProcessAssignments,toolProcessAssignments,toolUsageLogs]=await Promise.all([
+    [products,processMaster,processRoutes,processItems,processLogs,machineProcessAssignments,toolProcessAssignments,toolUsageLogs,workers,toolCheckSetting,dailyToolChecks]=await Promise.all([
       api("f2_products?active=eq.true&order=product_name.asc"),
       api("f2_process_master?active=eq.true&order=product_id,sort_order,id"),
       api("f2_process_routes?select=*"),
       api("f2_items?select=*,f2_shapes(shape_name)&shipped=eq.false&arrival_cancelled_at=is.null&order=part_no.asc"),
-      apiAll("f2_process_logs?select=id,item_id,process_id,attention,created_at"),
+      apiAll("f2_process_logs?cancelled_at=is.null&select=id,item_id,process_id,machine_no,worker_id,attention,created_at"),
       api(`f2_machine_process_assignments?machine_no=eq.${M}&select=process_id`).catch(()=>[]),
       api(`f2_tool_process_assignments?machine_no=eq.${M}&select=tool_id,process_id`).catch(()=>[]),
-      apiAll(`f2_tool_usage_logs?machine_no=eq.${M}&select=tool_id,process_id,item_id,created_at&order=created_at.desc`).catch(()=>[])
+      apiAll(`f2_tool_usage_logs?machine_no=eq.${M}&select=tool_id,process_id,item_id,created_at&order=created_at.desc`).catch(()=>[]),
+      api("f2_workers?active=eq.true&select=*&order=sort_order,worker_name").catch(()=>[]),
+      api(`f2_tool_check_settings?machine_no=eq.${M}&select=*`).then(x=>x[0]||null).catch(()=>null),
+      api(`f2_daily_tool_checks?machine_no=eq.${M}&checked_on=eq.${localDateKey()}&select=*`).catch(()=>[])
     ]);
     if(machineProcessAssignments.length){const assigned=new Set(machineProcessAssignments.map(x=>Number(x.process_id)));processMaster=processMaster.filter(x=>assigned.has(Number(x.id)));products=products.filter(x=>processMaster.some(p=>p.product_id==x.id))}
-    renderTools(); renderProductButtons();
+    renderTools(); renderProductButtons();checkDailyToolPrompt();
   }catch(e){fail(e)}
 }
 function renderTools(){
@@ -348,23 +357,42 @@ function chooseItem(id){
   document.getElementById("processButtons").innerHTML="";
   document.getElementById("processTitle").textContent="登録内容を確認";
   document.getElementById("processGuide").textContent="間違いなければ下の登録ボタンを押してください。";
+  selectedWorkWorker=null;renderWorkWorkers();
 }
+function renderWorkWorkers(){const box=document.getElementById("workWorkerButtons");box.innerHTML=workers.map(w=>`<button class="btn worker-btn ${w.id==selectedWorkWorker?'selected':''}" onclick="selectWorkWorker(${w.id})">${esc(w.worker_name)}</button>`).join("")||'<div class="muted">管理ページで作業者を登録してください</div>';document.querySelector(".register-big").disabled=!selectedWorkWorker}
+function selectWorkWorker(id){selectedWorkWorker=id;renderWorkWorkers()}
 async function registerWork(){
-  if(!chosenItem||!chosenProcess)return;
+  if(!chosenItem||!chosenProcess||!selectedWorkWorker)return alert("作業者を選択してください");
   const btn=document.querySelector(".register-big");btn.disabled=true;
   try{
     const attention=document.getElementById("variation").checked;
-    const saved=await api("f2_process_logs",{method:"POST",body:JSON.stringify({item_id:chosenItem.id,machine_no:M,step_no:1,process_id:chosenProcess.id,attention})});
+    const item=chosenItem,process=chosenProcess,product=chosenProduct,workerId=selectedWorkWorker;
+    const saved=await api("f2_process_logs",{method:"POST",body:JSON.stringify({item_id:item.id,machine_no:M,worker_id:workerId,step_no:1,process_id:process.id,attention})});
     if(saved?.[0]){processLogs.unshift(saved[0]);toolProcessAssignments.filter(x=>x.process_id==chosenProcess.id).forEach(x=>toolUsageLogs.unshift({tool_id:x.tool_id,process_id:chosenProcess.id,item_id:chosenItem.id,created_at:saved[0].created_at||new Date().toISOString()}))}
     if(attention && !chosenItem.attention){
       await api(`f2_items?id=eq.${chosenItem.id}`,{method:"PATCH",body:JSON.stringify({attention:true})});
       chosenItem.attention=true;
     }
     document.getElementById("variation").checked=false;
-    alert("作業登録しました");
-    chosenItem=null;showItemButtons();
+    lastRegistered=saved?.[0]?{id:saved[0].id,itemId:item.id,processId:process.id,workerId,createdAt:saved[0].created_at||new Date().toISOString(),summary:`${product.product_name} / ${item.part_no} / ${process.process_name} / ${workerName(workerId)}`} : null;
+    chosenItem=null;showItemButtons();showUndoBar();
   }catch(e){fail(e)}finally{btn.disabled=false}
 }
+
+function workerName(id){return workers.find(x=>x.id==id)?.worker_name||"未登録"}
+function localDateKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function showUndoBar(){clearTimeout(undoTimer);if(!lastRegistered)return;document.getElementById("undoSummary").textContent=lastRegistered.summary;document.getElementById("undoBar").classList.remove("hidden");undoTimer=setTimeout(hideUndoBar,300000)}
+function hideUndoBar(){document.getElementById("undoBar").classList.add("hidden");lastRegistered=null}
+async function cancelLastWork(){if(!lastRegistered)return;const x=lastRegistered;if(Date.now()-new Date(x.createdAt).getTime()>300000){hideUndoBar();return alert("取消可能な5分を過ぎました。管理ページで確認してください。")}if(!confirm("直前に登録した作業を取消しますか？\n記録は取消済みとして保存します。"))return;try{const [latest,shipped]=await Promise.all([api(`f2_process_logs?item_id=eq.${x.itemId}&cancelled_at=is.null&order=created_at.desc&limit=1`),api(`f2_shipments?item_id=eq.${x.itemId}&cancelled_at=is.null&limit=1`)]);if(!latest[0]||latest[0].id!=x.id)return alert("後続の作業が登録されているため取消できません。");if(shipped.length)return alert("出荷済みのため取消できません。先に管理ページで出荷を確認してください。");await api(`f2_process_logs?id=eq.${x.id}`,{method:"PATCH",body:JSON.stringify({cancelled_at:new Date().toISOString(),cancelled_by_worker_id:x.workerId})});hideUndoBar();await load();alert("直前の作業登録を取消しました") }catch(e){fail(e)}}
+function checkDailyToolPrompt(){const modal=document.getElementById("dailyCheckModal");if(!toolCheckSetting?.enabled||dailyToolChecks.length)return modal.classList.add("hidden");const now=new Date(),current=now.getHours()*60+now.getMinutes(),parts=String(toolCheckSetting.check_time||"08:00").split(":"),due=Number(parts[0])*60+Number(parts[1]);if(current<due||!modal.classList.contains("hidden"))return;selectedDailyWorker=null;renderDailyWorkers();modal.classList.remove("hidden")}
+function renderDailyWorkers(){document.getElementById("dailyWorkerButtons").innerHTML=workers.map(w=>`<button class="btn worker-btn ${w.id==selectedDailyWorker?'selected':''}" onclick="selectDailyWorker(${w.id})">${esc(w.worker_name)}</button>`).join("")||'<div class="muted">管理ページで作業者を登録してください</div>';document.getElementById("dailyConfirmBtn").disabled=!selectedDailyWorker}
+function selectDailyWorker(id){selectedDailyWorker=id;renderDailyWorkers()}
+async function confirmDailyToolCheck(){if(!selectedDailyWorker)return;const btn=document.getElementById("dailyConfirmBtn");btn.disabled=true;try{const saved=await api("f2_daily_tool_checks",{method:"POST",body:JSON.stringify({machine_no:M,worker_id:selectedDailyWorker,checked_on:localDateKey()})});if(saved?.[0])dailyToolChecks=[saved[0]];document.getElementById("dailyCheckModal").classList.add("hidden");alert("本日の工具確認を登録しました")}catch(e){await load();if(dailyToolChecks.length)document.getElementById("dailyCheckModal").classList.add("hidden");else fail(e)}finally{btn.disabled=false}}
+async function refreshTablet(){const el=document.getElementById("pullIndicator");el.textContent="更新中…";el.classList.add("show");await load();el.textContent="✓ 更新しました";setTimeout(()=>{el.classList.remove("show");el.textContent="↓ 引っ張って更新"},900)}
+document.addEventListener("touchstart",e=>{if(scrollY===0&&document.getElementById("process").classList.contains("hidden")&&document.getElementById("modal").classList.contains("hidden")&&document.getElementById("dailyCheckModal").classList.contains("hidden"))pullStart=e.touches[0].clientY;else pullStart=null},{passive:true});
+document.addEventListener("touchmove",e=>{if(pullStart===null)return;const d=e.touches[0].clientY-pullStart;if(d>20){const el=document.getElementById("pullIndicator");el.textContent=d>=75?"離して更新":"↓ 引っ張って更新";el.classList.add("show")}},{passive:true});
+document.addEventListener("touchend",e=>{if(pullStart===null)return;const d=e.changedTouches[0].clientY-pullStart;pullStart=null;if(d>=75)refreshTablet();else document.getElementById("pullIndicator").classList.remove("show")},{passive:true});
+setInterval(checkDailyToolPrompt,60000);
 
 load();
 </script>
