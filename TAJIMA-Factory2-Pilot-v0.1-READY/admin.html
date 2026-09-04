@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 第2工場 管理 v1.1</title><link rel="stylesheet" href="common.css">
+<title>TAJIMA 第2工場 管理 v1.2</title><link rel="stylesheet" href="common.css">
 <style>
 .wrap{max-width:1500px}.hidden{display:none!important}.nav{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.nav .btn{min-height:48px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -37,16 +37,18 @@
 .nav .btn.active-nav{background:#2563eb!important;color:#fff!important;border-color:#2563eb!important;box-shadow:0 2px 8px rgba(37,99,235,.22)}
 .selectable-row{cursor:pointer;transition:.12s ease;border:2px solid #dbe3ec}.selectable-row:hover{border-color:#93c5fd;background:#f8fbff}.selectable-row.selected{border-color:#2563eb;background:#eff6ff;box-shadow:inset 0 0 0 1px #2563eb}.select-mark{display:inline-flex;align-items:center;justify-content:center;flex:0 0 24px;width:24px;height:24px;min-width:24px;border:2px solid #94a3b8;border-radius:6px;font-weight:900;color:transparent;background:#fff}.selectable-row.selected .select-mark{border-color:#2563eb;background:#2563eb;color:#fff}.bulk-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:10px 0}.bulk-count{font-weight:900;color:#1e3a8a}.bulk-danger{background:#dc2626!important;color:#fff!important;border-color:#dc2626!important}.bulk-danger:disabled,.bulk-primary:disabled{opacity:.45;cursor:not-allowed}.bulk-primary{background:#2563eb!important;color:#fff!important;border-color:#2563eb!important}
 .update-note{border-left:5px solid #2563eb;background:#eff6ff}.update-note summary{cursor:pointer;font-weight:900;color:#1e3a8a}.update-note ul{margin:8px 0 0;padding-left:22px}.assignment-product{border:1px solid #dbe3ec;border-radius:10px;padding:10px;margin-top:9px}.assignment-processes{display:flex;gap:7px;flex-wrap:wrap;margin-top:7px}.assignment-processes label{cursor:pointer}.history-t-filter{display:flex;align-items:center;gap:7px;margin-top:10px}.history-t-filter input{width:120px;min-height:42px;padding:8px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}
+.progress-products,.tool-process-products{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.progress-products .btn.active,.tool-process-products .btn.active{background:#102b4e;color:#fff;border-color:#102b4e}.progress-line{cursor:pointer}.progress-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:900}.progress-parts{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;padding-top:8px;border-top:1px solid #dbe3ec}.progress-part{padding:5px 8px;border-radius:7px;background:#eff6ff}.tool-checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:7px;margin-top:10px}.tool-check{display:flex;align-items:center;gap:7px;border:1px solid #dbe3ec;border-radius:9px;padding:9px;background:#fff;cursor:pointer}.tool-check input{width:19px;height:19px}.count-pill{display:inline-block;background:#102b4e;color:#fff;border-radius:999px;padding:4px 9px;font-weight:900}.setup-warning{background:#fff7ed;border-color:#fdba74;color:#9a3412}
 
 </style></head><body>
-<div class="top"><b>TAJIMA 第2工場 管理</b><div class="top-actions"><a class="machine-launch-btn" href="index.html">各号機 タブレット画面へ</a><span>PILOT v1.1</span></div></div>
+<div class="top"><b>TAJIMA 第2工場 管理</b><div class="top-actions"><a class="machine-launch-btn" href="index.html">各号機 タブレット画面へ</a><span>PILOT v1.2</span></div></div>
 <div class="wrap"><div id="err" class="card alert hidden"></div>
 <div class="nav no-print">
 <button class="btn" data-nav="dash" onclick="view('dash')">ダッシュボード</button><button class="btn" data-nav="machines" onclick="view('machines')">機械・工具管理</button>
 <button class="btn" data-nav="master" onclick="view('master')">製品・工程マスタ</button><button class="btn" data-nav="arrival" onclick="view('arrival')">一括入荷</button>
 <button class="btn" data-nav="records" onclick="view('records')">工程記録 修正</button><button class="btn" data-nav="shipping" onclick="view('shipping')">出荷登録</button>
+<button class="btn" data-nav="progress" onclick="view('progress')">工程進捗</button>
 <button class="btn" data-nav="history-work" onclick="openHistory('work')">作業履歴</button><button class="btn" data-nav="history-tool" onclick="openHistory('tool')">工具履歴</button><button class="btn" data-nav="trace" onclick="view('trace')">品番履歴・印刷</button></div>
-<details class="card update-note no-print"><summary>更新内容　PILOT v1.1</summary><ul><li>入荷一覧を製品・型で絞込、品番順で表示</li><li>機械別の担当製品・工程設定を追加</li><li>工具履歴にT番号検索を追加</li><li>製品・型の選択状態を再読込後も維持</li></ul></details>
+<details class="card update-note no-print"><summary>更新内容　PILOT v1.2</summary><ul><li>製品別の現在位置・次に作業可能な工程を集計</li><li>機械・製品・工程ごとに使用工具を一括設定</li><li>工程登録時に工具使用回数を自動記録し、工具交換後から再集計</li><li>既存のメモ・工程進入条件・工具クイック操作はそのまま維持</li></ul></details>
 
 <section id="dash"><div class="grid3"><div class="card"><div class="muted">稼働機械</div><div id="dMachines" class="stat">-</div></div><div class="card"><div class="muted">工具注意</div><div id="dWarnings" class="stat">-</div></div><div class="card"><div class="muted">本日の作業登録</div><div id="dToday" class="stat">-</div></div></div>
 <div class="card"><div class="title">機械状況・工具情報</div><div id="machineDash" class="grid3"></div></div>
@@ -55,7 +57,8 @@
 <section id="machines" class="hidden"><div class="grid2"><div class="card"><div class="title">機械登録</div><div class="row"><input id="machineName" class="fc" placeholder="例：1号機 / MPE"><input id="machineSlots" type="number" class="fc" value="80" min="1" max="300"><button class="btn primary" onclick="addMachine()">機械追加</button></div><div id="machineList"></div></div>
 <div class="card"><div class="title">工具表 Excel 一括登録</div><select id="toolMachine" class="fc"></select><input id="toolFile" type="file" class="fc" accept=".xlsx,.xls,.csv" style="margin-top:8px"><div class="muted">先頭2列：T番号 / 名称。従来のExcel様式をそのまま使用。</div><textarea id="toolPaste" class="fc" style="height:110px;margin-top:8px" placeholder="Excelの2列をここへ貼付でもOK"></textarea><button class="btn" onclick="parsePaste()">貼付を読込</button><div id="toolPreview"></div><button class="btn primary big" onclick="applyTools()">選択機械へ工具表を反映</button></div></div>
 <div class="card"><div class="title">機械別 工具台帳</div><select id="ledgerMachine" class="fc" onchange="renderLedger()"></select><div id="ledger"></div></div>
-<div class="card"><div class="title">機械別 担当製品・工程</div><div class="muted">工程を1つ以上選ぶと、その機械のタブレットには選択した製品・工程だけ表示します。未設定の機械は従来どおり全製品・全工程を表示します。</div><select id="assignmentMachine" class="fc" onchange="renderMachineAssignments()" style="margin-top:10px"></select><div id="machineAssignmentList"></div><button class="btn" onclick="clearMachineAssignments()">この機械を全工程表示に戻す</button></div></section>
+<div class="card"><div class="title">機械別 担当製品・工程</div><div class="muted">工程を1つ以上選ぶと、その機械のタブレットには選択した製品・工程だけ表示します。未設定の機械は従来どおり全製品・全工程を表示します。</div><select id="assignmentMachine" class="fc" onchange="renderMachineAssignments()" style="margin-top:10px"></select><div id="machineAssignmentList"></div><button class="btn" onclick="clearMachineAssignments()">この機械を全工程表示に戻す</button></div>
+<div class="card"><div class="title">工程別 使用工具設定</div><div class="muted">機械 → 製品 → 工程を選び、その工程で使用するT番号をまとめてチェックします。工具名メモとは別に保存されます。</div><div class="row" style="margin-top:10px"><select id="toolAssignMachine" class="fc" onchange="renderToolAssignmentProducts()"></select><select id="toolAssignProcess" class="fc" onchange="renderToolChecks()"></select></div><div id="toolAssignProducts" class="tool-process-products"></div><div id="toolAssignChecks" class="tool-checks"></div><button id="saveToolAssignmentsBtn" class="btn primary big" onclick="saveToolAssignments()">選択した工具を保存</button><div id="toolAssignStatus" class="muted"></div></div></section>
 
 <section id="master" class="hidden"><div class="grid2"><div class="card"><div class="title">製品</div><div class="row"><input id="newProduct" class="fc" placeholder="KMX"><button class="btn primary" onclick="addProduct()">追加</button></div><div id="productList"></div></div>
 <div class="card"><div class="title">工程</div><select id="masterProduct" class="fc" onchange="renderProcesses()"></select><div class="row"><input id="newProcess" class="fc" placeholder="MPE工程 / 荒引きからMPH工程"><button class="btn primary" onclick="addProcess()">追加</button></div><div class="muted">上から順に 1工程・2工程… と自動表示されます。↑↓で順番を変更できます。</div><div id="processList"></div></div></div></section>
@@ -98,32 +101,36 @@
 
 <section id="history" class="hidden"><div class="card no-print"><div class="title" id="historyTitle">作業履歴</div><div class="row"><select id="hy" class="fc" onchange="renderHistory()"></select><select id="hm" class="fc" onchange="renderHistory()"></select><select id="hView" class="fc" onchange="renderHistory()"><option value="list">月別一覧</option><option value="calendar">日別カレンダー</option></select></div><div id="historyMachines" class="history-machines"></div><div id="toolHistoryTFilter" class="history-t-filter hidden"><b>T</b><input id="historyToolNo" type="number" inputmode="numeric" min="1" placeholder="番号" oninput="renderHistory()"><span class="muted">例：1 → T1のみ表示</span></div></div><div class="card"><div id="historyBody"></div></div></section>
 
+<section id="progress" class="hidden"><div class="card"><div class="title">製品別 工程進捗</div><div class="muted">現在位置は品番ごとに1か所、次に作業可能な工程は進入条件により複数に表示される場合があります。</div><div id="progressProducts" class="progress-products"></div></div><div class="grid2"><div class="card"><div class="title">現在の完了位置</div><div id="currentProgress"></div></div><div class="card"><div class="title">次に作業可能</div><div id="nextProgress"></div></div></div></section>
+
 <section id="trace" class="hidden"><div class="card no-print"><div class="title">品番履歴・印刷</div><div class="row"><select id="traceProduct" class="fc" onchange="fillTraceItems()"></select><select id="traceItem" class="fc"></select><button class="btn primary" onclick="showTrace()">表示</button><button class="btn" onclick="window.print()">印刷</button></div></div><div id="tracePaper" class="card">製品・品番を選択してください。</div></section>
 </div>
 <script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script>
 const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY,H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])),dt=s=>s?new Date(s).toLocaleString("ja-JP"):"";
-let machines=[],products=[],processes=[],routes=[],items=[],logs=[],tools=[],toolLogs=[],shipments=[],shapes=[],machineProcessAssignments=[],importRows=[];
+let machines=[],products=[],processes=[],routes=[],items=[],logs=[],tools=[],toolLogs=[],shipments=[],shapes=[],machineProcessAssignments=[],toolProcessAssignments=[],toolUsageLogs=[],importRows=[];
 let selectedArrivalShape=null,historyType="work",historyMachine="all";
 let shipViewDate=new Date(),shipSelectedDate=new Date(),shipProduct="all";
 let selectedArrivalIds=new Set(),selectedShipItemIds=new Set(),currentView="dash",arrivalProductFilter="all",arrivalShapeFilter="all";
+let progressProduct=null,toolAssignProduct=null,toolFeatureReady=true;
 async function api(p,o={}){let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});if(!r.ok)throw Error(await r.text());let t=await r.text();return t?JSON.parse(t):[]}
+async function apiAll(p){let out=[],offset=0;for(;;){let a=await api(`${p}${p.includes("?")?"&":"?"}limit=1000&offset=${offset}`);out.push(...a);if(a.length<1000)return out;offset+=1000}}
 function fail(e){$("err").textContent="通信エラー: "+e.message;$("err").classList.remove("hidden")}
 function setNavActive(key){document.querySelectorAll(".nav .btn[data-nav]").forEach(b=>b.classList.toggle("active-nav",b.dataset.nav===key))}
-function view(id){currentView=id;["dash","machines","master","arrival","records","shipping","history","trace"].forEach(x=>$(x).classList.toggle("hidden",x!==id));setNavActive(id==="history"?`history-${historyType}`:id);if(id==="shipping"){renderShippingFilters();renderShipping();renderShippingHistory()}if(id==="arrival")renderArrivals();if(id==="history")renderHistory();if(id==="trace")fillTraceItems()}
+function view(id){currentView=id;["dash","machines","master","arrival","records","shipping","progress","history","trace"].forEach(x=>$(x).classList.toggle("hidden",x!==id));setNavActive(id==="history"?`history-${historyType}`:id);if(id==="shipping"){renderShippingFilters();renderShipping();renderShippingHistory()}if(id==="arrival")renderArrivals();if(id==="progress")renderProgress();if(id==="history")renderHistory();if(id==="trace")fillTraceItems()}
 function opt(el,a,label,val="id",all=false){el.innerHTML=(all?'<option value="all">すべて</option>':'')+a.map(x=>`<option value="${x[val]}">${esc(label(x))}</option>`).join("")}
 async function load(){
  try{
- [machines,products,processes,routes,items,logs,tools,toolLogs,shipments,shapes,machineProcessAssignments]=await Promise.all([
+ [machines,products,processes,routes,items,logs,tools,toolLogs,shipments,shapes,machineProcessAssignments,toolProcessAssignments,toolUsageLogs]=await Promise.all([
  api("f2_machines?active=eq.true&order=machine_no"),api("f2_products?active=eq.true&order=product_name"),api("f2_process_master?active=eq.true&order=product_id,sort_order,id"),api("f2_process_routes?select=*"),
- api("f2_items?select=*,f2_products(product_name),f2_shapes(shape_name)&order=arrival_at.desc"),api("f2_process_logs?select=*,f2_items(part_no,product_id,f2_products(product_name)),f2_process_master(process_name,is_final)&order=created_at.desc&limit=1000"),
- api("f2_tools?select=*&order=machine_no,t_no"),api("f2_tool_logs?select=*&order=created_at.desc&limit=1000"),api("f2_shipments?select=*&order=shipped_at.desc"),api("f2_shapes?active=eq.true&order=product_id,sort_order,id"),api("f2_machine_process_assignments?select=*&order=machine_no,process_id").catch(()=>[])]);
+ api("f2_items?select=*,f2_products(product_name),f2_shapes(shape_name)&order=arrival_at.desc"),apiAll("f2_process_logs?select=*,f2_items(part_no,product_id,f2_products(product_name)),f2_process_master(process_name,is_final)&order=created_at.desc"),
+ api("f2_tools?select=*&order=machine_no,t_no"),apiAll("f2_tool_logs?select=*&order=created_at.desc"),api("f2_shipments?select=*&order=shipped_at.desc"),api("f2_shapes?active=eq.true&order=product_id,sort_order,id"),api("f2_machine_process_assignments?select=*&order=machine_no,process_id").catch(()=>[]),api("f2_tool_process_assignments?select=*&order=machine_no,process_id,tool_id").catch(()=>{toolFeatureReady=false;return []}),apiAll("f2_tool_usage_logs?select=*&order=created_at.desc").catch(()=>{toolFeatureReady=false;return []})]);
  selectedArrivalIds=new Set([...selectedArrivalIds].filter(id=>items.some(x=>x.id==id&&!x.arrival_cancelled_at)));
  selectedShipItemIds=new Set([...selectedShipItemIds].filter(id=>items.some(x=>x.id==id&&!x.arrival_cancelled_at&&!x.shipped)));
- fill();renderDash();renderMachines();renderLedger();renderMachineAssignments();renderProducts();renderProcesses();renderArrivals();fillRecordItems();renderRecords();renderShipping();renderShippingHistory();initHistory();setNavActive(currentView==="history"?`history-${historyType}`:currentView);
+ fill();renderDash();renderMachines();renderLedger();renderMachineAssignments();renderToolAssignmentProducts();renderProducts();renderProcesses();renderArrivals();fillRecordItems();renderRecords();renderShipping();renderShippingHistory();renderProgress();initHistory();setNavActive(currentView==="history"?`history-${historyType}`:currentView);
  }catch(e){fail(e)}
 }
-function fill(){const selectedMasterProduct=$("masterProduct").value,selectedArrivalProduct=$("arrProduct").value,selectedAssignmentMachine=$("assignmentMachine").value;for(const id of ["masterProduct","arrProduct","recProduct","traceProduct"])opt($(id),products,x=>x.product_name);if(products.some(x=>String(x.id)===String(selectedMasterProduct)))$("masterProduct").value=selectedMasterProduct;if(products.some(x=>String(x.id)===String(selectedArrivalProduct)))$("arrProduct").value=selectedArrivalProduct;for(const id of ["toolMachine","ledgerMachine","recMachine","assignmentMachine"])opt($(id),machines,x=>x.machine_name,"machine_no");if(machines.some(x=>String(x.machine_no)===String(selectedAssignmentMachine)))$("assignmentMachine").value=selectedAssignmentMachine;renderArrivalShapes();renderHistoryMachines()}
+function fill(){const selectedMasterProduct=$("masterProduct").value,selectedArrivalProduct=$("arrProduct").value,selectedAssignmentMachine=$("assignmentMachine").value,selectedToolMachine=$("toolAssignMachine").value;for(const id of ["masterProduct","arrProduct","recProduct","traceProduct"])opt($(id),products,x=>x.product_name);if(products.some(x=>String(x.id)===String(selectedMasterProduct)))$("masterProduct").value=selectedMasterProduct;if(products.some(x=>String(x.id)===String(selectedArrivalProduct)))$("arrProduct").value=selectedArrivalProduct;for(const id of ["toolMachine","ledgerMachine","recMachine","assignmentMachine","toolAssignMachine"])opt($(id),machines,x=>x.machine_name,"machine_no");if(machines.some(x=>String(x.machine_no)===String(selectedAssignmentMachine)))$("assignmentMachine").value=selectedAssignmentMachine;if(machines.some(x=>String(x.machine_no)===String(selectedToolMachine)))$("toolAssignMachine").value=selectedToolMachine;renderArrivalShapes();renderHistoryMachines()}
 function mname(n){return machines.find(x=>x.machine_no==n)?.machine_name||n+"号機"}
 function renderDash(){
  let today=new Date().toDateString();$("dMachines").textContent=machines.length;$("dWarnings").textContent=tools.filter(x=>x.attention||x.current_machine_no!=x.machine_no).length;$("dToday").textContent=logs.filter(x=>new Date(x.created_at).toDateString()==today).length;
@@ -137,7 +144,29 @@ document.getElementById("toolFile").addEventListener("change",async e=>{let f=e.
 function parseRows(a){importRows=[];for(let r of a){let raw=String(r[0]??"").trim(),name=String(r[1]??"").trim(),mm=raw.match(/(?:T)?\s*(\d{1,3})/i);if(mm){let n=Number(mm[1]);if(n>=1&&n<=300)importRows.push({t_no:n,tool_name:name})}}importRows=[...new Map(importRows.map(x=>[x.t_no,x])).values()].sort((a,b)=>a.t_no-b.t_no);$("toolPreview").innerHTML=`<div class="box"><b>${importRows.length}件 読込</b><br>${importRows.slice(0,12).map(x=>`T${x.t_no} ${esc(x.tool_name)}`).join(" / ")}${importRows.length>12?" ...":""}</div>`}
 function parsePaste(){parseRows($("toolPaste").value.split(/\n/).map(x=>x.split(/\t|,/)))}
 async function applyTools(){let no=Number($("toolMachine").value);if(!importRows.length)return alert("先にExcelまたは貼付データを読込してください");if(!confirm(`${mname(no)}へ ${importRows.length}件を反映しますか？`))return;try{for(const x of importRows){let ex=tools.find(t=>t.machine_no==no&&t.t_no==x.t_no);if(ex)await api(`f2_tools?id=eq.${ex.id}`,{method:"PATCH",body:JSON.stringify({tool_name:x.tool_name||null})});else await api("f2_tools",{method:"POST",body:JSON.stringify({machine_no:no,t_no:x.t_no,tool_name:x.tool_name||null,current_machine_no:no})})}await load();alert("工具表を反映しました")}catch(e){fail(e)}}
-function renderLedger(){let no=Number($("ledgerMachine").value),a=tools.filter(x=>x.machine_no==no);$("ledger").innerHTML=`<table class="table"><tr><th>T</th><th>工具名</th><th>使用製品・工程</th><th>最終交換</th><th>状態</th></tr>${a.map(t=>{let l=toolLogs.find(x=>x.tool_id==t.id&&(x.action=="工具交換"||x.action=="チップ交換"));return `<tr class="${t.attention?"warnrow":""}"><td>T${t.t_no}</td><td>${esc(t.tool_name||"")}</td><td>${esc(t.usage_note||"")}</td><td>${l?esc(l.action)+" "+dt(l.created_at):"記録なし"}</td><td>${t.attention?"⚠ 注意":t.current_machine_no!=no?esc(mname(t.current_machine_no))+"で使用中":"正常"}</td></tr>`}).join("")}</table>`}
+function assignedProcessText(toolId){return toolProcessAssignments.filter(x=>x.tool_id==toolId).map(x=>{let p=processes.find(z=>z.id==x.process_id),pr=products.find(z=>z.id==p?.product_id);return p&&pr?`${pr.product_name} / ${p.process_name}`:""}).filter(Boolean).join("、")}
+function useCountAfterChange(tool){let last=toolLogs.find(x=>x.tool_id==tool.id&&x.action==="工具交換"),since=last?new Date(last.created_at).getTime():0;return toolUsageLogs.filter(x=>x.tool_id==tool.id&&new Date(x.created_at).getTime()>since).length}
+function renderLedger(){let no=Number($("ledgerMachine").value),a=tools.filter(x=>x.machine_no==no);$("ledger").innerHTML=!toolFeatureReady?'<div class="box setup-warning">PILOT v1.2 SQLを先に実行すると、使用工程と使用回数が表示されます。既存の工具機能はそのまま使用できます。</div>':`<table class="table"><tr><th>T</th><th>工具名</th><th>使用製品・工程</th><th>工具交換後</th><th>最終交換</th><th>状態</th></tr>${a.map(t=>{let l=toolLogs.find(x=>x.tool_id==t.id&&x.action==="工具交換"),auto=assignedProcessText(t.id);return `<tr class="${t.attention?"warnrow":""}"><td>T${t.t_no}</td><td>${esc(t.tool_name||"")}</td><td>${esc(auto||t.usage_note||"未設定")}${auto&&t.usage_note?`<br><span class="muted">メモ: ${esc(t.usage_note)}</span>`:""}</td><td><span class="count-pill">${useCountAfterChange(t)}回</span></td><td>${l?dt(l.created_at):"記録なし"}</td><td>${t.attention?"⚠ 注意":t.current_machine_no!=no?esc(mname(t.current_machine_no))+"で使用中":"正常"}</td></tr>`}).join("")}</table>`}
+function renderToolAssignmentProducts(){
+ if(!$("toolAssignProducts"))return;
+ const machineNo=Number($("toolAssignMachine").value);
+ if(!products.some(x=>x.id==toolAssignProduct))toolAssignProduct=products[0]?.id||null;
+ $("toolAssignProducts").innerHTML=products.map(p=>`<button class="btn ${p.id==toolAssignProduct?'active':''}" onclick="selectToolAssignProduct(${p.id})">${esc(p.product_name)}</button>`).join("");
+ const old=$("toolAssignProcess").value,ps=processes.filter(x=>x.product_id==toolAssignProduct);opt($("toolAssignProcess"),ps,x=>x.process_name);if(ps.some(x=>String(x.id)===String(old)))$("toolAssignProcess").value=old;
+ $("toolAssignStatus").textContent=toolFeatureReady?`${mname(machineNo)} / 工程を選び、使用工具をチェックしてください。`:"先に同梱のPILOT v1.2 SQLを実行してください。";
+ $("saveToolAssignmentsBtn").disabled=!toolFeatureReady||!ps.length;renderToolChecks();
+}
+function selectToolAssignProduct(id){toolAssignProduct=id;renderToolAssignmentProducts()}
+function renderToolChecks(){
+ if(!$("toolAssignChecks"))return;const machineNo=Number($("toolAssignMachine").value),processId=Number($("toolAssignProcess").value),assigned=new Set(toolProcessAssignments.filter(x=>x.machine_no==machineNo&&x.process_id==processId).map(x=>Number(x.tool_id))),a=tools.filter(x=>x.machine_no==machineNo);
+ $("toolAssignChecks").innerHTML=a.map(t=>`<label class="tool-check"><input type="checkbox" value="${t.id}" ${assigned.has(Number(t.id))?'checked':''}> <b>T${t.t_no}</b><span>${esc(t.tool_name||"名称未登録")}</span></label>`).join("")||'<div class="muted">この機械の工具がありません。</div>';
+}
+async function saveToolAssignments(){
+ const machineNo=Number($("toolAssignMachine").value),processId=Number($("toolAssignProcess").value);if(!machineNo||!processId||!toolFeatureReady)return;
+ const toolIds=[...$("toolAssignChecks").querySelectorAll('input[type="checkbox"]:checked')].map(x=>Number(x.value));if(!confirm(`${mname(machineNo)}の選択工程に使用工具 ${toolIds.length}本を保存しますか？`))return;
+ const btn=$("saveToolAssignmentsBtn");btn.disabled=true;
+ try{const before=toolProcessAssignments.filter(x=>x.machine_no==machineNo&&x.process_id==processId).map(x=>Number(x.tool_id)),add=toolIds.filter(id=>!before.includes(id)),remove=before.filter(id=>!toolIds.includes(id));if(add.length)await api("f2_tool_process_assignments?on_conflict=machine_no,process_id,tool_id",{method:"POST",headers:{"Prefer":"resolution=ignore-duplicates,return=minimal"},body:JSON.stringify(add.map(tool_id=>({machine_no:machineNo,process_id:processId,tool_id})))});for(const toolId of remove)await api(`f2_tool_process_assignments?machine_no=eq.${machineNo}&process_id=eq.${processId}&tool_id=eq.${toolId}`,{method:"DELETE"});toolProcessAssignments=toolProcessAssignments.filter(x=>!(x.machine_no==machineNo&&x.process_id==processId));toolProcessAssignments.push(...toolIds.map(tool_id=>({machine_no:machineNo,process_id:processId,tool_id})));$("toolAssignStatus").textContent=`✓ ${toolIds.length}本を保存しました`;renderLedger()}catch(e){fail(e);await load()}finally{btn.disabled=false}
+}
 function renderMachineAssignments(){
  if(!$("machineAssignmentList"))return;
  const machineNo=Number($("assignmentMachine").value),assigned=new Set(machineProcessAssignments.filter(x=>x.machine_no==machineNo).map(x=>Number(x.process_id)));
@@ -173,6 +202,7 @@ async function deleteProcess(id,name){
  await api(`f2_process_routes?process_id=eq.${id}`,{method:"DELETE"});
  await api(`f2_process_routes?prerequisite_process_id=eq.${id}`,{method:"DELETE"});
   await api(`f2_machine_process_assignments?process_id=eq.${id}`,{method:"DELETE"}).catch(()=>{});
+  await api(`f2_tool_process_assignments?process_id=eq.${id}`,{method:"DELETE"}).catch(()=>{});
   await api(`f2_process_master?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({active:false,is_final:false})});
   await load();
  }catch(e){fail(e)}
@@ -315,6 +345,22 @@ function renderShipDayList(){
    return `<div class="box row"><div><b>${t}</b>　${esc(i?.f2_products?.product_name||"")} / ${i?.f2_shapes?.shape_name?`<span class="tag">${esc(i.f2_shapes.shape_name)}型</span> `:""}${esc(i?.part_no||"")}</div><button class="btn cancel-btn" onclick="cancelShipment(${x.id})">出荷取消</button></div>`;
  }).join("")||'<div class="muted">この日の出荷登録はありません。</div>';
 }
+
+function progressItems(){return activeItems().filter(x=>!x.shipped&&x.product_id==progressProduct)}
+function itemLabel(i){return `${i.f2_shapes?.shape_name?i.f2_shapes.shape_name+"型 / ":""}${i.part_no}`}
+function completedProcessIds(itemId){return new Set(logs.filter(x=>x.item_id==itemId).map(x=>Number(x.process_id)))}
+function canEnterProcess(itemId,processId){const doneIds=completedProcessIds(itemId);if(doneIds.has(Number(processId)))return false;const pres=routes.filter(r=>r.process_id==processId).map(r=>Number(r.prerequisite_process_id)).filter(Boolean);return !pres.length||pres.some(id=>doneIds.has(id))}
+function currentCompletedProcess(itemId){const doneIds=completedProcessIds(itemId);return processes.filter(p=>doneIds.has(Number(p.id))).sort((a,b)=>(b.sort_order-a.sort_order)||(b.id-a.id))[0]?.id||null}
+function progressRowsHtml(rows){return rows.map(r=>`<details class="box progress-line"><summary class="progress-head"><span>${esc(r.label)}</span><span class="count-pill">${r.items.length}個</span></summary><div class="progress-parts">${r.items.length?r.items.sort((a,b)=>String(a.part_no).localeCompare(String(b.part_no),"ja",{numeric:true})).map(i=>`<span class="progress-part">${esc(itemLabel(i))}</span>`).join(""):'<span class="muted">該当品番なし</span>'}</div></details>`).join("")}
+function renderProgress(){
+ if(!$("progressProducts"))return;if(!products.some(x=>x.id==progressProduct))progressProduct=products[0]?.id||null;
+ $("progressProducts").innerHTML=products.map(p=>`<button class="btn ${p.id==progressProduct?'active':''}" onclick="selectProgressProduct(${p.id})">${esc(p.product_name)}</button>`).join("");
+ const ps=processes.filter(x=>x.product_id==progressProduct).sort((a,b)=>(a.sort_order-b.sort_order)||(a.id-b.id)),a=progressItems();
+ const current=[{label:"入荷後・工程未登録",items:a.filter(i=>!currentCompletedProcess(i.id))},...ps.map(p=>({label:p.is_final?`${p.process_name} 完了（最終）`:`${p.process_name} 完了`,items:a.filter(i=>Number(currentCompletedProcess(i.id))===Number(p.id))}))];
+ const next=ps.map(p=>({label:`${p.process_name} 作業可能`,items:a.filter(i=>canEnterProcess(i.id,p.id))}));
+ $("currentProgress").innerHTML=progressRowsHtml(current);$("nextProgress").innerHTML=progressRowsHtml(next);
+}
+function selectProgressProduct(id){progressProduct=id;renderProgress()}
 
 function openHistory(type){historyType=type;view("history");setNavActive(`history-${type}`);renderHistoryMachines();renderHistory()}
 function renderHistoryMachines(){if(!$("historyMachines"))return;$("historyTitle").textContent=historyType==="work"?"作業履歴":"工具履歴";$("historyMachines").innerHTML=`<button class="btn ${historyMachine==='all'?'active':''}" onclick="setHistoryMachine('all')">すべて</button>`+machines.map(m=>`<button class="btn ${String(historyMachine)===String(m.machine_no)?'active':''}" onclick="setHistoryMachine(${m.machine_no})">${esc(m.machine_name)}</button>`).join("");$("toolHistoryTFilter").classList.toggle("hidden",historyType!=="tool")}

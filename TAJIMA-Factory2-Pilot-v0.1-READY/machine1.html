@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>TAJIMA 第2工場 一号機 v1.1</title>
+<title>TAJIMA 第2工場 一号機 v1.2</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -106,6 +106,7 @@
   .usage-input:focus{outline:3px solid #bfdbfe;border-color:#2563eb}
   .usage-help{font-size:13px;color:#64748b;margin-top:6px}
   .usage-saved{font-size:13px;color:#15803d;font-weight:800;margin-top:4px;min-height:18px}
+  .auto-usage{margin:0 0 12px;padding:12px;border:1px solid #bfdbfe;border-radius:10px;background:#eff6ff}.auto-usage-list{margin-top:6px;font-weight:800;line-height:1.6}.usage-count{font-size:22px;font-weight:900;color:#1d4ed8}
 
   .process-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   .process-choice{min-height:100px;font-size:24px;font-weight:900}
@@ -117,7 +118,7 @@
 <body>
 <div class="top">
   <div><b>TAJIMA 第2工場　<span id="machineNameTop">1号機</span></b><div class="muted" style="color:#cbd5e1">現場タブレット</div></div>
-  <span>PILOT v1.1</span>
+  <span>PILOT v1.2</span>
 </div>
 
 <div class="wrap">
@@ -176,6 +177,8 @@
     </div>
     <div class="usage-box">
       <div class="usage-label">使用製品・工程</div>
+      <div class="auto-usage"><div class="usage-label">管理ページ設定</div><div id="autoUsageList" class="auto-usage-list">未設定</div><div style="margin-top:8px">工具交換後 <span id="toolUseCount" class="usage-count">0回</span></div></div>
+      <div class="usage-label">従来メモ</div>
       <textarea id="usageNote" class="usage-input" placeholder="例：KMG 1工程 / KMX 2工程"></textarea>
       <div class="usage-help">入力後、ほかの場所をタップすると自動保存</div>
       <div id="usageSaved" class="usage-saved"></div>
@@ -189,13 +192,14 @@ const Q=new URLSearchParams(location.search),M=Number(1);
 const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY;
 let MACHINE_NAME=M+"号機";
 const H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
-let toolData=[],toolLogs=[],sel=null,products=[],processMaster=[],processRoutes=[],processItems=[],processLogs=[],machineProcessAssignments=[],chosenProduct=null,chosenProcess=null,chosenItem=null,usageSaveTimer=null;
+let toolData=[],toolLogs=[],sel=null,products=[],processMaster=[],processRoutes=[],processItems=[],processLogs=[],machineProcessAssignments=[],toolProcessAssignments=[],toolUsageLogs=[],chosenProduct=null,chosenProcess=null,chosenItem=null,usageSaveTimer=null;
 
 async function api(p,o={}){
   let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});
   if(!r.ok) throw Error(await r.text());
   let t=await r.text(); return t?JSON.parse(t):[];
 }
+async function apiAll(p){let out=[],offset=0;for(;;){let a=await api(`${p}${p.includes("?")?"&":"?"}limit=1000&offset=${offset}`);out.push(...a);if(a.length<1000)return out;offset+=1000}}
 function esc(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
 function fail(e){const box=document.getElementById("err");box.textContent="通信エラー: "+e.message;box.classList.remove("hidden")}
 function fmtToolTime(v){
@@ -227,13 +231,15 @@ async function load(){
       api(`f2_tools?machine_no=eq.${M}&order=t_no.asc`),
       api(`f2_tool_logs?machine_no=eq.${M}&select=id,tool_id,action,created_at&action=in.(工具交換,チップ交換)&order=created_at.desc`)
     ]);
-    [products,processMaster,processRoutes,processItems,processLogs,machineProcessAssignments]=await Promise.all([
+    [products,processMaster,processRoutes,processItems,processLogs,machineProcessAssignments,toolProcessAssignments,toolUsageLogs]=await Promise.all([
       api("f2_products?active=eq.true&order=product_name.asc"),
       api("f2_process_master?active=eq.true&order=product_id,sort_order,id"),
       api("f2_process_routes?select=*"),
       api("f2_items?select=*,f2_shapes(shape_name)&shipped=eq.false&arrival_cancelled_at=is.null&order=part_no.asc"),
-      api("f2_process_logs?select=id,item_id,process_id,attention,created_at"),
-      api(`f2_machine_process_assignments?machine_no=eq.${M}&select=process_id`).catch(()=>[])
+      apiAll("f2_process_logs?select=id,item_id,process_id,attention,created_at"),
+      api(`f2_machine_process_assignments?machine_no=eq.${M}&select=process_id`).catch(()=>[]),
+      api(`f2_tool_process_assignments?machine_no=eq.${M}&select=tool_id,process_id`).catch(()=>[]),
+      apiAll(`f2_tool_usage_logs?machine_no=eq.${M}&select=tool_id,process_id,item_id,created_at&order=created_at.desc`).catch(()=>[])
     ]);
     if(machineProcessAssignments.length){const assigned=new Set(machineProcessAssignments.map(x=>Number(x.process_id)));processMaster=processMaster.filter(x=>assigned.has(Number(x.id)));products=products.filter(x=>processMaster.some(p=>p.product_id==x.id))}
     renderTools(); renderProductButtons();
@@ -271,6 +277,10 @@ function openTool(id){
   document.getElementById("mt").textContent=`T${sel.t_no}　${sel.tool_name||"工具名未登録"}`;
   document.getElementById("ms").textContent=sel.current_machine_no==M?MACHINE_NAME+"にセット":"現在 "+sel.current_machine_no+"号機で使用中";
   document.getElementById("usageNote").value=sel.usage_note||"";
+  const linked=toolProcessAssignments.filter(x=>x.tool_id==sel.id).map(x=>{const p=processMaster.find(z=>z.id==x.process_id),product=products.find(z=>z.id==p?.product_id);return p&&product?`${product.product_name} / ${p.process_name}`:""}).filter(Boolean);
+  const lastExchange=toolLogs.find(x=>x.tool_id==sel.id&&x.action==="工具交換"),since=lastExchange?new Date(lastExchange.created_at).getTime():0,count=toolUsageLogs.filter(x=>x.tool_id==sel.id&&new Date(x.created_at).getTime()>since).length;
+  document.getElementById("autoUsageList").textContent=linked.join("、")||"未設定";
+  document.getElementById("toolUseCount").textContent=count+"回";
   document.getElementById("usageSaved").textContent="";
   document.getElementById("modal").classList.remove("hidden");
 }
@@ -377,7 +387,7 @@ async function registerWork(){
   try{
     const attention=document.getElementById("variation").checked;
     const saved=await api("f2_process_logs",{method:"POST",body:JSON.stringify({item_id:chosenItem.id,machine_no:M,step_no:1,process_id:chosenProcess.id,attention})});
-    if(saved?.[0])processLogs.unshift(saved[0]);
+    if(saved?.[0]){processLogs.unshift(saved[0]);toolProcessAssignments.filter(x=>x.process_id==chosenProcess.id).forEach(x=>toolUsageLogs.unshift({tool_id:x.tool_id,process_id:chosenProcess.id,item_id:chosenItem.id,created_at:saved[0].created_at||new Date().toISOString()}))}
     if(attention && !chosenItem.attention){
       await api(`f2_items?id=eq.${chosenItem.id}`,{method:"PATCH",body:JSON.stringify({attention:true})});
       chosenItem.attention=true;
