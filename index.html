@@ -195,9 +195,15 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 
 
 .material-button-list{display:grid!important;grid-template-columns:1fr!important;gap:8px!important}
-.material-master-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;width:100%;background:#f8fbff;border:2px solid #bfdbfe;border-radius:13px;padding:7px}
+.material-master-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;width:100%;background:#f8fbff;border:2px solid #bfdbfe;border-radius:13px;padding:7px}
 .material-master-main{width:100%;min-height:44px;border:0;background:transparent;color:#1e3a8a;font-weight:900;text-align:left;padding:7px 9px;font-size:15px}
 .material-master-main.selected{background:#1d4ed8;color:#fff;border-radius:9px}
+.material-edit-btn{border:0;background:#e0f2fe;color:#075985;border-radius:10px;padding:10px 12px;font-weight:900;white-space:nowrap}
+.material-replace-panel{background:#fff;border:2px dashed #f59e0b;border-radius:16px;padding:12px;margin:12px 0}
+.material-replace-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
+.material-replace-grid select{width:100%;padding:11px;border:2px solid var(--line);border-radius:12px;background:#fff;font-size:15px}
+.material-replace-preview{background:#fffbeb;border:1px solid #fbbf24;border-radius:12px;padding:10px;margin:10px 0;line-height:1.6}
+@media(max-width:650px){.material-replace-grid{grid-template-columns:1fr}}
 .move-top-btn,.order-move-top{min-height:40px;border:1px solid #93c5fd;background:#fff;color:#1d4ed8;border-radius:9px;padding:7px 10px;font-weight:900;white-space:nowrap}
 
 /* v11.1 勤怠補助 */
@@ -401,9 +407,11 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 
   <div id="materialButtonPanel" class="material-button-panel hidden">
     <button id="materialDeleteToggle" type="button" class="material-delete-toggle" onclick="toggleMaterialDeleteMode()">品目削除</button>
+    <button type="button" class="btn-light" style="width:100%;margin-bottom:10px" onclick="toggleMaterialReplacePanel()">誤登録品目の置換</button>
     <div class="material-button-title">登録済み材料</div>
     <div id="materialButtonList" class="material-button-list"></div>
   </div>
+  <div id="materialReplacePanel" class="material-replace-panel hidden"></div>
 
   <div id="materialBulkPanel" class="material-bulk-panel hidden">
     <div class="order-field-label">発注日</div>
@@ -516,7 +524,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.30";
+const APP_VERSION="11.31";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -537,7 +545,7 @@ let selectedProduct="", calYear=2026, calMonth=6, schedules=[], allMonthSchedule
 let autoSaveTimer=null, autoSaving=false;
 let shipmentUpdateMap={};
 let machineSetups=[]; let setupDirty=false;
-let materialAdmin=false, materialMasters=[], materialOrdersData=[], materialEvents=[], selectedMaterialId=null, materialFilter="active", materialDeleteMode=false, bulkSelectedMaterialIds=[], openOrderDateGroups={}, materialSheetSlot=Number(localStorage.getItem("tajima_material_sheet")||1), materialSheetConfigRows=[];
+let materialAdmin=false, materialMasters=[], materialOrdersData=[], materialEvents=[], selectedMaterialId=null, materialFilter="active", materialDeleteMode=false, materialReplaceOpen=false, bulkSelectedMaterialIds=[], openOrderDateGroups={}, materialSheetSlot=Number(localStorage.getItem("tajima_material_sheet")||1), materialSheetConfigRows=[];
 const HQ_MACHINES=["MPH","MPE","MVR40","MVR25","KNC"];
 let currentSection=localStorage.getItem("tajima_section")||"home";
 let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqAdmin=false, hqEditing=false;
@@ -1086,7 +1094,7 @@ async function switchMaterialSheet(slot){
   slot=Number(slot);if(slot<1||slot>3)return;
   materialSheetSlot=slot;
   localStorage.setItem("tajima_material_sheet",String(slot));
-  selectedMaterialId=null;bulkSelectedMaterialIds=[];materialDeleteMode=false;materialFilter="active";openOrderDateGroups={};
+  selectedMaterialId=null;bulkSelectedMaterialIds=[];materialDeleteMode=false;materialReplaceOpen=false;materialFilter="active";openOrderDateGroups={};
   if(window.materialSearch)materialSearch.value="";
   await loadMaterialPage();
 }
@@ -1106,6 +1114,7 @@ function materialModeApply(){
   materialAdminBtn.textContent=materialAdmin?"材料管理ログアウト":"材料管理者モード";
   materialAdminPanel.classList.toggle("hidden",!materialAdmin);
   if(window.materialButtonPanel)materialButtonPanel.classList.toggle("hidden",!materialAdmin);if(window.materialBulkPanel)materialBulkPanel.classList.toggle("hidden",!materialAdmin);if(window.bulkOrderDate&&!bulkOrderDate.value)bulkOrderDate.value=todayDateValue();
+  if(window.materialReplacePanel)materialReplacePanel.classList.toggle("hidden",!materialAdmin||!materialReplaceOpen);
   if(window.materialDeleteToggle){
     materialDeleteToggle.textContent=materialDeleteMode?"削除モード終了":"品目削除";
     materialDeleteToggle.classList.toggle("active",materialDeleteMode);
@@ -1113,9 +1122,10 @@ function materialModeApply(){
   document.querySelectorAll(".material-admin-only").forEach(e=>e.classList.toggle("hidden",!materialAdmin));
   drawMaterialSheetTabs();
   drawMaterialButtons();
+  drawMaterialReplacePanel();
 }
 function toggleMaterialAdmin(){
-  if(materialAdmin){materialAdmin=false;materialDeleteMode=false;materialModeApply();drawSelectedMaterial();drawMaterialSuggestions();drawMaterialOrders();return}
+  if(materialAdmin){materialAdmin=false;materialDeleteMode=false;materialReplaceOpen=false;materialModeApply();drawSelectedMaterial();drawMaterialSuggestions();drawMaterialOrders();return}
   const pw=prompt("材料管理者パスワードを入力してください");
   if(pw==="2342"){materialAdmin=true;materialModeApply();drawSelectedMaterial();drawMaterialSuggestions();drawMaterialOrders()}
   else if(pw!==null)alert("パスワードが違います");
@@ -1210,9 +1220,59 @@ function drawMaterialButtons(){
   materialOrdersData.forEach(o=>{if(!recentIds.includes(Number(o.material_id)))recentIds.push(Number(o.material_id))});
   const list=[...materialMasters].filter(m=>m.is_active!==false).sort((a,b)=>Number(a.sort_order??a.id)-Number(b.sort_order??b.id));
   materialButtonList.innerHTML=list.length
-?list.map(m=>`<div class="material-master-row"><button type="button" class="material-master-main ${bulkSelectedMaterialIds.includes(Number(m.id))?"selected":""}" onclick="toggleBulkMaterial(${m.id})">${esc(m.material_name)}</button><button type="button" class="move-top-btn" onclick="moveMaterialMasterToTop(${m.id},event)">↑ 上へ</button><button type="button" class="material-remove-btn ${materialDeleteMode?"":"hidden-delete"}" onclick="removeMaterialMaster(${m.id},event)">×</button></div>`).join("")
+?list.map(m=>`<div class="material-master-row"><button type="button" class="material-master-main ${bulkSelectedMaterialIds.includes(Number(m.id))?"selected":""}" onclick="toggleBulkMaterial(${m.id})">${esc(m.material_name)}</button><button type="button" class="material-edit-btn" onclick="editMaterialMaster(${m.id},event)">編集</button><button type="button" class="move-top-btn" onclick="moveMaterialMasterToTop(${m.id},event)">↑ 上へ</button><button type="button" class="material-remove-btn ${materialDeleteMode?"":"hidden-delete"}" onclick="removeMaterialMaster(${m.id},event)">×</button></div>`).join("")
 :'<span class="setup-empty">登録材料なし</span>';
 drawBulkOrderArea();
+}
+async function editMaterialMaster(id,event){
+  event?.preventDefault();event?.stopPropagation();
+  if(!materialAdmin)return;
+  const m=materialById(id);if(!m)return;
+  const name=prompt("材料名・品番",m.material_name||"");if(name===null)return;
+  const cleanName=name.trim();if(!cleanName){alert("材料名を入力してください");return}
+  const spec=prompt("規格・サイズ",m.spec||"");if(spec===null)return;
+  const supplier=materialSheetIsSimple()?materialSheetName():prompt("仕入先",m.supplier||"");if(supplier===null)return;
+  const note=prompt("材料メモ",m.note||"");if(note===null)return;
+  if(!confirm(`この品目を修正しますか？\n\n${m.material_name}\n${m.spec||"（規格なし）"}\n　↓\n${cleanName}\n${spec||"（規格なし）"}\n\n同じ品目に紐づく過去の発注表示にも反映されます。`))return;
+  const r=await fetch(`${MATERIAL_MASTER_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({material_name:cleanName,spec,supplier,note,updated_at:new Date().toISOString()})});
+  if(!r.ok){alert("品目修正エラー: "+await r.text());return}
+  await loadMaterialPage();alert("品目情報を修正しました。過去の発注表示にも反映されます。");
+}
+function toggleMaterialReplacePanel(){
+  if(!materialAdmin)return;
+  materialReplaceOpen=!materialReplaceOpen;
+  materialReplacePanel.classList.toggle("hidden",!materialReplaceOpen);
+  drawMaterialReplacePanel();
+}
+function drawMaterialReplacePanel(){
+  if(!window.materialReplacePanel)return;
+  if(!materialAdmin||!materialReplaceOpen){materialReplacePanel.innerHTML="";return}
+  const all=[...materialMasters].sort((a,b)=>String(a.material_name).localeCompare(String(b.material_name),"ja"));
+  const active=all.filter(m=>m.is_active!==false);
+  materialReplacePanel.innerHTML=`<div class="setup-title">誤登録品目の置換</div><div class="note" style="text-align:left;margin:5px 0">旧品目の発注記録を正しい品目へ移し、旧品目は通常画面から非表示にします。</div><div class="material-replace-grid"><label><b>誤登録した旧品目</b><select id="replaceSourceMaterial" onchange="updateMaterialReplacePreview()"><option value="">選択してください</option>${all.map(m=>`<option value="${m.id}">${m.is_active===false?"【無効】":""}${esc(m.material_name)} / ${esc(m.spec||"規格なし")}</option>`).join("")}</select></label><label><b>正しい品目</b><select id="replaceTargetMaterial" onchange="updateMaterialReplacePreview()"><option value="">選択してください</option>${active.map(m=>`<option value="${m.id}">${esc(m.material_name)} / ${esc(m.spec||"規格なし")}</option>`).join("")}</select></label></div><div id="materialReplacePreview" class="material-replace-preview">旧品目と正しい品目を選択してください。</div><button class="btn-red" style="width:100%" onclick="replaceMaterialMaster()">発注品目を置換して旧品目を無効化</button>`;
+}
+function updateMaterialReplacePreview(){
+  const source=materialById(document.getElementById("replaceSourceMaterial")?.value);
+  const target=materialById(document.getElementById("replaceTargetMaterial")?.value);
+  const box=document.getElementById("materialReplacePreview");if(!box)return;
+  if(!source||!target){box.textContent="旧品目と正しい品目を選択してください。";return}
+  if(Number(source.id)===Number(target.id)){box.textContent="同じ品目同士は置換できません。";return}
+  const count=materialOrdersData.filter(o=>Number(o.material_id)===Number(source.id)).length;
+  box.innerHTML=`<b>変更前</b>　${esc(source.material_name)} / ${esc(source.spec||"規格なし")}<br><b>変更後</b>　${esc(target.material_name)} / ${esc(target.spec||"規格なし")}<br><b>対象</b>　この仕入先シートの発注 ${count}件<br><span style="color:#b45309">数量・日付・メモ・進行状況・並び順は変更しません。</span>`;
+}
+async function replaceMaterialMaster(){
+  if(!materialAdmin)return;
+  const source=materialById(document.getElementById("replaceSourceMaterial")?.value);
+  const target=materialById(document.getElementById("replaceTargetMaterial")?.value);
+  if(!source||!target){alert("旧品目と正しい品目を選択してください");return}
+  if(Number(source.id)===Number(target.id)){alert("同じ品目同士は置換できません");return}
+  const count=materialOrdersData.filter(o=>Number(o.material_id)===Number(source.id)).length;
+  if(!confirm(`以下の品目を置換します。\n\n旧：${source.material_name} / ${source.spec||"規格なし"}\n新：${target.material_name} / ${target.spec||"規格なし"}\n対象発注：${count}件\n\n発注の数量・日付・メモ・進行状況は維持し、旧品目は通常画面から非表示にします。よろしいですか？`))return;
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/tajima_replace_material_master`,{method:"POST",headers:headers(),body:JSON.stringify({p_source_id:Number(source.id),p_target_id:Number(target.id)})});
+  if(!r.ok){alert("品目置換エラー: "+await r.text());return}
+  const changed=Number(await r.json());
+  selectedMaterialId=Number(target.id);materialSearch.value=target.material_name;materialReplaceOpen=false;
+  await loadMaterialPage();alert(`${changed}件の発注を正しい品目へ置換し、旧品目を非表示にしました。`);
 }
 async function moveMaterialMasterToTop(id,event){
   event?.preventDefault();event?.stopPropagation();
