@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 第2工場 管理 v1.5</title><link rel="stylesheet" href="common.css">
+<title>TAJIMA 第2工場 管理 v1.6</title><link rel="stylesheet" href="common.css">
 <style>
 .wrap{max-width:1500px}.hidden{display:none!important}.nav{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.nav .btn{min-height:48px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -29,7 +29,9 @@
 .ship-day .count{margin-top:7px;font-size:12px;color:#2563eb;font-weight:900}
 .ship-day.sun .num{color:#dc2626}.ship-day.sat .num{color:#2563eb}
 .ship-day-list .box{margin:6px 0}
-.ship-day-summary{font-weight:900;color:#102b4e;margin-bottom:7px}
+.ship-day-list-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px}
+.ship-day-summary{font-weight:900;color:#102b4e}
+.ship-register-date{background:#eff6ff;border:2px solid #93c5fd;border-radius:12px;padding:10px;margin-bottom:9px;font-weight:900;color:#1e3a8a;text-align:center}
 @media(max-width:900px){.ship-layout{grid-template-columns:1fr}.top{align-items:flex-start}.top-actions{gap:7px;flex-wrap:wrap;justify-content:flex-end}.machine-launch-btn{font-size:12px}}
 .process-box{position:relative;padding-top:30px}.process-badge{position:absolute;left:8px;top:7px;font-size:12px;font-weight:900;background:#102b4e;color:#fff;border-radius:7px;padding:3px 8px}.order-btns{display:flex;gap:5px;flex:0 0 auto}.order-btns .btn{min-width:42px;padding:7px}
 .shape-row{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.shape-btn{flex:0 0 auto}.shape-btn.selected{background:#102b4e;color:#fff;border-color:#102b4e}.history-machines{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.history-machines .btn.active{background:#102b4e;color:#fff;border-color:#102b4e}
@@ -42,7 +44,7 @@
 .worker-row{display:flex;align-items:center;gap:8px}.worker-row .fc{flex:1}.check-ok{color:#15803d;font-weight:900}.check-wait{color:#b45309;font-weight:900}.cancelled-log{opacity:.72;background:#f8fafc;text-decoration:none}.cancel-tag{background:#fee2e2;color:#b91c1c}.worker-tag{background:#dcfce7;color:#166534}.worker-assign-list{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.worker-assign-list label{cursor:pointer}.history-types,.history-filters{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.history-types .btn.active{background:#2563eb;color:#fff;border-color:#2563eb}.history-filters>*{min-width:130px;flex:1}.history-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.history-summary .box{text-align:center}.history-date{margin:10px 0;border:1px solid #dbe3ec;border-radius:11px;background:#fff}.history-date>summary{cursor:pointer;padding:12px;font-weight:900;color:#102b4e}.history-date-body{padding:0 12px 10px}.inactive-machine{opacity:.7;background:#f8fafc}@media(max-width:750px){.history-summary{grid-template-columns:repeat(2,1fr)}}
 
 </style></head><body>
-<div class="top"><b>TAJIMA 第2工場 管理</b><div class="top-actions"><a class="machine-launch-btn" href="index.html">各号機 タブレット画面へ</a><span>PILOT v1.5</span></div></div>
+<div class="top"><b>TAJIMA 第2工場 管理</b><div class="top-actions"><a class="machine-launch-btn" href="index.html">各号機 タブレット画面へ</a><span>PILOT v1.6</span></div></div>
 <div class="wrap"><div id="err" class="card alert hidden"></div>
 <div class="nav no-print">
 <button class="btn" data-nav="dash" onclick="view('dash')">ダッシュボード</button><button class="btn" data-nav="machines" onclick="view('machines')">機械・工具管理</button>
@@ -51,7 +53,7 @@
 <button class="btn" data-nav="progress" onclick="view('progress')">工程進捗</button>
 <button class="btn" data-nav="workers" onclick="view('workers')">作業者・工具点検</button>
 <button class="btn" data-nav="history-work" onclick="openHistory('work')">作業履歴</button><button class="btn" data-nav="history-tool" onclick="openHistory('tool')">工具履歴</button><button class="btn" data-nav="trace" onclick="view('trace')">品番履歴・印刷</button></div>
-<details class="card update-note no-print"><summary>更新内容　PILOT v1.5</summary><ul><li>T1～T300の機械登録と登録途中エラーを修正</li><li>機械の編集・安全な登録取消を追加</li><li>工具確認をタブレット上部から10時間間隔で登録</li><li>機械別に表示する作業者を設定</li><li>タブレット記録を年月・曜日・機械別に整理</li></ul></details>
+<details class="card update-note no-print"><summary>更新内容　PILOT v1.6</summary><ul><li>出荷カレンダーで過去・今日・未来の出荷日を選択可能</li><li>日別出荷履歴に品番の昇順・降順切替を追加</li><li>タブレット品番に前工程の完了・未完了を表示</li></ul></details>
 
 <section id="dash"><div class="grid3"><div class="card"><div class="muted">稼働機械</div><div id="dMachines" class="stat">-</div></div><div class="card"><div class="muted">工具注意</div><div id="dWarnings" class="stat">-</div></div><div class="card"><div class="muted">本日の作業登録</div><div id="dToday" class="stat">-</div></div></div>
 <div class="card"><div class="title">機械状況・工具情報</div><div id="machineDash" class="grid3"></div></div>
@@ -79,7 +81,8 @@
 <div class="ship-layout">
   <div class="card">
     <div class="title">出荷登録</div>
-    <div class="muted" style="margin-bottom:8px">最終工程が完了した品番を出荷登録します。登録日時は自動保存されます。</div>
+    <div class="muted" style="margin-bottom:8px">カレンダーで出荷日を選び、最終工程が完了した品番を出荷登録します。</div>
+    <div id="shipRegisterDate" class="ship-register-date"></div>
     <div id="shipProducts" class="ship-products"></div>
     <div class="bulk-bar"><div id="shipSelectedCount" class="bulk-count">選択 0件</div><div><button class="btn" onclick="clearShipSelection()">選択解除</button> <button id="bulkShipBtn" class="btn bulk-primary" onclick="shipSelected()" disabled>選択した品番を出荷</button></div></div>
     <div id="shipList"></div>
@@ -96,7 +99,7 @@
     </div>
     <div id="shipCalendar" class="ship-cal"></div>
     <div style="height:12px"></div>
-    <div id="shipDayTitle" class="ship-day-summary"></div>
+    <div class="ship-day-list-head"><div id="shipDayTitle" class="ship-day-summary"></div><button id="shipDaySortBtn" class="btn" onclick="toggleShipDaySort()">品番 ▲</button></div>
     <div id="shipDayList" class="ship-day-list"></div>
   </div>
 </div>
@@ -115,7 +118,7 @@ const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY,H={"apikey"
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])),dt=s=>s?new Date(s).toLocaleString("ja-JP"):"";
 let machines=[],inactiveMachines=[],products=[],processes=[],routes=[],items=[],logs=[],cancelledLogs=[],tools=[],toolLogs=[],shipments=[],shapes=[],machineProcessAssignments=[],toolProcessAssignments=[],toolUsageLogs=[],workers=[],machineWorkerAssignments=[],dailyToolChecks=[],importRows=[];
 let selectedArrivalShape=null,historyType="work",historyMachine="all";
-let shipViewDate=new Date(),shipSelectedDate=new Date(),shipProduct="all";
+let shipViewDate=new Date(),shipSelectedDate=new Date(),shipProduct="all",shipDaySort="asc";
 let selectedArrivalIds=new Set(),selectedShipItemIds=new Set(),currentView="dash",arrivalProductFilter="all",arrivalShapeFilter="all";
 let progressProduct=null,toolAssignProduct=null,toolFeatureReady=true;
 async function api(p,o={}){let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});if(!r.ok)throw Error(await r.text());let t=await r.text();return t?JSON.parse(t):[]}
@@ -315,6 +318,7 @@ function renderShipping(){
  renderShippingFilters();
  let a=shippingReadyItems();
  selectedShipItemIds=new Set([...selectedShipItemIds].filter(id=>a.some(i=>i.id==id)));
+ const sd=shipSelectedDate;if($("shipRegisterDate"))$("shipRegisterDate").textContent=`出荷日：${sd.getFullYear()}年${sd.getMonth()+1}月${sd.getDate()}日（右のカレンダーで変更）`;
  $("shipList").innerHTML=a.map(i=>{const sel=selectedShipItemIds.has(i.id);return `<div class="box row selectable-row ${sel?'selected':''}" onclick="toggleShipSelection(${i.id})"><span class="select-mark">✓</span><b>${esc(i.f2_products?.product_name)} / ${i.f2_shapes?.shape_name?`<span class="tag">${esc(i.f2_shapes.shape_name)}型</span> `:""}${esc(i.part_no)}</b></div>`}).join("")||"出荷可能品なし";
  updateShipBulkBar();
 }
@@ -324,8 +328,10 @@ function updateShipBulkBar(){if($("shipSelectedCount"))$("shipSelectedCount").te
 async function shipSelected(){
  const ids=[...selectedShipItemIds],ready=shippingReadyItems(),targets=ids.map(id=>ready.find(i=>i.id==id)).filter(Boolean);
  if(!targets.length)return alert("出荷する品番を選択してください。");
- if(!confirm(`選択した ${targets.length}件を出荷登録しますか？`))return;
- try{let n=new Date().toISOString();await api("f2_shipments",{method:"POST",body:JSON.stringify(targets.map(i=>({item_id:i.id,shipped_at:n})))});for(const i of targets)await api(`f2_items?id=eq.${i.id}`,{method:"PATCH",body:JSON.stringify({shipped:true})});selectedShipItemIds.clear();await load()}catch(e){fail(e)}
+ const y=shipSelectedDate.getFullYear(),m=shipSelectedDate.getMonth(),d=shipSelectedDate.getDate(),selectedDay=new Date(y,m,d),today=new Date();today.setHours(0,0,0,0);
+ const label=`${y}年${m+1}月${d}日`,past=selectedDay<today;
+ if(!confirm(`${past?"※ 過去の日付です。\n":""}${label}の出荷として、選択した ${targets.length}件を登録しますか？`))return;
+ try{const n=new Date(y,m,d,12,0,0).toISOString();await api("f2_shipments",{method:"POST",body:JSON.stringify(targets.map(i=>({item_id:i.id,shipped_at:n})))});for(const i of targets)await api(`f2_items?id=eq.${i.id}`,{method:"PATCH",body:JSON.stringify({shipped:true})});selectedShipItemIds.clear();await load()}catch(e){fail(e)}
 }
 async function ship(id){selectedShipItemIds=new Set([id]);return shipSelected()}
 async function cancelShipment(id){
@@ -336,13 +342,14 @@ async function cancelShipment(id){
 }
 
 function shipDateKey(v){let d=new Date(v);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
-function shipToday(){shipViewDate=new Date();shipSelectedDate=new Date();renderShippingHistory()}
+function shipToday(){shipViewDate=new Date();shipSelectedDate=new Date();renderShipping();renderShippingHistory()}
 function changeShipMonth(n){
  shipViewDate=new Date(shipViewDate.getFullYear(),shipViewDate.getMonth()+n,1);
  shipSelectedDate=new Date(shipViewDate.getFullYear(),shipViewDate.getMonth(),1);
- renderShippingHistory();
+ renderShipping();renderShippingHistory();
 }
-function selectShipDay(y,m,d){shipSelectedDate=new Date(y,m-1,d);renderShippingHistory()}
+function selectShipDay(y,m,d){shipSelectedDate=new Date(y,m-1,d);renderShipping();renderShippingHistory()}
+function toggleShipDaySort(){shipDaySort=shipDaySort==="asc"?"desc":"asc";renderShipDayList()}
 function filteredActiveShipments(){return activeShipments().filter(x=>{const i=items.find(z=>z.id==x.item_id);return shipProductMatch(i)})}
 function renderShippingHistory(){
  if(!$("shipCalendar"))return;
@@ -364,11 +371,12 @@ function renderShippingHistory(){
 }
 function renderShipDayList(){
  const key=shipDateKey(shipSelectedDate);
- const a=filteredActiveShipments().filter(x=>shipDateKey(x.shipped_at)===key).sort((x,y)=>new Date(x.shipped_at)-new Date(y.shipped_at));
+ const a=filteredActiveShipments().filter(x=>shipDateKey(x.shipped_at)===key).sort((x,y)=>{const xi=items.find(z=>z.id==x.item_id),yi=items.find(z=>z.id==y.item_id),c=String(xi?.part_no||"").localeCompare(String(yi?.part_no||""),"ja",{numeric:true,sensitivity:"base"});return shipDaySort==="asc"?c:-c});
  $("shipDayTitle").textContent=`${shipSelectedDate.getFullYear()}年${shipSelectedDate.getMonth()+1}月${shipSelectedDate.getDate()}日　出荷 ${a.length}件`;
+ if($("shipDaySortBtn"))$("shipDaySortBtn").textContent=shipDaySort==="asc"?"品番 ▲":"品番 ▼";
  $("shipDayList").innerHTML=a.map(x=>{
-   const i=items.find(z=>z.id==x.item_id),t=new Date(x.shipped_at).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
-   return `<div class="box row"><div><b>${t}</b>　${esc(i?.f2_products?.product_name||"")} / ${i?.f2_shapes?.shape_name?`<span class="tag">${esc(i.f2_shapes.shape_name)}型</span> `:""}${esc(i?.part_no||"")}</div><button class="btn cancel-btn" onclick="cancelShipment(${x.id})">出荷取消</button></div>`;
+   const i=items.find(z=>z.id==x.item_id);
+   return `<div class="box row"><div>${esc(i?.f2_products?.product_name||"")} / ${i?.f2_shapes?.shape_name?`<span class="tag">${esc(i.f2_shapes.shape_name)}型</span> `:""}<b>${esc(i?.part_no||"")}</b></div><button class="btn cancel-btn" onclick="cancelShipment(${x.id})">出荷取消</button></div>`;
  }).join("")||'<div class="muted">この日の出荷登録はありません。</div>';
 }
 

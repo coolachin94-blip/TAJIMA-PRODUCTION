@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>TAJIMA 第2工場 現場タブレット v1.5</title>
+<title>TAJIMA 第2工場 現場タブレット v1.6</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -103,6 +103,9 @@
 
   .process-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   .process-choice{min-height:100px;font-size:24px;font-weight:900}
+  .prior-process-status{position:absolute;right:7px;bottom:6px;left:7px;display:flex;justify-content:flex-end;gap:4px;flex-wrap:wrap;pointer-events:none}
+  .prior-process-status span{font-size:10px;line-height:1.2;border-radius:6px;padding:3px 5px;font-weight:900}
+  .prior-process-status .done{background:#dcfce7;color:#166534}.prior-process-status .missing{background:#fee2e2;color:#b91c1c}
   .process-choice.warn{border:2px solid #f59e0b}
   .register-big{width:100%;min-height:88px;font-size:26px}
   .worker-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}.worker-btn{min-height:62px;font-size:19px;font-weight:900}.worker-btn.selected{background:#2563eb;color:#fff;border-color:#2563eb}.pull-indicator{position:fixed;top:8px;left:50%;transform:translate(-50%,-70px);z-index:50;background:#102b4e;color:#fff;border-radius:999px;padding:10px 18px;font-weight:900;transition:transform .18s}.pull-indicator.show{transform:translate(-50%,0)}.undo-bar{position:fixed;left:10px;right:10px;bottom:10px;max-width:760px;margin:auto;z-index:25;background:#fff;border:2px solid #2563eb;border-radius:15px;padding:13px;box-shadow:0 10px 30px #0004}.undo-row{display:flex;gap:10px;align-items:center}.undo-row>div{flex:1}.daily-overlay{position:fixed;inset:0;z-index:40;background:rgba(15,23,42,.72);display:flex;align-items:center;justify-content:center;padding:16px}.daily-card{width:min(720px,100%);background:#fff;border-radius:20px;padding:22px;box-shadow:0 20px 55px #0006}.daily-title{font-size:28px;font-weight:900;color:#102b4e;text-align:center}.daily-worker-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.daily-confirm{width:100%;min-height:76px;font-size:23px}.tool-check-banner{width:100%;min-height:86px;margin-bottom:12px;border:2px solid #2563eb;background:#eff6ff;color:#102b4e;font-size:21px;font-weight:900}.tool-check-banner.ready{background:#2563eb;color:#fff}.tool-check-banner:disabled{opacity:1;cursor:default;border-color:#86efac;background:#f0fdf4;color:#166534}.daily-close{width:100%;margin-top:10px}
@@ -112,7 +115,7 @@
 <body>
 <div class="top">
   <div><b>TAJIMA 第2工場　<span id="machineNameTop">1号機</span></b><div class="muted" style="color:#cbd5e1">現場タブレット</div></div>
-  <span>PILOT v1.5</span>
+  <span>PILOT v1.6</span>
 </div>
 <div id="pullIndicator" class="pull-indicator">↓ 引っ張って更新</div>
 
@@ -187,7 +190,7 @@ const Q=new URLSearchParams(location.search),M=Number(Q.get("machine")||1);
 const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY;
 let MACHINE_NAME=M+"号機",MACHINE_SLOTS=80;
 const H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
-let toolData=[],toolLogs=[],sel=null,products=[],processMaster=[],processRoutes=[],processItems=[],processLogs=[],machineProcessAssignments=[],toolProcessAssignments=[],toolUsageLogs=[],workers=[],machineWorkerAssignments=[],dailyToolChecks=[],chosenProduct=null,chosenProcess=null,chosenItem=null,selectedWorkWorker=null,selectedDailyWorker=null,lastRegistered=null,undoTimer=null,pullStart=null;
+let toolData=[],toolLogs=[],sel=null,products=[],processMaster=[],allProcessMaster=[],processRoutes=[],processItems=[],processLogs=[],machineProcessAssignments=[],toolProcessAssignments=[],toolUsageLogs=[],workers=[],machineWorkerAssignments=[],dailyToolChecks=[],chosenProduct=null,chosenProcess=null,chosenItem=null,selectedWorkWorker=null,selectedDailyWorker=null,lastRegistered=null,undoTimer=null,pullStart=null;
 
 async function api(p,o={}){
   let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});
@@ -240,6 +243,7 @@ async function load(){
       api(`f2_machine_worker_assignments?machine_no=eq.${M}&select=worker_id`).catch(()=>[]),
       api(`f2_daily_tool_checks?machine_no=eq.${M}&select=*&order=checked_at.desc&limit=1`).catch(()=>[])
     ]);
+    allProcessMaster=[...processMaster];
     if(machineWorkerAssignments.length){const allowed=new Set(machineWorkerAssignments.map(x=>Number(x.worker_id)));workers=workers.filter(x=>allowed.has(Number(x.id)))}
     if(machineProcessAssignments.length){const assigned=new Set(machineProcessAssignments.map(x=>Number(x.process_id)));processMaster=processMaster.filter(x=>assigned.has(Number(x.id)));products=products.filter(x=>processMaster.some(p=>p.product_id==x.id))}
     document.getElementById("toolRangeTitle").textContent=`T1〜T${MACHINE_SLOTS} 工具一覧`;
@@ -346,13 +350,18 @@ function eligible(item){
   if(!pres.length)return true;
   return pres.some(pid=>hasDone(item.id,pid));
 }
+function priorProcessStatusHtml(item){
+  const ps=allProcessMaster.filter(x=>x.product_id==chosenProduct.id).sort((a,b)=>(a.sort_order-b.sort_order)||(a.id-b.id));
+  const idx=ps.findIndex(x=>x.id==chosenProcess.id);if(idx<=0)return "";
+  return `<span class="prior-process-status">${ps.slice(0,idx).map((p,n)=>{const ok=hasDone(item.id,p.id);return `<span class="${ok?"done":"missing"}">${n+1}工程 ${esc(p.process_name)} ${ok?"✓":"✕"}</span>`}).join("")}</span>`;
+}
 function showItemButtons(){
   chosenItem=null;
   document.getElementById("processTitle").textContent=`${chosenProduct.product_name} / ${chosenProcess.process_name}　品番を選択`;
   document.getElementById("processGuide").textContent="この工程に進める品番だけ表示しています。";
   document.getElementById("registerCard").classList.add("hidden");
   let a=processItems.filter(x=>x.product_id==chosenProduct.id&&eligible(x));
-  document.getElementById("processButtons").innerHTML=a.map(x=>`<button class="btn process-choice ${x.attention?'warn':''}" style="position:relative" onclick="chooseItem(${x.id})">${x.f2_shapes?.shape_name?`<span style="position:absolute;left:7px;top:6px;font-size:11px;font-weight:900;background:#102b4e;color:white;border-radius:6px;padding:2px 6px">${esc(x.f2_shapes.shape_name)}</span>`:""}${esc(x.part_no)}${x.attention?'<br>⚠ 注意あり':''}</button>`).join("")||'<div class="card muted">現在この工程に進める品番はありません</div>';
+  document.getElementById("processButtons").innerHTML=a.map(x=>`<button class="btn process-choice ${x.attention?'warn':''}" style="position:relative" onclick="chooseItem(${x.id})">${x.f2_shapes?.shape_name?`<span style="position:absolute;left:7px;top:6px;font-size:11px;font-weight:900;background:#102b4e;color:white;border-radius:6px;padding:2px 6px">${esc(x.f2_shapes.shape_name)}</span>`:""}${esc(x.part_no)}${x.attention?'<br>⚠ 注意あり':''}${priorProcessStatusHtml(x)}</button>`).join("")||'<div class="card muted">現在この工程に進める品番はありません</div>';
 }
 function chooseItem(id){
   chosenItem=processItems.find(x=>x.id==id);
