@@ -45,8 +45,9 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .hq-calendar.selecting .hq-day:not(.hq-empty){cursor:crosshair;touch-action:none}.hq-day.range-preview{background:#ddd6fe;border-color:#7c3aed}
 .hq-range-stack{margin-top:3px;display:grid;gap:2px}.hq-range{position:relative;display:block;background:#2563eb;color:#fff;min-height:20px;padding:3px 5px;font-size:10px;line-height:14px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .hq-range.start{border-radius:8px 0 0 8px}.hq-range.middle{border-radius:0}.hq-range.end{border-radius:0 8px 8px 0;padding-right:12px}.hq-range.start.end{border-radius:8px}.hq-range.end:after{content:"";position:absolute;right:3px;top:7px;border-left:6px solid #fff;border-top:4px solid transparent;border-bottom:4px solid transparent}.hq-range.done{background:#64748b}.hq-range.cancelled{display:none}
-.hq-day-number{display:block;text-align:right;padding-right:3px;color:#334155}.hq-monthly{margin-top:12px;background:#f8fbff;border:2px solid var(--line);border-radius:16px;padding:11px}.hq-monthly-title{font-weight:900;color:var(--deep);margin-bottom:7px}.hq-plan-row{display:grid;grid-template-columns:1fr auto auto auto;gap:7px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px;margin:6px 0}.hq-plan-qty{font-weight:900;color:#1d4ed8}.hq-plan-form{display:grid;grid-template-columns:1fr 110px auto;gap:7px;margin-top:9px}.hq-plan-form input{min-width:0;padding:9px;border:2px solid var(--line);border-radius:11px;font-size:15px}.hq-legacy{margin:12px 0}.hq-legacy summary{cursor:pointer;font-weight:900;color:#5b21b6;padding:8px}
+.hq-day-number{display:block;text-align:right;padding-right:3px;color:#334155}.hq-monthly{margin-top:14px;background:#f8fbff;border:2px solid var(--line);border-radius:16px;padding:13px}.hq-monthly-title{font-weight:900;color:var(--deep);margin-bottom:8px}.hq-monthly-text{white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;min-height:54px;font-size:17px;line-height:1.65;font-weight:800;color:#172554}.hq-monthly-empty{color:#94a3b8}.hq-monthly-editor{width:100%;min-height:130px;padding:13px;border:2px solid var(--blue);border-radius:13px;font-size:18px;line-height:1.6;font-weight:800;color:#0f172a;background:#fff;resize:vertical;margin:7px 0}.hq-legacy{margin:12px 0}.hq-legacy summary{cursor:pointer;font-weight:900;color:#5b21b6;padding:8px}
 .hq-schedule-modal label{display:block;font-weight:900;color:#334155;font-size:13px}.hq-schedule-modal select{width:100%;padding:12px;border:2px solid var(--line);border-radius:14px;font-size:17px;margin:6px 0 10px}.hq-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hq-modal-danger{margin-top:8px;width:100%}
+#hqApp{max-width:1380px}.hq-day{min-height:112px;padding:7px 4px;font-size:16px}.hq-range{min-height:28px;padding:6px 7px;font-size:12px;line-height:16px}.hq-range.end:after{top:10px}.hq-machine{padding:18px}.hq-calendar{gap:7px}
 
 
 .setup-panel{background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px;margin:12px 0;box-shadow:0 4px 14px rgba(37,99,235,.08)}
@@ -100,7 +101,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .setup-edit input{width:100%;padding:9px;border:2px solid var(--line);border-radius:12px;margin:4px 0 8px;font-size:15px}
 
 @media(max-width:430px){.home-title{font-size:28px}.hq-day{min-height:46px;font-size:12px}.hq-chip{font-size:8px}.section-switch{display:grid;grid-template-columns:1fr}}
-@media(max-width:700px){.hq-calendar{gap:2px}.hq-day{padding:3px 1px;min-height:58px}.hq-range{font-size:8px;padding-left:2px}.hq-plan-form{grid-template-columns:1fr 82px}.hq-plan-form button{grid-column:1/-1}}
+@media(max-width:700px){#hqApp{max-width:100%}.hq-calendar{gap:2px}.hq-day{padding:3px 1px;min-height:76px;font-size:12px}.hq-range{min-height:22px;font-size:9px;line-height:13px;padding:4px 2px}.hq-range.end:after{top:7px}.hq-machine{padding:10px}.hq-monthly-editor{font-size:16px;min-height:110px}}
 
 
 .material-app .header{position:relative;top:auto}
@@ -543,12 +544,12 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.32";
+const APP_VERSION="11.33";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
 const HQ_API=`${SUPABASE_URL}/rest/v1/hq_machine_schedules`;
-const HQ_MONTHLY_API=`${SUPABASE_URL}/rest/v1/hq_monthly_plans`;
+const HQ_MONTHLY_NOTE_API=`${SUPABASE_URL}/rest/v1/hq_monthly_notes`;
 const SHIP_UPDATE_API=`${SUPABASE_URL}/rest/v1/shipment_schedule_updates`;
 const SETUP_API=`${SUPABASE_URL}/rest/v1/factory_machine_setups`;
 const MATERIAL_MASTER_API=`${SUPABASE_URL}/rest/v1/material_master`;
@@ -568,7 +569,7 @@ let machineSetups=[]; let setupDirty=false;
 let materialAdmin=false, materialMasters=[], materialOrdersData=[], materialEvents=[], selectedMaterialId=null, materialFilter="active", materialDeleteMode=false, materialReplaceOpen=false, bulkSelectedMaterialIds=[], openOrderDateGroups={}, materialSheetSlot=Number(localStorage.getItem("tajima_material_sheet")||1), materialSheetConfigRows=[];
 const HQ_MACHINES=["MPH","MPE","MVR40","MVR25","KNC"];
 let currentSection=localStorage.getItem("tajima_section")||"home";
-let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqMonthlyPlans=[], hqAdmin=false, hqEditing=false;
+let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqMonthlyNotes=[], hqAdmin=false, hqEditing=false;
 let hqRangeDrag=null, hqSuppressClickUntil=0;
 
 function monthStr(){return `${currentYear}-${String(currentMonth).padStart(2,"0")}`}
@@ -947,14 +948,14 @@ async function loadHqSchedules(force=false){
   let y=hqYear,m=hqMonth+1;if(m===13){m=1;y++}
   const to=`${y}-${String(m).padStart(2,"0")}-01`;
   const url=`${HQ_API}?cancelled_at=is.null&start_date=lt.${to}&end_date=gte.${from}&select=*&order=start_date.asc,id.asc`;
-  const planUrl=`${HQ_MONTHLY_API}?cancelled_at=is.null&plan_month=eq.${hqMonthStr()}-01&select=*&order=sort_order.asc,id.asc`;
-  try{[hqSchedules,hqMonthlyPlans]=await Promise.all([restGet(url),restGet(planUrl)]);drawHq()}catch(e){alert("本社予定読み込みエラー: "+e.message)}
+  const noteUrl=`${HQ_MONTHLY_NOTE_API}?plan_month=eq.${hqMonthStr()}-01&select=*&order=machine_name.asc`;
+  try{[hqSchedules,hqMonthlyNotes]=await Promise.all([restGet(url),restGet(noteUrl)]);drawHq()}catch(e){alert("本社予定読み込みエラー: "+e.message)}
 }
 function hqScheduleStart(s){return s.start_date||s.due_date||s.material_date}
 function hqScheduleEnd(s){return s.end_date||s.due_date||s.start_date||s.material_date}
 function scheduleTouchesDate(s,date){const a=hqScheduleStart(s),b=hqScheduleEnd(s);return !!a&&a<=date&&b>=date}
 function hqItemsForMachine(machine){return hqSchedules.filter(s=>s.machine_name===machine&&!s.cancelled_at)}
-function hqPlansForMachine(machine){return hqMonthlyPlans.filter(p=>p.machine_name===machine&&!p.cancelled_at)}
+function hqNoteForMachine(machine){return hqMonthlyNotes.find(n=>n.machine_name===machine)||null}
 function drawHq(){
   hqMonthTitle.textContent=`${hqYear}年${hqMonth}月`;
   hqMachines.innerHTML="";
@@ -964,7 +965,7 @@ function drawHq(){
     const card=document.createElement("div");
     card.className="hq-machine "+(expanded?"expanded":"");
     const active=schedules.filter(s=>s.status!=="完了").length;
-    card.innerHTML=`<div class="hq-top"><button class="toggle-btn" onclick="toggleHqMachine('${machine}')">${expanded?'▲':'▼'}</button><div class="hq-name">${machine}</div><div style="font-weight:900;color:#64748b">${active}件</div></div><div class="hq-details"><div class="hq-add-guide hq-admin hidden">日付を押したまま終了日まで動かすと予定を追加できます（1日だけなら日付をタップ）</div>${drawHqCalendar(machine,schedules)}${drawHqMonthlyPlans(machine)}${drawHqList(machine,schedules)}</div>`;
+    card.innerHTML=`<div class="hq-top"><button class="toggle-btn" onclick="toggleHqMachine('${machine}')">${expanded?'▲':'▼'}</button><div class="hq-name">${machine}</div><div style="font-weight:900;color:#64748b">${active}件</div></div><div class="hq-details"><div class="hq-add-guide hq-admin hidden">日付を押したまま終了日まで動かすか、開始日をタップして終了日を入力すると、期間全体が自動でつながります。</div>${drawHqCalendar(machine,schedules)}${drawHqMonthlyNote(machine)}${drawHqList(machine,schedules)}</div>`;
     hqMachines.appendChild(card);
   }
   hqModeApply();
@@ -1055,10 +1056,8 @@ async function deleteHqSchedule(id){
 }
 async function cancelHqScheduleFromModal(){const id=Number(hqScheduleId.value);if(!id)return;closeHqScheduleModal();await deleteHqSchedule(id)}
 
-function drawHqMonthlyPlans(machine){const plans=hqPlansForMachine(machine);return `<div class="hq-monthly"><div class="hq-monthly-title">${hqYear}年${hqMonth}月　月間予定モデル・台数</div>${plans.length?plans.map(p=>`<div class="hq-plan-row"><span>${esc(p.model_name)}</span><span class="hq-plan-qty">${p.planned_qty}台</span><button class="btn-light btn-small hq-admin hidden" onclick="editHqMonthlyPlan(${p.id})">修正</button><button class="btn-red btn-small hq-admin hidden" onclick="cancelHqMonthlyPlan(${p.id})">削除</button></div>`).join(""):`<div class="note">月間予定なし</div>`}<div class="hq-plan-form hq-admin hidden"><input id="hq-plan-model-${machine}" placeholder="モデル名" onfocus="markHqEditing()"><input id="hq-plan-qty-${machine}" type="number" min="0" inputmode="numeric" placeholder="台数" onfocus="markHqEditing()"><button class="btn-purple btn-small" onclick="addHqMonthlyPlan('${machine}')">追加</button></div></div>`}
-async function addHqMonthlyPlan(machine){const model=document.getElementById(`hq-plan-model-${machine}`).value.trim(),qty=document.getElementById(`hq-plan-qty-${machine}`).value;if(!model||qty===""||Number(qty)<0){alert("モデル名と台数を入力してください");return}const row={machine_name:machine,plan_month:`${hqMonthStr()}-01`,model_name:model,planned_qty:Number(qty),sort_order:hqPlansForMachine(machine).length*10+10,updated_at:new Date().toISOString()};const r=await fetch(HQ_MONTHLY_API,{method:"POST",headers:headers(),body:JSON.stringify([row])});if(!r.ok){alert("月間予定追加エラー: "+await r.text());return}hqEditing=false;await loadHqSchedules(true)}
-async function editHqMonthlyPlan(id){if(!hqAdmin)return;const p=hqMonthlyPlans.find(x=>x.id===id);if(!p)return;const model=prompt("モデル名",p.model_name||"");if(model===null)return;const qty=prompt("予定台数",p.planned_qty??"");if(qty===null)return;if(!model.trim()||qty===""||Number(qty)<0){alert("モデル名と台数を正しく入力してください");return}const r=await fetch(`${HQ_MONTHLY_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({model_name:model.trim(),planned_qty:Number(qty),updated_at:new Date().toISOString()})});if(!r.ok){alert("月間予定修正エラー: "+await r.text());return}await loadHqSchedules(true)}
-async function cancelHqMonthlyPlan(id){if(!hqAdmin||!confirm("この月間予定を削除しますか？\n記録は取消状態で保存されます。"))return;const r=await fetch(`${HQ_MONTHLY_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({cancelled_at:new Date().toISOString(),updated_at:new Date().toISOString()})});if(!r.ok){alert("月間予定削除エラー: "+await r.text());return}await loadHqSchedules(true)}
+function drawHqMonthlyNote(machine){const note=hqNoteForMachine(machine),text=note?.memo_text||"";return `<div class="hq-monthly"><div class="hq-monthly-title">${hqYear}年${hqMonth}月　${machine} 自由メモ</div><div class="hq-monthly-text${text?"":" hq-monthly-empty"}">${text?esc(text):"メモなし"}</div><div class="hq-admin hidden"><textarea id="hq-note-${machine}" class="hq-monthly-editor" placeholder="今月のモデル、台数、注意事項などを自由に入力してください" oninput="markHqEditing()" onfocus="markHqEditing()">${esc(text)}</textarea><button class="btn-purple" style="width:100%" onclick="saveHqMonthlyNote('${machine}')">自由メモを保存</button></div></div>`}
+async function saveHqMonthlyNote(machine){if(!hqAdmin)return;const memo=document.getElementById(`hq-note-${machine}`).value||"";const row={machine_name:machine,plan_month:`${hqMonthStr()}-01`,memo_text:memo,updated_at:new Date().toISOString()};const r=await fetch(`${HQ_MONTHLY_NOTE_API}?on_conflict=machine_name,plan_month`,{method:"POST",headers:{...headers(),"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify([row])});if(!r.ok){alert("自由メモ保存エラー: "+await r.text());return}hqEditing=false;await loadHqSchedules(true);alert("自由メモを保存しました")}
 
 
 // material order management
