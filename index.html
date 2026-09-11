@@ -47,7 +47,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .hq-range.start{border-radius:8px 0 0 8px}.hq-range.middle{border-radius:0}.hq-range.end{border-radius:0 8px 8px 0;padding-right:12px}.hq-range.start.end{border-radius:8px}.hq-range.end:after{content:"";position:absolute;right:3px;top:7px;border-left:6px solid #fff;border-top:4px solid transparent;border-bottom:4px solid transparent}.hq-range.done{background:#64748b}.hq-range.cancelled{display:none}
 .hq-day-number{display:block;text-align:right;padding-right:3px;color:#334155}.hq-monthly{margin-top:14px;background:#f8fbff;border:2px solid var(--line);border-radius:16px;padding:13px}.hq-monthly-title{font-weight:900;color:var(--deep);margin-bottom:8px}.hq-monthly-text{white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;min-height:54px;font-size:17px;line-height:1.65;font-weight:800;color:#172554}.hq-monthly-empty{color:#94a3b8}.hq-monthly-editor{width:100%;min-height:130px;padding:13px;border:2px solid var(--blue);border-radius:13px;font-size:18px;line-height:1.6;font-weight:800;color:#0f172a;background:#fff;resize:vertical;margin:7px 0}.hq-legacy{margin:12px 0}.hq-legacy summary{cursor:pointer;font-weight:900;color:#5b21b6;padding:8px}
 .hq-schedule-modal label{display:block;font-weight:900;color:#334155;font-size:13px}.hq-schedule-modal select{width:100%;padding:12px;border:2px solid var(--line);border-radius:14px;font-size:17px;margin:6px 0 10px}.hq-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hq-modal-danger{margin-top:8px;width:100%}
-#hqApp{max-width:1380px}.hq-day{min-height:112px;padding:7px 4px;font-size:16px}.hq-range{min-height:28px;padding:6px 7px;font-size:12px;line-height:16px}.hq-range.end:after{top:10px}.hq-machine{padding:18px}.hq-calendar{gap:7px}
+.hq-day{min-height:156px;padding:7px 4px;font-size:16px}.hq-range{min-height:30px;padding:7px 7px;font-size:12px;line-height:16px}.hq-range.end:after{top:11px}.hq-color-choices{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:7px 0 13px}.hq-color-choice{height:46px;border:4px solid transparent;border-radius:12px;color:#fff;font-size:13px;font-weight:900;box-shadow:0 2px 6px rgba(15,23,42,.18)}.hq-color-choice.selected{border-color:#0f172a;transform:translateY(-1px);box-shadow:0 0 0 2px #fff,0 0 0 5px #0f172a}.hq-direct-add{width:100%;margin:9px 0 2px;font-size:17px;padding:13px}
 
 
 .setup-panel{background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px;margin:12px 0;box-shadow:0 4px 14px rgba(37,99,235,.08)}
@@ -101,7 +101,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .setup-edit input{width:100%;padding:9px;border:2px solid var(--line);border-radius:12px;margin:4px 0 8px;font-size:15px}
 
 @media(max-width:430px){.home-title{font-size:28px}.hq-day{min-height:46px;font-size:12px}.hq-chip{font-size:8px}.section-switch{display:grid;grid-template-columns:1fr}}
-@media(max-width:700px){#hqApp{max-width:100%}.hq-calendar{gap:2px}.hq-day{padding:3px 1px;min-height:76px;font-size:12px}.hq-range{min-height:22px;font-size:9px;line-height:13px;padding:4px 2px}.hq-range.end:after{top:7px}.hq-machine{padding:10px}.hq-monthly-editor{font-size:16px;min-height:110px}}
+@media(max-width:700px){.hq-calendar{gap:2px}.hq-day{padding:3px 1px;min-height:112px;font-size:12px}.hq-range{min-height:24px;font-size:9px;line-height:13px;padding:5px 2px}.hq-range.end:after{top:8px}.hq-color-choices{grid-template-columns:repeat(2,1fr)}.hq-monthly-editor{font-size:16px;min-height:110px}}
 
 
 .material-app .header{position:relative;top:auto}
@@ -395,6 +395,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
   <label>品名・モデル<input id="hqScheduleItem" placeholder="例: MPH table"></label>
   <div class="row"><label>開始日<input id="hqScheduleStart" type="date"></label><label>終了日<input id="hqScheduleEnd" type="date"></label></div>
   <label>予定台数（任意）<input id="hqScheduleQty" type="number" inputmode="numeric" min="0" placeholder="例: 20"></label>
+  <label>予定バーの色<div id="hqColorChoices" class="hq-color-choices"></div></label>
   <label>メモ（任意）<textarea id="hqScheduleMemo" placeholder="メモ"></textarea></label>
   <div class="hq-modal-actions"><button class="btn-light" onclick="closeHqScheduleModal()">閉じる</button><button class="btn-purple" onclick="saveHqScheduleModal()">保存</button></div>
   <button id="hqScheduleDeleteBtn" class="btn-red hq-modal-danger" onclick="cancelHqScheduleFromModal()">この予定を削除</button>
@@ -544,7 +545,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.33";
+const APP_VERSION="11.34";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -570,7 +571,8 @@ let materialAdmin=false, materialMasters=[], materialOrdersData=[], materialEven
 const HQ_MACHINES=["MPH","MPE","MVR40","MVR25","KNC"];
 let currentSection=localStorage.getItem("tajima_section")||"home";
 let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqMonthlyNotes=[], hqAdmin=false, hqEditing=false;
-let hqRangeDrag=null, hqSuppressClickUntil=0;
+const HQ_BAR_COLORS=[{name:"青",value:"#2563EB"},{name:"赤",value:"#DC2626"},{name:"緑",value:"#16A34A"},{name:"橙",value:"#EA580C"},{name:"紫",value:"#7C3AED"},{name:"青緑",value:"#0F766E"},{name:"桃",value:"#DB2777"},{name:"紺",value:"#1E3A8A"}];
+let hqRangeDrag=null, hqSuppressClickUntil=0, hqSelectedColor=HQ_BAR_COLORS[0].value;
 
 function monthStr(){return `${currentYear}-${String(currentMonth).padStart(2,"0")}`}
 function calMonthStr(){return `${calYear}-${String(calMonth).padStart(2,"0")}`}
@@ -953,6 +955,7 @@ async function loadHqSchedules(force=false){
 }
 function hqScheduleStart(s){return s.start_date||s.due_date||s.material_date}
 function hqScheduleEnd(s){return s.end_date||s.due_date||s.start_date||s.material_date}
+function hqScheduleColor(s){return HQ_BAR_COLORS.some(c=>c.value===String(s.bar_color||"").toUpperCase())?String(s.bar_color).toUpperCase():HQ_BAR_COLORS[0].value}
 function scheduleTouchesDate(s,date){const a=hqScheduleStart(s),b=hqScheduleEnd(s);return !!a&&a<=date&&b>=date}
 function hqItemsForMachine(machine){return hqSchedules.filter(s=>s.machine_name===machine&&!s.cancelled_at)}
 function hqNoteForMachine(machine){return hqMonthlyNotes.find(n=>n.machine_name===machine)||null}
@@ -965,7 +968,7 @@ function drawHq(){
     const card=document.createElement("div");
     card.className="hq-machine "+(expanded?"expanded":"");
     const active=schedules.filter(s=>s.status!=="完了").length;
-    card.innerHTML=`<div class="hq-top"><button class="toggle-btn" onclick="toggleHqMachine('${machine}')">${expanded?'▲':'▼'}</button><div class="hq-name">${machine}</div><div style="font-weight:900;color:#64748b">${active}件</div></div><div class="hq-details"><div class="hq-add-guide hq-admin hidden">日付を押したまま終了日まで動かすか、開始日をタップして終了日を入力すると、期間全体が自動でつながります。</div>${drawHqCalendar(machine,schedules)}${drawHqMonthlyNote(machine)}${drawHqList(machine,schedules)}</div>`;
+    card.innerHTML=`<div class="hq-top"><button class="toggle-btn" onclick="toggleHqMachine('${machine}')">${expanded?'▲':'▼'}</button><div class="hq-name">${machine}</div><div style="font-weight:900;color:#64748b">${active}件</div></div><div class="hq-details"><div class="hq-add-guide hq-admin hidden">ドラッグしなくても下のボタンから開始日・終了日を入力すると、期間全体が自動でつながります。</div><button class="btn-purple hq-direct-add hq-admin hidden" onclick="openHqScheduleModal('${machine}','${hqMonthStr()}-01','${hqMonthStr()}-01')">＋ 作業予定を入力</button>${drawHqCalendar(machine,schedules)}${drawHqMonthlyNote(machine)}${drawHqList(machine,schedules)}</div>`;
     hqMachines.appendChild(card);
   }
   hqModeApply();
@@ -978,7 +981,7 @@ function drawHqCalendar(machine,schedules){
   for(let d=1;d<=last;d++){
     const date=`${hqMonthStr()}-${String(d).padStart(2,"0")}`;
     const dayItems=schedules.filter(s=>scheduleTouchesDate(s,date)).sort((a,b)=>String(hqScheduleStart(a)).localeCompare(String(hqScheduleStart(b)))||Number(a.id)-Number(b.id));
-    const chips=dayItems.map(s=>{const start=hqScheduleStart(s),end=hqScheduleEnd(s);const pos=(date===start?" start":" middle")+(date===end?" end":"");const qty=s.planned_qty?` ${s.planned_qty}台`:"";return `<span class="hq-range${pos}${s.status==="完了"?" done":""}" title="${esc(s.item_name)}${qty}" onclick="event.stopPropagation();editHqSchedule(${s.id})">${date===start||start<hqMonthStr()+"-01"?esc(s.item_name)+qty:""}</span>`}).join("");
+    const chips=dayItems.map(s=>{const start=hqScheduleStart(s),end=hqScheduleEnd(s);const pos=(date===start?" start":" middle")+(date===end?" end":"");const qty=s.planned_qty?` ${s.planned_qty}台`:"";return `<span class="hq-range${pos}${s.status==="完了"?" done":""}" style="${s.status==="完了"?"":`background:${hqScheduleColor(s)}`}" title="${esc(s.item_name)}${qty}" onclick="event.stopPropagation();editHqSchedule(${s.id})">${date===start||start<hqMonthStr()+"-01"?esc(s.item_name)+qty:""}</span>`}).join("");
     html+=`<div class="hq-day${dayItems.length?" work":""}" data-hq-machine="${machine}" data-hq-date="${date}" onpointerdown="beginHqRange(event,'${machine}','${date}')" onclick="showHqDay('${machine}','${date}')"><span class="hq-day-number">${d}</span><div class="hq-range-stack">${chips}</div></div>`;
   }
   return html+"</div>";
@@ -1001,9 +1004,11 @@ function beginHqRange(e,machine,date){if(!hqAdmin||e.target.closest(".hq-range")
 window.addEventListener("pointermove",e=>{if(!hqRangeDrag||e.pointerId!==hqRangeDrag.pointerId)return;const el=document.elementFromPoint(e.clientX,e.clientY)?.closest?.("[data-hq-date]");if(el&&el.dataset.hqMachine===hqRangeDrag.machine){hqRangeDrag.end=el.dataset.hqDate;paintHqRangePreview()}});
 window.addEventListener("pointerup",e=>{if(!hqRangeDrag||e.pointerId!==hqRangeDrag.pointerId)return;const d=hqRangeDrag;hqRangeDrag=null;hqSuppressClickUntil=Date.now()+500;clearHqRangePreview();const start=d.start<d.end?d.start:d.end,end=d.start>d.end?d.start:d.end;openHqScheduleModal(d.machine,start,end)});
 function fillHqMachineSelect(selected){hqScheduleMachine.innerHTML=HQ_MACHINES.map(m=>`<option value="${m}"${m===selected?" selected":""}>${m}</option>`).join("")}
-function openHqScheduleModal(machine,start,end,s=null){if(!hqAdmin)return;fillHqMachineSelect(machine);hqScheduleId.value=s?.id||"";hqScheduleModalTitle.textContent=s?"作業予定を修正":"作業予定を追加";hqScheduleItem.value=s?.item_name||"";hqScheduleStart.value=start;hqScheduleEnd.value=end;hqScheduleQty.value=s?.planned_qty??"";hqScheduleMemo.value=s?.memo||"";hqScheduleDeleteBtn.style.display=s?"block":"none";hqScheduleModal.style.display="flex";hqEditing=true;setTimeout(()=>hqScheduleItem.focus(),50)}
+function renderHqColorChoices(){hqColorChoices.innerHTML=HQ_BAR_COLORS.map(c=>`<button type="button" class="hq-color-choice${c.value===hqSelectedColor?" selected":""}" style="background:${c.value}" onclick="selectHqColor('${c.value}')">${c.name}</button>`).join("")}
+function selectHqColor(color){if(!HQ_BAR_COLORS.some(c=>c.value===color))return;hqSelectedColor=color;renderHqColorChoices()}
+function openHqScheduleModal(machine,start,end,s=null){if(!hqAdmin)return;fillHqMachineSelect(machine);hqScheduleId.value=s?.id||"";hqScheduleModalTitle.textContent=s?"作業予定を修正":"作業予定を追加";hqScheduleItem.value=s?.item_name||"";hqScheduleStart.value=start;hqScheduleEnd.value=end;hqScheduleQty.value=s?.planned_qty??"";hqSelectedColor=hqScheduleColor(s||{});renderHqColorChoices();hqScheduleMemo.value=s?.memo||"";hqScheduleDeleteBtn.style.display=s?"block":"none";hqScheduleModal.style.display="flex";hqEditing=true;setTimeout(()=>hqScheduleItem.focus(),50)}
 function closeHqScheduleModal(){hqScheduleModal.style.display="none";hqEditing=false}
-async function saveHqScheduleModal(){if(!hqAdmin)return;const id=hqScheduleId.value;const item=hqScheduleItem.value.trim(),start=hqScheduleStart.value,end=hqScheduleEnd.value,qty=hqScheduleQty.value;if(!item||!start||!end){alert("品名・開始日・終了日を入力してください");return}if(start>end){alert("終了日は開始日以降にしてください");return}if(qty!==""&&Number(qty)<0){alert("予定台数は0以上で入力してください");return}const row={machine_name:hqScheduleMachine.value,item_name:item,start_date:start,end_date:end,due_date:end,planned_qty:qty===""?null:Number(qty),memo:hqScheduleMemo.value||"",status:"予定",updated_at:new Date().toISOString()};const url=id?`${HQ_API}?id=eq.${id}`:HQ_API;const r=await fetch(url,{method:id?"PATCH":"POST",headers:headers(),body:JSON.stringify(id?row:[row])});if(!r.ok){alert("保存エラー: "+await r.text());return}closeHqScheduleModal();await loadHqSchedules(true)}
+async function saveHqScheduleModal(){if(!hqAdmin)return;const id=hqScheduleId.value;const item=hqScheduleItem.value.trim(),start=hqScheduleStart.value,end=hqScheduleEnd.value,qty=hqScheduleQty.value;if(!item||!start||!end){alert("品名・開始日・終了日を入力してください");return}if(start>end){alert("終了日は開始日以降にしてください");return}if(qty!==""&&Number(qty)<0){alert("予定台数は0以上で入力してください");return}const row={machine_name:hqScheduleMachine.value,item_name:item,start_date:start,end_date:end,due_date:end,planned_qty:qty===""?null:Number(qty),bar_color:hqSelectedColor,memo:hqScheduleMemo.value||"",status:"予定",updated_at:new Date().toISOString()};const url=id?`${HQ_API}?id=eq.${id}`:HQ_API;const r=await fetch(url,{method:id?"PATCH":"POST",headers:headers(),body:JSON.stringify(id?row:[row])});if(!r.ok){alert("保存エラー: "+await r.text());return}closeHqScheduleModal();await loadHqSchedules(true)}
 async function bulkAddHqSchedules(){
   if(!hqAdmin)return;
   const text=(hqBulkText.value||"").trim();
