@@ -45,6 +45,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .hq-calendar.selecting .hq-day:not(.hq-empty){cursor:crosshair;touch-action:none}.hq-day.range-preview{background:#ddd6fe;border-color:#7c3aed}
 .hq-range-stack{margin-top:3px;display:grid;gap:2px}.hq-range{position:relative;display:block;background:#2563eb;color:#fff;min-height:20px;padding:3px 5px;font-size:10px;line-height:14px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .hq-range.start{border-radius:8px 0 0 8px}.hq-range.middle{border-radius:0}.hq-range.end{border-radius:0 8px 8px 0;padding-right:12px}.hq-range.start.end{border-radius:8px}.hq-range.end:after{content:"";position:absolute;right:3px;top:7px;border-left:6px solid #fff;border-top:4px solid transparent;border-bottom:4px solid transparent}.hq-range.done{background:#64748b}.hq-range.cancelled{display:none}
+.hq-range{display:flex;align-items:center;gap:4px}.hq-range-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}.hq-range-qty{flex:none;white-space:nowrap;font-size:11px;background:rgba(15,23,42,.22);border-radius:6px;padding:1px 3px}
 .hq-day-number{display:block;text-align:right;padding-right:3px;color:#334155}.hq-monthly{margin-top:14px;background:#f8fbff;border:2px solid var(--line);border-radius:16px;padding:13px}.hq-monthly-title{font-weight:900;color:var(--deep);margin-bottom:8px}.hq-monthly-text{white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;min-height:54px;font-size:17px;line-height:1.65;font-weight:800;color:#172554}.hq-monthly-empty{color:#94a3b8}.hq-monthly-editor{width:100%;min-height:130px;padding:13px;border:2px solid var(--blue);border-radius:13px;font-size:18px;line-height:1.6;font-weight:800;color:#0f172a;background:#fff;resize:vertical;margin:7px 0}.hq-legacy{margin:12px 0}.hq-legacy summary{cursor:pointer;font-weight:900;color:#5b21b6;padding:8px}
 .hq-schedule-modal label{display:block;font-weight:900;color:#334155;font-size:13px}.hq-schedule-modal select{width:100%;padding:12px;border:2px solid var(--line);border-radius:14px;font-size:17px;margin:6px 0 10px}.hq-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hq-modal-danger{margin-top:8px;width:100%}
 .hq-day{min-height:156px;padding:7px 4px;font-size:16px}.hq-range{min-height:30px;padding:7px 7px;font-size:12px;line-height:16px}.hq-range.end:after{top:11px}.hq-color-choices{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:7px 0 13px}.hq-color-choice{height:46px;border:4px solid transparent;border-radius:12px;color:#fff;font-size:13px;font-weight:900;box-shadow:0 2px 6px rgba(15,23,42,.18)}.hq-color-choice.selected{border-color:#0f172a;transform:translateY(-1px);box-shadow:0 0 0 2px #fff,0 0 0 5px #0f172a}.hq-direct-add{width:100%;margin:9px 0 2px;font-size:17px;padding:13px}
@@ -366,11 +367,6 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 <div id="hqApp" class="app" style="display:none">
   <div class="header">
     <h1>本社 機械別予定</h1>
-    <div class="month-row">
-      <button class="btn-light" onclick="changeHqMonth(-1)">◀ 前月</button>
-      <div id="hqMonthTitle" class="month-title"></div>
-      <button class="btn-light" onclick="changeHqMonth(1)">翌月 ▶</button>
-    </div>
     <div id="hqModeState" class="mode">閲覧モード</div>
   </div>
   <div class="section-switch">
@@ -545,7 +541,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.34";
+const APP_VERSION="11.35";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -573,6 +569,7 @@ let currentSection=localStorage.getItem("tajima_section")||"home";
 let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqMonthlyNotes=[], hqAdmin=false, hqEditing=false;
 const HQ_BAR_COLORS=[{name:"青",value:"#2563EB"},{name:"赤",value:"#DC2626"},{name:"緑",value:"#16A34A"},{name:"橙",value:"#EA580C"},{name:"紫",value:"#7C3AED"},{name:"青緑",value:"#0F766E"},{name:"桃",value:"#DB2777"},{name:"紺",value:"#1E3A8A"}];
 let hqRangeDrag=null, hqSuppressClickUntil=0, hqSelectedColor=HQ_BAR_COLORS[0].value;
+const hqMachineViews=Object.fromEntries(HQ_MACHINES.map(m=>[m,{year:hqYear,month:hqMonth}]));
 
 function monthStr(){return `${currentYear}-${String(currentMonth).padStart(2,"0")}`}
 function calMonthStr(){return `${calYear}-${String(calMonth).padStart(2,"0")}`}
@@ -941,61 +938,61 @@ function canHqAutoRefresh(){
   return !(a.closest && a.closest("#hqApp") && ["INPUT","TEXTAREA","SELECT"].includes(a.tagName));
 }
 function toggleHqAdmin(){if(hqAdmin){hqAdmin=false;hqModeApply();drawHq();return}const pw=prompt("本社管理者パスワードを入力してください");if(pw==="4564"){hqAdmin=true;hqModeApply();drawHq()}else if(pw!==null){alert("パスワードが違います")}}
-function changeHqMonth(d){if(hqEditing&&!confirm("入力中の内容があります。月を移動しますか？"))return;hqEditing=false;hqMonth+=d;if(hqMonth<=0){hqMonth=12;hqYear--}if(hqMonth>=13){hqMonth=1;hqYear++}loadHqSchedules()}
+function hqView(machine){return hqMachineViews[machine]}
+function hqViewMonthStr(machine){const v=hqView(machine);return `${v.year}-${String(v.month).padStart(2,"0")}`}
+function hqViewBounds(machine){const v=hqView(machine),from=`${hqViewMonthStr(machine)}-01`;let y=v.year,m=v.month+1;if(m===13){m=1;y++}return {from,to:`${y}-${String(m).padStart(2,"0")}-01`}}
+function changeHqMachineMonth(machine,d){if(hqEditing&&!confirm("入力中の内容があります。月を移動しますか？"))return;hqEditing=false;const v=hqView(machine);v.month+=d;if(v.month<=0){v.month=12;v.year--}if(v.month>=13){v.month=1;v.year++}loadHqSchedules(true)}
 async function loadHqSchedules(force=false){
   if(!force && hqEditing)return;
-  hqMonthTitle.textContent=`${hqYear}年${hqMonth}月`;
   if(!checkConfig()){alert("config.jsにPublishable keyを入れてください");return}
-  const from=`${hqMonthStr()}-01`;
-  let y=hqYear,m=hqMonth+1;if(m===13){m=1;y++}
-  const to=`${y}-${String(m).padStart(2,"0")}-01`;
+  const bounds=HQ_MACHINES.map(hqViewBounds),from=bounds.map(b=>b.from).sort()[0],to=bounds.map(b=>b.to).sort().at(-1);
   const url=`${HQ_API}?cancelled_at=is.null&start_date=lt.${to}&end_date=gte.${from}&select=*&order=start_date.asc,id.asc`;
-  const noteUrl=`${HQ_MONTHLY_NOTE_API}?plan_month=eq.${hqMonthStr()}-01&select=*&order=machine_name.asc`;
+  const noteUrl=`${HQ_MONTHLY_NOTE_API}?plan_month=gte.${from}&plan_month=lt.${to}&select=*&order=plan_month.asc,machine_name.asc`;
   try{[hqSchedules,hqMonthlyNotes]=await Promise.all([restGet(url),restGet(noteUrl)]);drawHq()}catch(e){alert("本社予定読み込みエラー: "+e.message)}
 }
-function hqScheduleStart(s){return s.start_date||s.due_date||s.material_date}
-function hqScheduleEnd(s){return s.end_date||s.due_date||s.start_date||s.material_date}
+function hqRowStartDate(s){return s.start_date||s.due_date||s.material_date}
+function hqRowEndDate(s){return s.end_date||s.due_date||s.start_date||s.material_date}
 function hqScheduleColor(s){return HQ_BAR_COLORS.some(c=>c.value===String(s.bar_color||"").toUpperCase())?String(s.bar_color).toUpperCase():HQ_BAR_COLORS[0].value}
-function scheduleTouchesDate(s,date){const a=hqScheduleStart(s),b=hqScheduleEnd(s);return !!a&&a<=date&&b>=date}
+function scheduleTouchesDate(s,date){const a=hqRowStartDate(s),b=hqRowEndDate(s);return !!a&&a<=date&&b>=date}
 function hqItemsForMachine(machine){return hqSchedules.filter(s=>s.machine_name===machine&&!s.cancelled_at)}
-function hqNoteForMachine(machine){return hqMonthlyNotes.find(n=>n.machine_name===machine)||null}
+function hqNoteForMachine(machine){return hqMonthlyNotes.find(n=>n.machine_name===machine&&n.plan_month===`${hqViewMonthStr(machine)}-01`)||null}
 function drawHq(){
-  hqMonthTitle.textContent=`${hqYear}年${hqMonth}月`;
   hqMachines.innerHTML="";
   for(const machine of HQ_MACHINES){
     const expanded=isHqExpanded(machine);
-    const schedules=hqItemsForMachine(machine);
+    const b=hqViewBounds(machine),schedules=hqItemsForMachine(machine).filter(s=>hqRowStartDate(s)<b.to&&hqRowEndDate(s)>=b.from),v=hqView(machine);
     const card=document.createElement("div");
     card.className="hq-machine "+(expanded?"expanded":"");
     const active=schedules.filter(s=>s.status!=="完了").length;
-    card.innerHTML=`<div class="hq-top"><button class="toggle-btn" onclick="toggleHqMachine('${machine}')">${expanded?'▲':'▼'}</button><div class="hq-name">${machine}</div><div style="font-weight:900;color:#64748b">${active}件</div></div><div class="hq-details"><div class="hq-add-guide hq-admin hidden">ドラッグしなくても下のボタンから開始日・終了日を入力すると、期間全体が自動でつながります。</div><button class="btn-purple hq-direct-add hq-admin hidden" onclick="openHqScheduleModal('${machine}','${hqMonthStr()}-01','${hqMonthStr()}-01')">＋ 作業予定を入力</button>${drawHqCalendar(machine,schedules)}${drawHqMonthlyNote(machine)}${drawHqList(machine,schedules)}</div>`;
+    card.innerHTML=`<div class="hq-top"><button class="toggle-btn" onclick="toggleHqMachine('${machine}')">${expanded?'▲':'▼'}</button><div class="hq-name">${machine}</div><div style="font-weight:900;color:#64748b">${active}件</div></div><div class="hq-details"><div class="month-row"><button class="btn-light" onclick="changeHqMachineMonth('${machine}',-1)">◀ 前月</button><div class="month-title">${v.year}年${v.month}月</div><button class="btn-light" onclick="changeHqMachineMonth('${machine}',1)">翌月 ▶</button></div><div class="hq-add-guide hq-admin hidden">ドラッグしなくても下のボタンから開始日・終了日を入力すると、期間全体が自動でつながります。</div><button class="btn-purple hq-direct-add hq-admin hidden" onclick="openHqScheduleModal('${machine}','${hqViewMonthStr(machine)}-01','${hqViewMonthStr(machine)}-01')">＋ 作業予定を入力</button>${drawHqCalendar(machine,schedules)}${drawHqMonthlyNote(machine)}${drawHqList(machine,schedules)}</div>`;
     hqMachines.appendChild(card);
   }
   hqModeApply();
 }
 function drawHqCalendar(machine,schedules){
+  const v=hqView(machine),monthKey=hqViewMonthStr(machine);
   const dows=["日","月","火","水","木","金","土"];
   let html=`<div class="hq-calendar${hqAdmin?" selecting":""}">${dows.map(d=>`<div class="hq-dow">${d}</div>`).join("")}`;
-  const first=new Date(hqYear,hqMonth-1,1),last=new Date(hqYear,hqMonth,0).getDate();
+  const first=new Date(v.year,v.month-1,1),last=new Date(v.year,v.month,0).getDate();
   for(let i=0;i<first.getDay();i++)html+=`<div class="hq-day hq-empty"></div>`;
   for(let d=1;d<=last;d++){
-    const date=`${hqMonthStr()}-${String(d).padStart(2,"0")}`;
-    const dayItems=schedules.filter(s=>scheduleTouchesDate(s,date)).sort((a,b)=>String(hqScheduleStart(a)).localeCompare(String(hqScheduleStart(b)))||Number(a.id)-Number(b.id));
-    const chips=dayItems.map(s=>{const start=hqScheduleStart(s),end=hqScheduleEnd(s);const pos=(date===start?" start":" middle")+(date===end?" end":"");const qty=s.planned_qty?` ${s.planned_qty}台`:"";return `<span class="hq-range${pos}${s.status==="完了"?" done":""}" style="${s.status==="完了"?"":`background:${hqScheduleColor(s)}`}" title="${esc(s.item_name)}${qty}" onclick="event.stopPropagation();editHqSchedule(${s.id})">${date===start||start<hqMonthStr()+"-01"?esc(s.item_name)+qty:""}</span>`}).join("");
+    const date=`${monthKey}-${String(d).padStart(2,"0")}`;
+    const dayItems=schedules.filter(s=>scheduleTouchesDate(s,date)).sort((a,b)=>String(hqRowStartDate(a)).localeCompare(String(hqRowStartDate(b)))||Number(a.id)-Number(b.id));
+    const chips=dayItems.map(s=>{const start=hqRowStartDate(s),end=hqRowEndDate(s);const pos=(date===start?" start":" middle")+(date===end?" end":"");const qty=s.planned_qty?`${s.planned_qty}台`:"";return `<span class="hq-range${pos}${s.status==="完了"?" done":""}" style="${s.status==="完了"?"":`background:${hqScheduleColor(s)}`}" title="${esc(s.item_name)}${qty?` ${qty}`:""}" onclick="event.stopPropagation();editHqSchedule(${s.id})"><span class="hq-range-name">${esc(s.item_name)}</span>${qty?`<b class="hq-range-qty">${qty}</b>`:""}</span>`}).join("");
     html+=`<div class="hq-day${dayItems.length?" work":""}" data-hq-machine="${machine}" data-hq-date="${date}" onpointerdown="beginHqRange(event,'${machine}','${date}')" onclick="showHqDay('${machine}','${date}')"><span class="hq-day-number">${d}</span><div class="hq-range-stack">${chips}</div></div>`;
   }
   return html+"</div>";
 }
 function drawHqList(machine,schedules){
   if(!schedules.length)return `<div class="hq-list"><div class="hq-item">予定なし</div></div>`;
-  return `<details class="hq-list"><summary>予定一覧 ${schedules.length}件</summary>`+schedules.map(s=>`<div class="hq-item" onclick="editHqSchedule(${s.id})"><b>${esc(s.item_name)}${s.planned_qty?`　${s.planned_qty}台`:""}</b><br>作業期間: ${hqScheduleStart(s)||"-"} ～ ${hqScheduleEnd(s)||"-"}<br>状態: ${s.status||"予定"}<br>${esc(s.memo||"")}<div class="hq-admin hidden" style="margin-top:8px"><button class="btn-green btn-small" onclick="event.stopPropagation();completeHqSchedule(${s.id})">完了</button> <button class="btn-red btn-small" onclick="event.stopPropagation();deleteHqSchedule(${s.id})">削除</button></div></div>`).join("")+`</details>`;
+  return `<details class="hq-list"><summary>予定一覧 ${schedules.length}件</summary>`+schedules.map(s=>`<div class="hq-item" onclick="editHqSchedule(${s.id})"><b>${esc(s.item_name)}${s.planned_qty?`　${s.planned_qty}台`:""}</b><br>作業期間: ${hqRowStartDate(s)||"-"} ～ ${hqRowEndDate(s)||"-"}<br>状態: ${s.status||"予定"}<br>${esc(s.memo||"")}<div class="hq-admin hidden" style="margin-top:8px"><button class="btn-green btn-small" onclick="event.stopPropagation();completeHqSchedule(${s.id})">完了</button> <button class="btn-red btn-small" onclick="event.stopPropagation();deleteHqSchedule(${s.id})">削除</button></div></div>`).join("")+`</details>`;
 }
 function showHqDay(machine,date){
   if(Date.now()<hqSuppressClickUntil)return;
   const list=hqItemsForMachine(machine).filter(s=>scheduleTouchesDate(s,date));
   if(!list.length){if(!hqAdmin)alert(`${machine} ${date}\n予定なし`);return}
   if(list.length===1&&hqAdmin){editHqSchedule(list[0].id);return}
-  alert(`${machine} ${date}\n\n`+list.map(s=>`${s.item_name}${s.planned_qty?` ${s.planned_qty}台`:""}\n作業期間: ${hqScheduleStart(s)} ～ ${hqScheduleEnd(s)}\n状態: ${s.status||"予定"}\n${s.memo||""}`).join("\n\n"));
+  alert(`${machine} ${date}\n\n`+list.map(s=>`${s.item_name}${s.planned_qty?` ${s.planned_qty}台`:""}\n作業期間: ${hqRowStartDate(s)} ～ ${hqRowEndDate(s)}\n状態: ${s.status||"予定"}\n${s.memo||""}`).join("\n\n"));
 }
 function hqDateBetween(date,a,b){return date>=(a<b?a:b)&&date<=(a>b?a:b)}
 function clearHqRangePreview(){document.querySelectorAll(".hq-day.range-preview").forEach(e=>e.classList.remove("range-preview"))}
@@ -1006,9 +1003,9 @@ window.addEventListener("pointerup",e=>{if(!hqRangeDrag||e.pointerId!==hqRangeDr
 function fillHqMachineSelect(selected){hqScheduleMachine.innerHTML=HQ_MACHINES.map(m=>`<option value="${m}"${m===selected?" selected":""}>${m}</option>`).join("")}
 function renderHqColorChoices(){hqColorChoices.innerHTML=HQ_BAR_COLORS.map(c=>`<button type="button" class="hq-color-choice${c.value===hqSelectedColor?" selected":""}" style="background:${c.value}" onclick="selectHqColor('${c.value}')">${c.name}</button>`).join("")}
 function selectHqColor(color){if(!HQ_BAR_COLORS.some(c=>c.value===color))return;hqSelectedColor=color;renderHqColorChoices()}
-function openHqScheduleModal(machine,start,end,s=null){if(!hqAdmin)return;fillHqMachineSelect(machine);hqScheduleId.value=s?.id||"";hqScheduleModalTitle.textContent=s?"作業予定を修正":"作業予定を追加";hqScheduleItem.value=s?.item_name||"";hqScheduleStart.value=start;hqScheduleEnd.value=end;hqScheduleQty.value=s?.planned_qty??"";hqSelectedColor=hqScheduleColor(s||{});renderHqColorChoices();hqScheduleMemo.value=s?.memo||"";hqScheduleDeleteBtn.style.display=s?"block":"none";hqScheduleModal.style.display="flex";hqEditing=true;setTimeout(()=>hqScheduleItem.focus(),50)}
+function openHqScheduleModal(machine,start,end,s=null){if(!hqAdmin)return;fillHqMachineSelect(machine);document.getElementById("hqScheduleId").value=s?.id||"";hqScheduleModalTitle.textContent=s?"作業予定を修正":"作業予定を追加";hqScheduleItem.value=s?.item_name||"";document.getElementById("hqScheduleStart").value=start;document.getElementById("hqScheduleEnd").value=end;hqScheduleQty.value=s?.planned_qty??"";hqSelectedColor=hqScheduleColor(s||{});renderHqColorChoices();hqScheduleMemo.value=s?.memo||"";hqScheduleDeleteBtn.style.display=s?"block":"none";hqScheduleModal.style.display="flex";hqEditing=true;setTimeout(()=>hqScheduleItem.focus(),50)}
 function closeHqScheduleModal(){hqScheduleModal.style.display="none";hqEditing=false}
-async function saveHqScheduleModal(){if(!hqAdmin)return;const id=hqScheduleId.value;const item=hqScheduleItem.value.trim(),start=hqScheduleStart.value,end=hqScheduleEnd.value,qty=hqScheduleQty.value;if(!item||!start||!end){alert("品名・開始日・終了日を入力してください");return}if(start>end){alert("終了日は開始日以降にしてください");return}if(qty!==""&&Number(qty)<0){alert("予定台数は0以上で入力してください");return}const row={machine_name:hqScheduleMachine.value,item_name:item,start_date:start,end_date:end,due_date:end,planned_qty:qty===""?null:Number(qty),bar_color:hqSelectedColor,memo:hqScheduleMemo.value||"",status:"予定",updated_at:new Date().toISOString()};const url=id?`${HQ_API}?id=eq.${id}`:HQ_API;const r=await fetch(url,{method:id?"PATCH":"POST",headers:headers(),body:JSON.stringify(id?row:[row])});if(!r.ok){alert("保存エラー: "+await r.text());return}closeHqScheduleModal();await loadHqSchedules(true)}
+async function saveHqScheduleModal(){if(!hqAdmin)return;const id=document.getElementById("hqScheduleId").value;const item=hqScheduleItem.value.trim(),start=document.getElementById("hqScheduleStart").value,end=document.getElementById("hqScheduleEnd").value,qty=hqScheduleQty.value;if(!item||!start||!end){alert("品名・開始日・終了日を入力してください");return}if(start>end){alert("終了日は開始日以降にしてください");return}if(qty!==""&&Number(qty)<0){alert("予定台数は0以上で入力してください");return}const row={machine_name:hqScheduleMachine.value,item_name:item,start_date:start,end_date:end,due_date:end,planned_qty:qty===""?null:Number(qty),bar_color:hqSelectedColor,memo:hqScheduleMemo.value||"",status:"予定",updated_at:new Date().toISOString()};const url=id?`${HQ_API}?id=eq.${id}`:HQ_API;const r=await fetch(url,{method:id?"PATCH":"POST",headers:headers(),body:JSON.stringify(id?row:[row])});if(!r.ok){alert("保存エラー: "+await r.text());return}closeHqScheduleModal();await loadHqSchedules(true)}
 async function bulkAddHqSchedules(){
   if(!hqAdmin)return;
   const text=(hqBulkText.value||"").trim();
@@ -1039,7 +1036,7 @@ function editHqSchedule(id){
   if(!hqAdmin)return;
   const s=hqSchedules.find(x=>x.id===id);
   if(!s)return;
-  openHqScheduleModal(s.machine_name,hqScheduleStart(s),hqScheduleEnd(s),s);
+  openHqScheduleModal(s.machine_name,hqRowStartDate(s),hqRowEndDate(s),s);
 }
 async function updateHqSchedule(id,row){
   const r=await fetch(`${HQ_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify(row)});
@@ -1061,8 +1058,8 @@ async function deleteHqSchedule(id){
 }
 async function cancelHqScheduleFromModal(){const id=Number(hqScheduleId.value);if(!id)return;closeHqScheduleModal();await deleteHqSchedule(id)}
 
-function drawHqMonthlyNote(machine){const note=hqNoteForMachine(machine),text=note?.memo_text||"";return `<div class="hq-monthly"><div class="hq-monthly-title">${hqYear}年${hqMonth}月　${machine} 自由メモ</div><div class="hq-monthly-text${text?"":" hq-monthly-empty"}">${text?esc(text):"メモなし"}</div><div class="hq-admin hidden"><textarea id="hq-note-${machine}" class="hq-monthly-editor" placeholder="今月のモデル、台数、注意事項などを自由に入力してください" oninput="markHqEditing()" onfocus="markHqEditing()">${esc(text)}</textarea><button class="btn-purple" style="width:100%" onclick="saveHqMonthlyNote('${machine}')">自由メモを保存</button></div></div>`}
-async function saveHqMonthlyNote(machine){if(!hqAdmin)return;const memo=document.getElementById(`hq-note-${machine}`).value||"";const row={machine_name:machine,plan_month:`${hqMonthStr()}-01`,memo_text:memo,updated_at:new Date().toISOString()};const r=await fetch(`${HQ_MONTHLY_NOTE_API}?on_conflict=machine_name,plan_month`,{method:"POST",headers:{...headers(),"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify([row])});if(!r.ok){alert("自由メモ保存エラー: "+await r.text());return}hqEditing=false;await loadHqSchedules(true);alert("自由メモを保存しました")}
+function drawHqMonthlyNote(machine){const note=hqNoteForMachine(machine),text=note?.memo_text||"",v=hqView(machine);return `<div class="hq-monthly"><div class="hq-monthly-title">${v.year}年${v.month}月　${machine} 自由メモ</div><div class="hq-monthly-text${text?"":" hq-monthly-empty"}">${text?esc(text):"メモなし"}</div><div class="hq-admin hidden"><textarea id="hq-note-${machine}" class="hq-monthly-editor" placeholder="今月のモデル、台数、注意事項などを自由に入力してください" oninput="markHqEditing()" onfocus="markHqEditing()">${esc(text)}</textarea><button class="btn-purple" style="width:100%" onclick="saveHqMonthlyNote('${machine}')">自由メモを保存</button></div></div>`}
+async function saveHqMonthlyNote(machine){if(!hqAdmin)return;const memo=document.getElementById(`hq-note-${machine}`).value||"";const row={machine_name:machine,plan_month:`${hqViewMonthStr(machine)}-01`,memo_text:memo,updated_at:new Date().toISOString()};const r=await fetch(`${HQ_MONTHLY_NOTE_API}?on_conflict=machine_name,plan_month`,{method:"POST",headers:{...headers(),"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify([row])});if(!r.ok){alert("自由メモ保存エラー: "+await r.text());return}hqEditing=false;await loadHqSchedules(true);alert("自由メモを保存しました")}
 
 
 // material order management
