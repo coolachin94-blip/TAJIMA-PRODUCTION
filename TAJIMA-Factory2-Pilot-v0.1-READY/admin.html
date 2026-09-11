@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 第2工場 管理 v1.6</title><link rel="stylesheet" href="common.css">
+<title>TAJIMA 第2工場 管理 v1.7</title><link rel="stylesheet" href="common.css">
 <style>
 .wrap{max-width:1500px}.hidden{display:none!important}.nav{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.nav .btn{min-height:48px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -36,6 +36,7 @@
 .process-box{position:relative;padding-top:30px}.process-badge{position:absolute;left:8px;top:7px;font-size:12px;font-weight:900;background:#102b4e;color:#fff;border-radius:7px;padding:3px 8px}.order-btns{display:flex;gap:5px;flex:0 0 auto}.order-btns .btn{min-width:42px;padding:7px}
 .shape-row{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.shape-btn{flex:0 0 auto}.shape-btn.selected{background:#102b4e;color:#fff;border-color:#102b4e}.history-machines{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.history-machines .btn.active{background:#102b4e;color:#fff;border-color:#102b4e}
 .ship-products{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0 12px}.ship-products .btn.active{background:#102b4e;color:#fff;border-color:#102b4e}.cancel-btn{border-color:#fca5a5!important;color:#b91c1c!important;background:#fff7f7!important}
+.ship-ready-sort{display:flex;gap:7px;align-items:center;margin:8px 0}.ship-ready-sort .btn.active{background:#102b4e;color:#fff;border-color:#102b4e}
 .nav .btn.active-nav{background:#2563eb!important;color:#fff!important;border-color:#2563eb!important;box-shadow:0 2px 8px rgba(37,99,235,.22)}
 .selectable-row{cursor:pointer;transition:.12s ease;border:2px solid #dbe3ec}.selectable-row:hover{border-color:#93c5fd;background:#f8fbff}.selectable-row.selected{border-color:#2563eb;background:#eff6ff;box-shadow:inset 0 0 0 1px #2563eb}.select-mark{display:inline-flex;align-items:center;justify-content:center;flex:0 0 24px;width:24px;height:24px;min-width:24px;border:2px solid #94a3b8;border-radius:6px;font-weight:900;color:transparent;background:#fff}.selectable-row.selected .select-mark{border-color:#2563eb;background:#2563eb;color:#fff}.bulk-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:10px 0}.bulk-count{font-weight:900;color:#1e3a8a}.bulk-danger{background:#dc2626!important;color:#fff!important;border-color:#dc2626!important}.bulk-danger:disabled,.bulk-primary:disabled{opacity:.45;cursor:not-allowed}.bulk-primary{background:#2563eb!important;color:#fff!important;border-color:#2563eb!important}
 .update-note{border-left:5px solid #2563eb;background:#eff6ff}.update-note summary{cursor:pointer;font-weight:900;color:#1e3a8a}.update-note ul{margin:8px 0 0;padding-left:22px}.assignment-product{border:1px solid #dbe3ec;border-radius:10px;padding:10px;margin-top:9px}.assignment-processes{display:flex;gap:7px;flex-wrap:wrap;margin-top:7px}.assignment-processes label{cursor:pointer}.history-t-filter{display:flex;align-items:center;gap:7px;margin-top:10px}.history-t-filter input{width:120px;min-height:42px;padding:8px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}
@@ -44,7 +45,7 @@
 .worker-row{display:flex;align-items:center;gap:8px}.worker-row .fc{flex:1}.check-ok{color:#15803d;font-weight:900}.check-wait{color:#b45309;font-weight:900}.cancelled-log{opacity:.72;background:#f8fafc;text-decoration:none}.cancel-tag{background:#fee2e2;color:#b91c1c}.worker-tag{background:#dcfce7;color:#166534}.worker-assign-list{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.worker-assign-list label{cursor:pointer}.history-types,.history-filters{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.history-types .btn.active{background:#2563eb;color:#fff;border-color:#2563eb}.history-filters>*{min-width:130px;flex:1}.history-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.history-summary .box{text-align:center}.history-date{margin:10px 0;border:1px solid #dbe3ec;border-radius:11px;background:#fff}.history-date>summary{cursor:pointer;padding:12px;font-weight:900;color:#102b4e}.history-date-body{padding:0 12px 10px}.inactive-machine{opacity:.7;background:#f8fafc}@media(max-width:750px){.history-summary{grid-template-columns:repeat(2,1fr)}}
 
 </style></head><body>
-<div class="top"><b>TAJIMA 第2工場 管理</b><div class="top-actions"><a class="machine-launch-btn" href="index.html">各号機 タブレット画面へ</a><span>PILOT v1.6</span></div></div>
+<div class="top"><b>TAJIMA 第2工場 管理</b><div class="top-actions"><a class="machine-launch-btn" href="index.html">各号機 タブレット画面へ</a><span>PILOT v1.7</span></div></div>
 <div class="wrap"><div id="err" class="card alert hidden"></div>
 <div class="nav no-print">
 <button class="btn" data-nav="dash" onclick="view('dash')">ダッシュボード</button><button class="btn" data-nav="machines" onclick="view('machines')">機械・工具管理</button>
@@ -53,7 +54,7 @@
 <button class="btn" data-nav="progress" onclick="view('progress')">工程進捗</button>
 <button class="btn" data-nav="workers" onclick="view('workers')">作業者・工具点検</button>
 <button class="btn" data-nav="history-work" onclick="openHistory('work')">作業履歴</button><button class="btn" data-nav="history-tool" onclick="openHistory('tool')">工具履歴</button><button class="btn" data-nav="trace" onclick="view('trace')">品番履歴・印刷</button></div>
-<details class="card update-note no-print"><summary>更新内容　PILOT v1.6</summary><ul><li>出荷カレンダーで過去・今日・未来の出荷日を選択可能</li><li>日別出荷履歴に品番の昇順・降順切替を追加</li><li>タブレット品番に前工程の完了・未完了を表示</li></ul></details>
+<details class="card update-note no-print"><summary>更新内容　PILOT v1.7</summary><ul><li>タブレットで品番を押すと工程状況を大きく表示</li><li>工程番号を省き、工程名と〇・✕だけを表示</li><li>出荷対象品番に昇順・降順の切替を追加</li></ul></details>
 
 <section id="dash"><div class="grid3"><div class="card"><div class="muted">稼働機械</div><div id="dMachines" class="stat">-</div></div><div class="card"><div class="muted">工具注意</div><div id="dWarnings" class="stat">-</div></div><div class="card"><div class="muted">本日の作業登録</div><div id="dToday" class="stat">-</div></div></div>
 <div class="card"><div class="title">機械状況・工具情報</div><div id="machineDash" class="grid3"></div></div>
@@ -84,6 +85,7 @@
     <div class="muted" style="margin-bottom:8px">カレンダーで出荷日を選び、最終工程が完了した品番を出荷登録します。</div>
     <div id="shipRegisterDate" class="ship-register-date"></div>
     <div id="shipProducts" class="ship-products"></div>
+    <div class="ship-ready-sort"><b>品番順</b><button id="shipReadyAscBtn" class="btn" onclick="setShipReadySort('asc')">昇順 ▲</button><button id="shipReadyDescBtn" class="btn" onclick="setShipReadySort('desc')">降順 ▼</button></div>
     <div class="bulk-bar"><div id="shipSelectedCount" class="bulk-count">選択 0件</div><div><button class="btn" onclick="clearShipSelection()">選択解除</button> <button id="bulkShipBtn" class="btn bulk-primary" onclick="shipSelected()" disabled>選択した品番を出荷</button></div></div>
     <div id="shipList"></div>
   </div>
@@ -118,7 +120,7 @@ const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY,H={"apikey"
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])),dt=s=>s?new Date(s).toLocaleString("ja-JP"):"";
 let machines=[],inactiveMachines=[],products=[],processes=[],routes=[],items=[],logs=[],cancelledLogs=[],tools=[],toolLogs=[],shipments=[],shapes=[],machineProcessAssignments=[],toolProcessAssignments=[],toolUsageLogs=[],workers=[],machineWorkerAssignments=[],dailyToolChecks=[],importRows=[];
 let selectedArrivalShape=null,historyType="work",historyMachine="all";
-let shipViewDate=new Date(),shipSelectedDate=new Date(),shipProduct="all",shipDaySort="asc";
+let shipViewDate=new Date(),shipSelectedDate=new Date(),shipProduct="all",shipDaySort="asc",shipReadySort="asc";
 let selectedArrivalIds=new Set(),selectedShipItemIds=new Set(),currentView="dash",arrivalProductFilter="all",arrivalShapeFilter="all";
 let progressProduct=null,toolAssignProduct=null,toolFeatureReady=true;
 async function api(p,o={}){let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});if(!r.ok)throw Error(await r.text());let t=await r.text();return t?JSON.parse(t):[]}
@@ -314,10 +316,12 @@ function renderShippingFilters(){
 function setShipProduct(v){shipProduct=v;renderShippingFilters();renderShipping();renderShippingHistory()}
 function shipProductMatch(item){return shipProduct==='all'||Number(item?.product_id)===Number(shipProduct)}
 function shippingReadyItems(){let finals=processes.filter(x=>x.is_final);return activeItems().filter(i=>shipProductMatch(i)&&!i.shipped&&finals.some(p=>p.product_id==i.product_id&&done(i.id,p.id)))}
+function setShipReadySort(v){shipReadySort=v==="desc"?"desc":"asc";renderShipping()}
 function renderShipping(){
  renderShippingFilters();
- let a=shippingReadyItems();
+ let a=shippingReadyItems().sort((x,y)=>{const c=String(x.part_no||"").localeCompare(String(y.part_no||""),"ja",{numeric:true,sensitivity:"base"});return shipReadySort==="asc"?c:-c});
  selectedShipItemIds=new Set([...selectedShipItemIds].filter(id=>a.some(i=>i.id==id)));
+ if($("shipReadyAscBtn"))$("shipReadyAscBtn").classList.toggle("active",shipReadySort==="asc");if($("shipReadyDescBtn"))$("shipReadyDescBtn").classList.toggle("active",shipReadySort==="desc");
  const sd=shipSelectedDate;if($("shipRegisterDate"))$("shipRegisterDate").textContent=`出荷日：${sd.getFullYear()}年${sd.getMonth()+1}月${sd.getDate()}日（右のカレンダーで変更）`;
  $("shipList").innerHTML=a.map(i=>{const sel=selectedShipItemIds.has(i.id);return `<div class="box row selectable-row ${sel?'selected':''}" onclick="toggleShipSelection(${i.id})"><span class="select-mark">✓</span><b>${esc(i.f2_products?.product_name)} / ${i.f2_shapes?.shape_name?`<span class="tag">${esc(i.f2_shapes.shape_name)}型</span> `:""}${esc(i.part_no)}</b></div>`}).join("")||"出荷可能品なし";
  updateShipBulkBar();
