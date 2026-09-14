@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAJIMA 第2工場 管理 v1.7</title><link rel="stylesheet" href="common.css">
+<title>TAJIMA 第2工場 管理 v1.8</title><link rel="stylesheet" href="common.css">
 <style>
 .wrap{max-width:1500px}.hidden{display:none!important}.nav{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.nav .btn{min-height:48px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -45,7 +45,7 @@
 .worker-row{display:flex;align-items:center;gap:8px}.worker-row .fc{flex:1}.check-ok{color:#15803d;font-weight:900}.check-wait{color:#b45309;font-weight:900}.cancelled-log{opacity:.72;background:#f8fafc;text-decoration:none}.cancel-tag{background:#fee2e2;color:#b91c1c}.worker-tag{background:#dcfce7;color:#166534}.worker-assign-list{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.worker-assign-list label{cursor:pointer}.history-types,.history-filters{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.history-types .btn.active{background:#2563eb;color:#fff;border-color:#2563eb}.history-filters>*{min-width:130px;flex:1}.history-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.history-summary .box{text-align:center}.history-date{margin:10px 0;border:1px solid #dbe3ec;border-radius:11px;background:#fff}.history-date>summary{cursor:pointer;padding:12px;font-weight:900;color:#102b4e}.history-date-body{padding:0 12px 10px}.inactive-machine{opacity:.7;background:#f8fafc}@media(max-width:750px){.history-summary{grid-template-columns:repeat(2,1fr)}}
 
 </style></head><body>
-<div class="top"><b>TAJIMA 第2工場 管理</b><div class="top-actions"><a class="machine-launch-btn" href="index.html">各号機 タブレット画面へ</a><span>PILOT v1.7</span></div></div>
+<div class="top"><b>TAJIMA 第2工場 管理</b><div class="top-actions"><a class="machine-launch-btn" href="index.html">各号機 タブレット画面へ</a><span>PILOT v1.8</span></div></div>
 <div class="wrap"><div id="err" class="card alert hidden"></div>
 <div class="nav no-print">
 <button class="btn" data-nav="dash" onclick="view('dash')">ダッシュボード</button><button class="btn" data-nav="machines" onclick="view('machines')">機械・工具管理</button>
@@ -54,7 +54,7 @@
 <button class="btn" data-nav="progress" onclick="view('progress')">工程進捗</button>
 <button class="btn" data-nav="workers" onclick="view('workers')">作業者・工具点検</button>
 <button class="btn" data-nav="history-work" onclick="openHistory('work')">作業履歴</button><button class="btn" data-nav="history-tool" onclick="openHistory('tool')">工具履歴</button><button class="btn" data-nav="trace" onclick="view('trace')">品番履歴・印刷</button></div>
-<details class="card update-note no-print"><summary>更新内容　PILOT v1.7</summary><ul><li>タブレットで品番を押すと工程状況を大きく表示</li><li>工程番号を省き、工程名と〇・✕だけを表示</li><li>出荷対象品番に昇順・降順の切替を追加</li></ul></details>
+<details class="card update-note no-print"><summary>更新内容　PILOT v1.8</summary><ul><li>タブレットの工具管理に担当製品・工程の絞り込みを追加</li><li>工程を選ぶと、その工程に登録された工具だけを表示</li><li>「すべて」で従来どおり全工具を表示</li></ul></details>
 
 <section id="dash"><div class="grid3"><div class="card"><div class="muted">稼働機械</div><div id="dMachines" class="stat">-</div></div><div class="card"><div class="muted">工具注意</div><div id="dWarnings" class="stat">-</div></div><div class="card"><div class="muted">本日の作業登録</div><div id="dToday" class="stat">-</div></div></div>
 <div class="card"><div class="title">機械状況・工具情報</div><div id="machineDash" class="grid3"></div></div>

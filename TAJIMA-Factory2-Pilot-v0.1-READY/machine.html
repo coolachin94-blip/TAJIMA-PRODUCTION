@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>TAJIMA 第2工場 現場タブレット v1.7</title>
+<title>TAJIMA 第2工場 現場タブレット v1.8</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -107,13 +107,14 @@
   .register-big{width:100%;min-height:88px;font-size:26px}
   .worker-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}.worker-btn{min-height:62px;font-size:19px;font-weight:900}.worker-btn.selected{background:#2563eb;color:#fff;border-color:#2563eb}.pull-indicator{position:fixed;top:8px;left:50%;transform:translate(-50%,-70px);z-index:50;background:#102b4e;color:#fff;border-radius:999px;padding:10px 18px;font-weight:900;transition:transform .18s}.pull-indicator.show{transform:translate(-50%,0)}.undo-bar{position:fixed;left:10px;right:10px;bottom:10px;max-width:760px;margin:auto;z-index:25;background:#fff;border:2px solid #2563eb;border-radius:15px;padding:13px;box-shadow:0 10px 30px #0004}.undo-row{display:flex;gap:10px;align-items:center}.undo-row>div{flex:1}.daily-overlay{position:fixed;inset:0;z-index:40;background:rgba(15,23,42,.72);display:flex;align-items:center;justify-content:center;padding:16px}.daily-card{width:min(720px,100%);background:#fff;border-radius:20px;padding:22px;box-shadow:0 20px 55px #0006}.daily-title{font-size:28px;font-weight:900;color:#102b4e;text-align:center}.daily-worker-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.daily-confirm{width:100%;min-height:76px;font-size:23px}.tool-check-banner{width:100%;min-height:86px;margin-bottom:12px;border:2px solid #2563eb;background:#eff6ff;color:#102b4e;font-size:21px;font-weight:900}.tool-check-banner.ready{background:#2563eb;color:#fff}.tool-check-banner:disabled{opacity:1;cursor:default;border-color:#86efac;background:#f0fdf4;color:#166534}.daily-close{width:100%;margin-top:10px}
   .item-check-title{font-size:30px;font-weight:900;color:#102b4e;text-align:center}.item-check-sub{font-size:21px;font-weight:900;text-align:center;margin:6px 0 16px}.item-process-list{display:grid;gap:10px;max-height:52vh;overflow:auto}.item-process-row{display:flex;align-items:center;justify-content:space-between;gap:14px;border:2px solid #dbe3ec;border-radius:14px;padding:15px 18px;font-size:22px;font-weight:900}.item-process-mark{flex:0 0 48px;text-align:center;font-size:28px}.item-process-row.done{background:#f0fdf4;border-color:#86efac;color:#166534}.item-process-row.missing{background:#fff7f7;border-color:#fca5a5;color:#b91c1c}.item-check-actions{display:grid;grid-template-columns:1fr 1.5fr;gap:10px;margin-top:18px}.item-check-actions .btn{min-height:72px;font-size:21px}
+  .tool-process-filters{display:flex;gap:9px;overflow-x:auto;padding:4px 0 10px;-webkit-overflow-scrolling:touch}.tool-process-filter{flex:0 0 auto;min-height:54px;padding:11px 15px;font-size:17px;font-weight:900;white-space:nowrap}.tool-process-filter.active{background:#2563eb;color:#fff;border-color:#2563eb}.tool-filter-empty{padding:18px;text-align:center;font-size:18px;font-weight:900;color:#64748b}
   @media(max-width:800px){.process-grid{grid-template-columns:repeat(2,1fr)}.worker-grid,.daily-worker-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 <div class="top">
   <div><b>TAJIMA 第2工場　<span id="machineNameTop">1号機</span></b><div class="muted" style="color:#cbd5e1">現場タブレット</div></div>
-  <span>PILOT v1.7</span>
+  <span>PILOT v1.8</span>
 </div>
 <div id="pullIndicator" class="pull-indicator">↓ 引っ張って更新</div>
 
@@ -132,6 +133,8 @@
     </div>
     <button id="toolCheckBanner" class="btn tool-check-banner" onclick="openDailyToolCheck()"></button>
     <div class="card">
+      <div class="usage-label">担当製品・工程</div>
+      <div id="toolProcessFilters" class="tool-process-filters"></div>
       <div id="toolRangeTitle" class="title">工具一覧</div>
       <div class="muted">工具名はその場で入力・変更。T番号を押すと交換・移動などのクイック登録が開きます。</div>
       <div class="toolbar" style="margin-top:12px">
@@ -189,7 +192,7 @@ const Q=new URLSearchParams(location.search),M=Number(Q.get("machine")||1);
 const U=window.TAJIMA_SUPABASE_URL,K=window.TAJIMA_SUPABASE_ANON_KEY;
 let MACHINE_NAME=M+"号機",MACHINE_SLOTS=80;
 const H={"apikey":K,"Authorization":"Bearer "+K,"Content-Type":"application/json","Prefer":"return=representation"};
-let toolData=[],toolLogs=[],sel=null,products=[],processMaster=[],allProcessMaster=[],processRoutes=[],processItems=[],processLogs=[],machineProcessAssignments=[],toolProcessAssignments=[],toolUsageLogs=[],workers=[],machineWorkerAssignments=[],dailyToolChecks=[],chosenProduct=null,chosenProcess=null,chosenItem=null,pendingItemId=null,selectedWorkWorker=null,selectedDailyWorker=null,lastRegistered=null,undoTimer=null,pullStart=null;
+let toolData=[],toolLogs=[],sel=null,products=[],processMaster=[],allProcessMaster=[],processRoutes=[],processItems=[],processLogs=[],machineProcessAssignments=[],toolProcessAssignments=[],toolUsageLogs=[],workers=[],machineWorkerAssignments=[],dailyToolChecks=[],chosenProduct=null,chosenProcess=null,chosenItem=null,pendingItemId=null,selectedWorkWorker=null,selectedDailyWorker=null,lastRegistered=null,undoTimer=null,pullStart=null,selectedToolProcess="all";
 
 async function api(p,o={}){
   let r=await fetch(U+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});
@@ -246,13 +249,24 @@ async function load(){
     if(machineWorkerAssignments.length){const allowed=new Set(machineWorkerAssignments.map(x=>Number(x.worker_id)));workers=workers.filter(x=>allowed.has(Number(x.id)))}
     if(machineProcessAssignments.length){const assigned=new Set(machineProcessAssignments.map(x=>Number(x.process_id)));processMaster=processMaster.filter(x=>assigned.has(Number(x.id)));products=products.filter(x=>processMaster.some(p=>p.product_id==x.id))}
     document.getElementById("toolRangeTitle").textContent=`T1〜T${MACHINE_SLOTS} 工具一覧`;
-    renderTools(); renderProductButtons();renderToolCheckBanner();
+    renderToolProcessFilters();renderTools(); renderProductButtons();renderToolCheckBanner();
   }catch(e){fail(e)}
 }
+function renderToolProcessFilters(){
+  const box=document.getElementById("toolProcessFilters");
+  if(!box)return;
+  if(selectedToolProcess!=="all"&&!processMaster.some(x=>Number(x.id)===Number(selectedToolProcess)))selectedToolProcess="all";
+  box.innerHTML=`<button class="btn tool-process-filter ${selectedToolProcess==="all"?"active":""}" onclick="setToolProcessFilter('all')">すべて</button>`+processMaster.map(p=>{const product=products.find(x=>x.id==p.product_id);return `<button class="btn tool-process-filter ${Number(selectedToolProcess)===Number(p.id)?"active":""}" onclick="setToolProcessFilter(${p.id})">${esc(product?.product_name||"")}｜${esc(p.process_name)}</button>`}).join("");
+}
+function setToolProcessFilter(processId){selectedToolProcess=processId==="all"?"all":Number(processId);renderToolProcessFilters();renderTools()}
 function renderTools(){
   let q=document.getElementById("search").value.trim().toLowerCase();
   let rows=toolData.filter(x=>(`t${x.t_no} ${x.tool_name||""}`).toLowerCase().includes(q));
-  document.getElementById("toolList").innerHTML=rows.map(x=>{
+  if(selectedToolProcess!=="all"){
+    const linkedIds=new Set(toolProcessAssignments.filter(x=>Number(x.process_id)===Number(selectedToolProcess)).map(x=>Number(x.tool_id)));
+    rows=rows.filter(x=>linkedIds.has(Number(x.id)));
+  }
+  document.getElementById("toolList").innerHTML=rows.length?rows.map(x=>{
     let away=x.current_machine_no!=M;
     let status=x.attention?"⚠ 注意あり":away?`${x.current_machine_no}号機で使用中`:"正常";
     let cls=x.attention?"attn":away?"away":"";
@@ -267,7 +281,7 @@ function renderTools(){
       <td>${lastHtml}</td>
       <td><span class="status ${sc}">${esc(status)}</span></td>
     </tr>`;
-  }).join("");
+  }).join(""):`<tr><td colspan="4"><div class="tool-filter-empty">${selectedToolProcess==="all"?"該当する工具はありません":"この工程に登録された工具はありません"}</div></td></tr>`;
   document.getElementById("ta").textContent=toolData.some(x=>x.attention||x.current_machine_no!=M)?"❗":"";
 }
 async function saveToolName(id,name){
