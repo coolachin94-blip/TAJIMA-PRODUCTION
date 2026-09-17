@@ -408,6 +408,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
     <button class="btn-light" onclick="showHome()">ホーム</button>
     <button id="materialAdminBtn" class="btn-green" onclick="toggleMaterialAdmin()">材料管理者モード</button>
     <button class="btn-light" onclick="loadMaterialPage()">再読み込み</button>
+    <button class="btn-purple material-admin-only hidden" onclick="openSuppliedGoods()">支給品管理</button>
   </div>
 
   <div id="materialSheetTabs" class="material-sheet-tabs"></div>
@@ -541,7 +542,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.35";
+const APP_VERSION="11.36";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -1130,6 +1131,11 @@ function toggleMaterialAdmin(){
   const pw=prompt("材料管理者パスワードを入力してください");
   if(pw==="2342"){materialAdmin=true;materialModeApply();drawSelectedMaterial();drawMaterialSuggestions();drawMaterialOrders()}
   else if(pw!==null)alert("パスワードが違います");
+}
+function openSuppliedGoods(){
+  if(!materialAdmin)return;
+  sessionStorage.setItem("tajima_supplied_goods_admin","yes");
+  location.href="supplied-goods.html";
 }
 function materialById(id){return materialMasters.find(x=>Number(x.id)===Number(id))}
 function orderEvents(id,type=null){
