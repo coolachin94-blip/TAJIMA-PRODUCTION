@@ -1444,6 +1444,21 @@ async function addMaterialEvent(orderId,type){
   await loadMaterialPage();
   if(willComplete)alert("全工程完了しました。完了履歴に保存されています。");
 }
+function materialEventLabel(type){
+  return type==="received"?"入荷":type==="polish_sent"?"研磨発送":"研磨戻り";
+}
+async function undoLastMaterialEvent(orderId){
+  if(!materialAdmin)return;
+  const events=orderEvents(orderId).slice().sort((a,b)=>new Date(b.event_at)-new Date(a.event_at)||Number(b.id)-Number(a.id));
+  const last=events[0];
+  if(!last){alert("取消できる工程記録がありません");return}
+  const label=materialEventLabel(last.event_type);
+  const time=formatTime(last.event_at);
+  if(!confirm(`直前の操作を取消しますか？\n\n${time}　${label} ${last.qty}\n\n発注自体と、それ以前の工程記録は残ります。`))return;
+  const r=await fetch(`${MATERIAL_EVENT_API}?id=eq.${last.id}`,{method:"DELETE",headers:headers()});
+  if(!r.ok){alert("取消エラー: "+await r.text());return}
+  await loadMaterialPage();
+}
 async function deleteMaterialOrder(id){
   if(!materialAdmin)return;
   if(!confirm("この発注を削除しますか？履歴も削除されます。"))return;
@@ -1564,7 +1579,7 @@ function drawMaterialOrders(){
     const m=materialById(o.material_id)||{};
     const c=orderCalc(o),st=orderStatus(o),simple=Number(o.sheet_slot??materialSheetSlot)!==1;
     const ev=orderEvents(o.id).slice().sort((a,b)=>new Date(b.event_at)-new Date(a.event_at));
-    const history=ev.slice(0,5).map(e=>`${formatTime(e.event_at)}　${e.event_type==="received"?"入荷":e.event_type==="polish_sent"?"研磨発送":"研磨戻り"} ${e.qty}`).join("<br>");
+    const history=ev.slice(0,5).map(e=>`${formatTime(e.event_at)}　${materialEventLabel(e.event_type)} ${e.qty}`).join("<br>");
     return `<div class="material-order-card">
       <div class="material-order-top">
         <div class="material-order-title"><div class="material-order-heading"><span class="material-order-date-badge">${formatOrderDateOnly(o.ordered_at)}</span><b>${esc(m.material_name||"不明")}</b>&nbsp;× ${c.ordered}</div><div class="material-order-no">発注No. ${esc(o.order_no)} / ${formatTime(o.ordered_at)}</div></div>
@@ -1603,6 +1618,7 @@ function drawMaterialOrders(){
         <button class="btn-green" onclick="addMaterialEvent(${o.id},'polish_returned')">研磨戻り</button>
       </div>`}
       ${history?`<div class="material-history">${history}</div>`:""}
+      <button class="btn-light btn-small material-admin-only ${materialAdmin?"":"hidden"}" style="margin-top:8px" onclick="undoLastMaterialEvent(${o.id})" ${ev.length?"":"disabled"}>↩ 直前の操作を取消</button>
       <button class="btn-red btn-small material-admin-only ${materialAdmin?"":"hidden"}" style="margin-top:8px" onclick="deleteMaterialOrder(${o.id})">発注削除</button>
     </div>`;
   }).join("");
