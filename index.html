@@ -314,6 +314,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .material-sheet-settings-row input{width:100%;padding:9px;border:2px solid var(--line);border-radius:10px}
 .work-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.work-summary>div{background:#fff;border:2px solid #dbeafe;border-radius:14px;padding:10px;text-align:center}.work-summary span{display:block;font-size:11px;color:#64748b;font-weight:900}.work-summary b{font-size:22px;color:#1e3a8a}.work-admin-card{background:#fff;border:2px solid #bfdbfe;border-radius:16px;padding:12px;margin:10px 0}.work-admin-card.done{opacity:.72;border-color:#cbd5e1}.work-admin-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.work-admin-title b{font-size:18px;color:#173b86}.work-admin-meta{font-size:12px;color:#64748b;margin-top:4px}.work-admin-counts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}.work-admin-counts>div{background:#eff6ff;border-radius:10px;padding:8px;text-align:center}.work-admin-counts span{display:block;font-size:11px;color:#64748b}.work-admin-counts b{font-size:18px}.work-admin-actions{display:flex;gap:6px;flex-wrap:wrap}.work-admin-actions input{width:90px;padding:8px;border:2px solid #cbd5e1;border-radius:9px;font-size:16px;text-align:center}.work-status{padding:5px 9px;border-radius:999px;background:#e2e8f0;font-size:12px;font-weight:900;white-space:nowrap}.work-status.running{background:#dcfce7;color:#166534}.work-status.completed{background:#dbeafe;color:#1e40af}@media(max-width:560px){.work-summary{grid-template-columns:repeat(2,1fr)}.work-admin-title b{font-size:15px}}
 .work-product{margin:11px 0}.work-product-head{width:100%;border:2px solid #bfdbfe;background:#fff;border-radius:15px;padding:13px;display:flex;justify-content:space-between;gap:10px;text-align:left;align-items:center}.work-product-name{font-size:19px;font-weight:900;color:#173b86}.work-product-info{font-size:12px;color:#64748b;margin-top:4px}.work-product-body{padding-left:12px}.work-dot{display:inline-block;width:13px;height:13px;border-radius:50%;margin-right:6px;vertical-align:-1px}.work-dot.green{background:#16a34a}.work-admin-card.running{border-left:8px solid #16a34a}
+.nikko-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.nikko-switch button{padding:14px;font-size:18px}.nikko-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:12px 0}.nikko-toolbar b{color:#1e3a8a}.nikko-item-code{font-size:18px;color:#173b86;font-weight:900;overflow-wrap:anywhere}.nikko-item-meta{font-size:12px;color:#64748b;margin-top:4px}.nikko-admin-actions{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}.nikko-admin-actions button{padding:9px 12px}.nikko-group-count{color:#166534;font-weight:900;white-space:nowrap}.nikko-group-body{padding:0 10px 7px}.nikko-admin-card{background:white;border:2px solid #bfdbfe;border-radius:14px;margin:8px 0;padding:12px}.nikko-admin-card.running{border-left:8px solid #16a34a}.nikko-admin-card.completed{border-color:#cbd5e1}.nikko-admin-card-head{display:flex;justify-content:space-between;align-items:start;gap:10px}@media(max-width:520px){.nikko-switch button{font-size:15px}.nikko-toolbar button{width:100%}}
 .material-simple-note{background:#ecfdf5;border:1px solid #86efac;color:#166534;border-radius:12px;padding:9px 11px;font-size:12px;font-weight:800;margin:8px 0}
 @media(max-width:430px){.material-sheet-tab{font-size:12px;padding:10px 3px}.material-sheet-settings-row{grid-template-columns:60px 1fr}.material-sheet-settings-row button{grid-column:2}}
 
@@ -375,7 +376,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
     <button class="btn-light" onclick="showHome()">ホーム</button>
     <button id="hqAdminBtn" class="btn-purple" onclick="toggleHqAdmin()">本社管理者モード</button>
     <button class="btn-light" onclick="hqEditing=false;loadHqSchedules(true)">再読み込み</button>
-    <button class="btn-green hq-admin hidden" onclick="showWorkAdmin()">藤巻 作業管理</button>
+    <button class="btn-green hq-admin hidden" onclick="showWorkAdmin()">作業管理（藤巻・ニッコー）</button>
   </div>
 <details class="hq-bulk hq-legacy hq-admin hidden">
     <summary>従来の一括入力を開く</summary>
@@ -388,13 +389,19 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 </div>
 
 <div id="workAdminApp" class="app" style="display:none">
-  <div class="header"><h1>藤巻工範 作業管理</h1><div class="mode admin">本社管理者専用</div></div>
-  <div class="section-switch"><button class="btn-light" onclick="showHeadOffice()">本社へ戻る</button><button class="btn-light" onclick="loadWorkAdmin()">再読み込み</button><button class="btn-purple" onclick="openWorkerPage()">作業者画面を開く</button></div>
-  <div class="work-summary"><div><span>作業待ち</span><b id="workWaitingCount">0</b></div><div><span>作業中</span><b id="workRunningCount">0</b></div><div><span>残り台数</span><b id="workRemainingCount">0</b></div><div><span>完了履歴</span><b id="workDoneCount">0</b></div></div>
+  <div class="header"><h1 id="workAdminTitle">藤巻工範 作業管理</h1><div class="mode admin">本社管理者専用</div></div>
+  <div class="nikko-switch"><button id="fujimakiWorkTab" class="btn-blue" onclick="selectWorkSheet('fujimaki')">藤巻工範</button><button id="nikkoWorkTab" class="btn-light" onclick="selectWorkSheet('nikko')">ニッコー</button></div>
+  <div class="section-switch"><button class="btn-light" onclick="showHeadOffice()">本社へ戻る</button><button class="btn-light" onclick="refreshWorkSheet()">再読み込み</button><button class="btn-purple" onclick="openWorkerPage()">作業者画面を開く</button></div>
+  <div id="fujimakiWorkPanel"><div class="work-summary"><div><span>作業待ち</span><b id="workWaitingCount">0</b></div><div><span>作業中</span><b id="workRunningCount">0</b></div><div><span>残り台数</span><b id="workRemainingCount">0</b></div><div><span>完了履歴</span><b id="workDoneCount">0</b></div></div>
   <div class="material-filter-row"><button class="btn-light" onclick="setWorkAdminFilter('active')">進行中</button><button class="btn-light" onclick="setWorkAdminFilter('done')">完了履歴</button><button class="btn-light" onclick="setWorkAdminFilter('all')">全部</button></div>
   <div class="note">品目を押すと発注カードが古い順に開きます。同時に進行できる作業は2件までです。</div>
-  <div id="workAdminList"></div>
+  <div id="workAdminList"></div></div>
+  <div id="nikkoWorkPanel" class="hidden"><div class="nikko-toolbar"><div><b id="nikkoRunningCount">進行中 0 / 2</b>　<span id="nikkoWaitingCount">作業待ち 0</span></div><button class="btn-green" onclick="openNikkoAdd()">＋ 品番を登録</button></div>
+  <div class="material-filter-row"><button class="btn-light" onclick="setNikkoAdminFilter('active')">作業一覧</button><button class="btn-light" onclick="setNikkoAdminFilter('done')">完了品目を確認</button></div>
+  <div id="nikkoAdminList"></div></div>
 </div>
+
+<div id="nikkoAddModal" class="modal-bg"><div class="modal"><h2>ニッコー 品番登録</h2><label>品目<input id="nikkoProductInput" list="nikkoProducts" placeholder="例：冷却プレート 上"></label><datalist id="nikkoProducts"></datalist><label>品番<input id="nikkoPartInput" placeholder="個別の品番"></label><div class="row"><button class="btn-light" onclick="closeNikkoAdd()">取消</button><button class="btn-green" onclick="saveNikkoAdd()">登録</button></div></div></div>
 
 <div id="hqScheduleModal" class="modal-bg"><div class="modal hq-schedule-modal">
   <h2 id="hqScheduleModalTitle">作業予定</h2>
@@ -554,7 +561,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.37.5";
+const APP_VERSION="11.38.0";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -567,6 +574,7 @@ const MATERIAL_ORDER_API=`${SUPABASE_URL}/rest/v1/material_orders`;
 const MATERIAL_EVENT_API=`${SUPABASE_URL}/rest/v1/material_order_events`;
 const MATERIAL_SHEET_API=`${SUPABASE_URL}/rest/v1/material_vendor_sheets`;
 const MATERIAL_WORK_API=`${SUPABASE_URL}/rest/v1/material_work_progress`;
+const NIKKO_WORK_API=`${SUPABASE_URL}/rest/v1/nikko_work_items`;
 const ATT_EMP_API=`${SUPABASE_URL}/rest/v1/attendance_employees`;
 const ATT_CAL_API=`${SUPABASE_URL}/rest/v1/attendance_company_calendar`;
 const ATT_PUNCH_API=`${SUPABASE_URL}/rest/v1/attendance_punches`;
@@ -582,6 +590,7 @@ const HQ_MACHINES=["MPH","MPE","MVR40","MVR25","KNC"];
 let currentSection=localStorage.getItem("tajima_section")||"home";
 let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqMonthlyNotes=[], hqAdmin=localStorage.getItem("tajima_hq_admin_logged_in")==="yes", hqEditing=false;
 let workAdminRows=[],workAdminFilter="active";
+let workSheet=localStorage.getItem("tajima_work_sheet")==="nikko"?"nikko":"fujimaki",nikkoAdminRows=[],nikkoAdminFilter="active",nikkoSaving=false;
 const HQ_BAR_COLORS=[{name:"青",value:"#2563EB"},{name:"赤",value:"#DC2626"},{name:"緑",value:"#16A34A"},{name:"橙",value:"#EA580C"},{name:"紫",value:"#7C3AED"},{name:"青緑",value:"#0F766E"},{name:"桃",value:"#DB2777"},{name:"紺",value:"#1E3A8A"}];
 let hqRangeDrag=null, hqSuppressClickUntil=0, hqSelectedColor=HQ_BAR_COLORS[0].value;
 const hqMachineViews=Object.fromEntries(HQ_MACHINES.map(m=>[m,{year:hqYear,month:hqMonth}]));
@@ -917,8 +926,10 @@ function showHome(){currentSection="home";localStorage.setItem("tajima_section",
 function showFactory2(){currentSection="factory2";localStorage.setItem("tajima_section","factory2");hideMainSections();factoryApp.style.display="block";document.querySelector(".bottom").style.display="block";loadAll()}
 function showHeadOffice(){currentSection="hq";localStorage.setItem("tajima_section","hq");hideMainSections();hqApp.style.display="block";document.querySelector(".bottom").style.display="none";loadHqSchedules()}
 function showMaterialOrders(){currentSection="materials";localStorage.setItem("tajima_section","materials");hideMainSections();materialApp.style.display="block";document.querySelector(".bottom").style.display="none";loadMaterialPage()}
-function showWorkAdmin(){if(!hqAdmin){alert("本社管理者モードで開いてください");return}currentSection="work-admin";localStorage.setItem("tajima_section","work-admin");hideMainSections();workAdminApp.style.display="block";document.querySelector(".bottom").style.display="none";loadWorkAdmin()}
-function openWorkerPage(){window.open("fujimaki-worker.html","_blank")}
+function showWorkAdmin(){if(!hqAdmin){alert("本社管理者モードで開いてください");return}currentSection="work-admin";localStorage.setItem("tajima_section","work-admin");hideMainSections();workAdminApp.style.display="block";document.querySelector(".bottom").style.display="none";selectWorkSheet(workSheet)}
+function openWorkerPage(){window.open(workSheet==="nikko"?"nikko-worker.html":"fujimaki-worker.html","_blank")}
+function selectWorkSheet(sheet){if(!hqAdmin)return;workSheet=sheet==="nikko"?"nikko":"fujimaki";localStorage.setItem("tajima_work_sheet",workSheet);fujimakiWorkPanel.classList.toggle("hidden",workSheet!=="fujimaki");nikkoWorkPanel.classList.toggle("hidden",workSheet!=="nikko");fujimakiWorkTab.className=workSheet==="fujimaki"?"btn-blue":"btn-light";nikkoWorkTab.className=workSheet==="nikko"?"btn-blue":"btn-light";workAdminTitle.textContent=workSheet==="nikko"?"ニッコー 作業管理":"藤巻工範 作業管理";refreshWorkSheet()}
+function refreshWorkSheet(){if(workSheet==="nikko")loadNikkoAdmin();else loadWorkAdmin()}
 
 // head office schedules
 function hqMonthStr(){return `${hqYear}-${String(hqMonth).padStart(2,"0")}`}
@@ -1516,6 +1527,49 @@ async function patchWork(id,row){const r=await fetch(`${MATERIAL_WORK_API}?id=eq
 async function saveWorkQty(id){const row=workAdminRows.find(x=>Number(x.id)===Number(id));if(!row)return;const qty=Math.max(0,Math.min(num(row.target_qty),num(document.getElementById(`workQty-${id}`).value))),finished=qty>=num(row.target_qty);await patchWork(id,{completed_qty:qty,status:finished?"completed":row.status==="running"?"running":"waiting",priority:0,completed_at:finished?new Date().toISOString():null})}
 async function setWorkAllDone(id){const row=workAdminRows.find(x=>Number(x.id)===Number(id));if(row)await patchWork(id,{completed_qty:num(row.target_qty),status:"completed",priority:0,completed_at:new Date().toISOString()})}
 async function reopenWork(id){const row=workAdminRows.find(x=>Number(x.id)===Number(id));if(row)await patchWork(id,{completed_qty:Math.max(0,num(row.target_qty)-1),status:"waiting",priority:0,completed_at:null})}
+
+async function loadNikkoAdmin(){
+  if(!hqAdmin||!checkConfig())return;
+  try{nikkoAdminRows=await restGet(`${NIKKO_WORK_API}?select=*&order=sort_order.asc,id.asc`);drawNikkoAdmin()}
+  catch(err){nikkoAdminList.innerHTML=`<div class="note" style="color:#b91c1c">ニッコーを読み込めません。setup-nikko-work.sql を実行してください。<br>${esc(err.message)}</div>`}
+}
+function setNikkoAdminFilter(value){nikkoAdminFilter=value;drawNikkoAdmin()}
+function nikkoGroupOpen(name,items){const saved=localStorage.getItem("tajima_nikko_admin_"+name);return saved===null?items.some(x=>x.status==="running"):saved==="yes"}
+function toggleNikkoAdminGroup(token){const name=decodeURIComponent(token),items=nikkoAdminRows.filter(x=>x.product_name===name&&(nikkoAdminFilter==="done"?x.status==="completed":x.status!=="completed")),key="tajima_nikko_admin_"+name;localStorage.setItem(key,nikkoGroupOpen(name,items)?"no":"yes");drawNikkoAdmin()}
+function drawNikkoAdmin(){
+  nikkoRunningCount.textContent=`進行中 ${nikkoAdminRows.filter(x=>x.status==="running").length} / 2`;
+  nikkoWaitingCount.textContent=`作業待ち ${nikkoAdminRows.filter(x=>x.status==="waiting").length}`;
+  const shown=nikkoAdminRows.filter(x=>nikkoAdminFilter==="done"?x.status==="completed":x.status!=="completed"),groups=new Map();
+  for(const item of shown){if(!groups.has(item.product_name))groups.set(item.product_name,[]);groups.get(item.product_name).push(item)}
+  const sorted=[...groups.entries()].sort((a,b)=>Math.min(...a[1].map(x=>Number(x.sort_order)))-Math.min(...b[1].map(x=>Number(x.sort_order)))||a[0].localeCompare(b[0],"ja"));
+  nikkoAdminList.innerHTML=sorted.length?sorted.map(([name,items])=>{
+    items.sort((a,b)=>Number(a.sort_order)-Number(b.sort_order)||Number(a.id)-Number(b.id));
+    const open=nikkoGroupOpen(name,items),running=items.filter(x=>x.status==="running").length;
+    const cards=items.map((x,i)=>`<article class="nikko-admin-card ${esc(x.status)}"><div class="nikko-admin-card-head"><div><div class="nikko-item-code">${esc(x.part_no)}</div><div class="nikko-item-meta">${esc(x.product_name)}${x.status==="completed"?` · 完了 ${esc(x.completed_at?new Date(x.completed_at).toLocaleString("ja-JP"):"日時不明")}`:""}</div></div><span class="work-status ${esc(x.status)}">${workStatusLabel(x)}</span></div><div class="nikko-admin-actions">${nikkoAdminFilter!=="done"?`<button class="btn-light btn-small" onclick="moveNikkoItem(${x.id},-1)" ${i===0?"disabled":""}>↑ 上へ</button><button class="btn-light btn-small" onclick="moveNikkoItem(${x.id},1)" ${i===items.length-1?"disabled":""}>↓ 下へ</button><button class="btn-blue btn-small" onclick="editNikkoItem(${x.id})">修正</button><button class="btn-green btn-small" onclick="finishNikkoItem(${x.id})">完了にする</button>`:`<button class="btn-light btn-small" onclick="restoreNikkoItem(${x.id})">作業待ちに戻す</button>`}</div></article>`).join("");
+    return `<section class="work-product"><button class="work-product-head" onclick="toggleNikkoAdminGroup('${encodeURIComponent(name).replaceAll("'","%27")}')"><div><div class="work-product-name">${esc(name)}</div><div class="work-product-info">品番 ${items.length}件</div></div><div class="nikko-group-count">${running?`● 進行中 ${running}件`:""}　${open?"▲":"▼"}</div></button>${open?`<div class="nikko-group-body">${cards}</div>`:""}</section>`;
+  }).join(""):'<div class="note">該当する品番はありません。</div>';
+}
+function openNikkoAdd(){if(!hqAdmin)return;nikkoProductInput.value="";nikkoPartInput.value="";nikkoProducts.innerHTML=[...new Set(nikkoAdminRows.map(x=>x.product_name))].map(name=>`<option value="${esc(name)}"></option>`).join("");nikkoAddModal.style.display="flex";nikkoProductInput.focus()}
+function closeNikkoAdd(){nikkoAddModal.style.display="none"}
+async function saveNikkoAdd(){
+  if(!hqAdmin||nikkoSaving)return;
+  const name=nikkoProductInput.value.trim(),part=nikkoPartInput.value.trim();
+  if(!name||!part){alert("品目と品番を入力してください");return}
+  if(nikkoAdminRows.some(x=>x.part_no===part)){alert("この品番は登録済みです");return}
+  nikkoSaving=true;
+  try{const order=Math.max(Date.now()*1000,...nikkoAdminRows.map(x=>Number(x.sort_order)||0))+1024,r=await fetch(NIKKO_WORK_API,{method:"POST",headers:headers(),body:JSON.stringify([{product_name:name,part_no:part,sort_order:order}])});if(!r.ok)throw new Error(await r.text());localStorage.setItem("tajima_nikko_admin_"+name,"yes");closeNikkoAdd();await loadNikkoAdmin()}catch(err){alert("登録エラー: "+err.message)}finally{nikkoSaving=false}
+}
+async function patchNikkoAdmin(id,update){if(!hqAdmin)return false;const r=await fetch(`${NIKKO_WORK_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({...update,updated_at:new Date().toISOString()})});if(!r.ok){alert("更新エラー: "+await r.text());return false}await loadNikkoAdmin();return true}
+async function moveNikkoItem(id,dir){
+  if(!hqAdmin||nikkoSaving)return;
+  const item=nikkoAdminRows.find(x=>Number(x.id)===Number(id));if(!item)return;
+  const siblings=nikkoAdminRows.filter(x=>x.status!=="completed"&&x.product_name===item.product_name).sort((a,b)=>Number(a.sort_order)-Number(b.sort_order)||Number(a.id)-Number(b.id)),i=siblings.findIndex(x=>Number(x.id)===Number(id)),other=siblings[i+dir];if(!other)return;
+  nikkoSaving=true;
+  try{for(const [row,value] of [[item,other.sort_order],[other,item.sort_order]]){const r=await fetch(`${NIKKO_WORK_API}?id=eq.${row.id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({sort_order:value,updated_at:new Date().toISOString()})});if(!r.ok)throw new Error(await r.text())}await loadNikkoAdmin()}catch(err){alert("並べ替えエラー: "+err.message);await loadNikkoAdmin()}finally{nikkoSaving=false}
+}
+async function editNikkoItem(id){if(!hqAdmin)return;const row=nikkoAdminRows.find(x=>Number(x.id)===Number(id));if(!row)return;const name=prompt("品目を修正",row.product_name);if(name===null)return;const part=prompt("品番を修正",row.part_no);if(part===null)return;if(!name.trim()||!part.trim()){alert("品目と品番を入力してください");return}await patchNikkoAdmin(id,{product_name:name.trim(),part_no:part.trim()})}
+async function finishNikkoItem(id){if(!confirm("この品番を完了にしますか？"))return;await patchNikkoAdmin(id,{status:"completed",completed_at:new Date().toISOString()})}
+async function restoreNikkoItem(id){if(!confirm("作業待ちに戻しますか？"))return;await patchNikkoAdmin(id,{status:"waiting",completed_at:null})}
 async function rawPatchWork(id,row){const r=await fetch(`${MATERIAL_WORK_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({...row,updated_at:new Date().toISOString()})});if(!r.ok)throw new Error(await r.text())}
 function materialEventLabel(type){
   return type==="received"?"入荷":type==="polish_sent"?"研磨発送":"研磨戻り";
@@ -2056,7 +2110,7 @@ window.addEventListener("touchend",async()=>{if(!isPulling)return;const ok=pullD
 
 window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
-if(currentSection==="factory2")showFactory2();else if(currentSection==="hq")showHeadOffice();else if(currentSection==="materials")showMaterialOrders();else if(currentSection==="work-admin"&&hqAdmin)showWorkAdmin();else showHome();checkAppVersion();setInterval(()=>{if(currentSection==="factory2"&&!dirty&&!loading&&checkConfig())loadAll();if(currentSection==="hq"&&checkConfig()&&canHqAutoRefresh())loadHqSchedules();if(currentSection==="work-admin"&&checkConfig())loadWorkAdmin();/* 材料発注管理は入力保護のため自動再読込しない */},60000);setInterval(checkAppVersion,60000);
+if(currentSection==="factory2")showFactory2();else if(currentSection==="hq")showHeadOffice();else if(currentSection==="materials")showMaterialOrders();else if(currentSection==="work-admin"&&hqAdmin)showWorkAdmin();else showHome();checkAppVersion();setInterval(()=>{if(currentSection==="factory2"&&!dirty&&!loading&&checkConfig())loadAll();if(currentSection==="hq"&&checkConfig()&&canHqAutoRefresh())loadHqSchedules();if(currentSection==="work-admin"&&checkConfig())refreshWorkSheet();/* 材料発注管理は入力保護のため自動再読込しない */},60000);setInterval(checkAppVersion,60000);
 </script>
 </body>
 </html>
