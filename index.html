@@ -312,6 +312,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .material-sheet-settings{background:#fff;border:2px dashed #93c5fd;border-radius:14px;padding:10px;margin:-3px 0 12px}
 .material-sheet-settings-row{display:grid;grid-template-columns:90px 1fr auto;gap:7px;align-items:center;margin:6px 0}
 .material-sheet-settings-row input{width:100%;padding:9px;border:2px solid var(--line);border-radius:10px}
+.work-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.work-summary>div{background:#fff;border:2px solid #dbeafe;border-radius:14px;padding:10px;text-align:center}.work-summary span{display:block;font-size:11px;color:#64748b;font-weight:900}.work-summary b{font-size:22px;color:#1e3a8a}.work-admin-card{background:#fff;border:2px solid #bfdbfe;border-radius:16px;padding:12px;margin:10px 0}.work-admin-card.urgent{border-left:8px solid #dc2626}.work-admin-card.done{opacity:.72;border-color:#cbd5e1}.work-admin-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.work-admin-title b{font-size:18px;color:#173b86}.work-admin-meta{font-size:12px;color:#64748b;margin-top:4px}.work-admin-counts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}.work-admin-counts>div{background:#eff6ff;border-radius:10px;padding:8px;text-align:center}.work-admin-counts span{display:block;font-size:11px;color:#64748b}.work-admin-counts b{font-size:18px}.work-admin-actions{display:flex;gap:6px;flex-wrap:wrap}.work-admin-actions input{width:90px;padding:8px;border:2px solid #cbd5e1;border-radius:9px;font-size:16px;text-align:center}.work-status{padding:5px 9px;border-radius:999px;background:#e2e8f0;font-size:12px;font-weight:900;white-space:nowrap}.work-status.running{background:#dcfce7;color:#166534}.work-status.completed{background:#dbeafe;color:#1e40af}@media(max-width:560px){.work-summary{grid-template-columns:repeat(2,1fr)}.work-admin-title b{font-size:15px}}
 .material-simple-note{background:#ecfdf5;border:1px solid #86efac;color:#166534;border-radius:12px;padding:9px 11px;font-size:12px;font-weight:800;margin:8px 0}
 @media(max-width:430px){.material-sheet-tab{font-size:12px;padding:10px 3px}.material-sheet-settings-row{grid-template-columns:60px 1fr}.material-sheet-settings-row button{grid-column:2}}
 
@@ -373,6 +374,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
     <button class="btn-light" onclick="showHome()">ホーム</button>
     <button id="hqAdminBtn" class="btn-purple" onclick="toggleHqAdmin()">本社管理者モード</button>
     <button class="btn-light" onclick="hqEditing=false;loadHqSchedules(true)">再読み込み</button>
+    <button class="btn-green hq-admin hidden" onclick="showWorkAdmin()">藤巻 作業管理</button>
   </div>
 <details class="hq-bulk hq-legacy hq-admin hidden">
     <summary>従来の一括入力を開く</summary>
@@ -382,6 +384,15 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
   </details>
   <div id="hqMachines"></div>
   <div class="note">本社管理者パスワード: 4564。管理者はカレンダー上の日付を押したまま終了日まで動かして、作業予定を登録できます。</div>
+</div>
+
+<div id="workAdminApp" class="app" style="display:none">
+  <div class="header"><h1>藤巻工範 作業管理</h1><div class="mode admin">本社管理者専用</div></div>
+  <div class="section-switch"><button class="btn-light" onclick="showHeadOffice()">本社へ戻る</button><button class="btn-light" onclick="loadWorkAdmin()">再読み込み</button><button class="btn-purple" onclick="openWorkerPage()">作業者画面を開く</button></div>
+  <div class="work-summary"><div><span>作業待ち</span><b id="workWaitingCount">0</b></div><div><span>作業中</span><b id="workRunningCount">0</b></div><div><span>残り台数</span><b id="workRemainingCount">0</b></div><div><span>完了履歴</span><b id="workDoneCount">0</b></div></div>
+  <div class="material-filter-row"><button class="btn-light" onclick="setWorkAdminFilter('active')">進行中</button><button class="btn-light" onclick="setWorkAdminFilter('done')">完了履歴</button><button class="btn-light" onclick="setWorkAdminFilter('all')">全部</button></div>
+  <div class="note">初回のみ、シート1で入荷済み・未研磨発送の発注を取り込みます。過去に加工済みの品目は完了台数を修正してください。</div>
+  <div id="workAdminList"></div>
 </div>
 
 <div id="hqScheduleModal" class="modal-bg"><div class="modal hq-schedule-modal">
@@ -542,7 +553,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.36.2";
+const APP_VERSION="11.37.0";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -554,6 +565,7 @@ const MATERIAL_MASTER_API=`${SUPABASE_URL}/rest/v1/material_master`;
 const MATERIAL_ORDER_API=`${SUPABASE_URL}/rest/v1/material_orders`;
 const MATERIAL_EVENT_API=`${SUPABASE_URL}/rest/v1/material_order_events`;
 const MATERIAL_SHEET_API=`${SUPABASE_URL}/rest/v1/material_vendor_sheets`;
+const MATERIAL_WORK_API=`${SUPABASE_URL}/rest/v1/material_work_progress`;
 const ATT_EMP_API=`${SUPABASE_URL}/rest/v1/attendance_employees`;
 const ATT_CAL_API=`${SUPABASE_URL}/rest/v1/attendance_company_calendar`;
 const ATT_PUNCH_API=`${SUPABASE_URL}/rest/v1/attendance_punches`;
@@ -568,6 +580,7 @@ let materialAdmin=false, materialMasters=[], materialOrdersData=[], materialEven
 const HQ_MACHINES=["MPH","MPE","MVR40","MVR25","KNC"];
 let currentSection=localStorage.getItem("tajima_section")||"home";
 let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqMonthlyNotes=[], hqAdmin=false, hqEditing=false;
+let workAdminRows=[],workAdminFilter="active";
 const HQ_BAR_COLORS=[{name:"青",value:"#2563EB"},{name:"赤",value:"#DC2626"},{name:"緑",value:"#16A34A"},{name:"橙",value:"#EA580C"},{name:"紫",value:"#7C3AED"},{name:"青緑",value:"#0F766E"},{name:"桃",value:"#DB2777"},{name:"紺",value:"#1E3A8A"}];
 let hqRangeDrag=null, hqSuppressClickUntil=0, hqSelectedColor=HQ_BAR_COLORS[0].value;
 const hqMachineViews=Object.fromEntries(HQ_MACHINES.map(m=>[m,{year:hqYear,month:hqMonth}]));
@@ -898,10 +911,13 @@ async function deleteSchedule(id){if(!isAdmin)return;if(!confirm("削除しま�
 
 
 // section navigation
-function showHome(){currentSection="home";localStorage.setItem("tajima_section","home");homeScreen.style.display="block";factoryApp.style.display="none";hqApp.style.display="none";materialApp.style.display="none";document.querySelector(".bottom").style.display="none"}
-function showFactory2(){currentSection="factory2";localStorage.setItem("tajima_section","factory2");homeScreen.style.display="none";factoryApp.style.display="block";hqApp.style.display="none";materialApp.style.display="none";document.querySelector(".bottom").style.display="block";loadAll()}
-function showHeadOffice(){currentSection="hq";localStorage.setItem("tajima_section","hq");homeScreen.style.display="none";factoryApp.style.display="none";hqApp.style.display="block";materialApp.style.display="none";document.querySelector(".bottom").style.display="none";loadHqSchedules()}
-function showMaterialOrders(){currentSection="materials";localStorage.setItem("tajima_section","materials");homeScreen.style.display="none";factoryApp.style.display="none";hqApp.style.display="none";materialApp.style.display="block";document.querySelector(".bottom").style.display="none";loadMaterialPage()}
+function hideMainSections(){homeScreen.style.display="none";factoryApp.style.display="none";hqApp.style.display="none";materialApp.style.display="none";workAdminApp.style.display="none"}
+function showHome(){currentSection="home";localStorage.setItem("tajima_section","home");hideMainSections();homeScreen.style.display="block";document.querySelector(".bottom").style.display="none"}
+function showFactory2(){currentSection="factory2";localStorage.setItem("tajima_section","factory2");hideMainSections();factoryApp.style.display="block";document.querySelector(".bottom").style.display="block";loadAll()}
+function showHeadOffice(){currentSection="hq";localStorage.setItem("tajima_section","hq");hideMainSections();hqApp.style.display="block";document.querySelector(".bottom").style.display="none";loadHqSchedules()}
+function showMaterialOrders(){currentSection="materials";localStorage.setItem("tajima_section","materials");hideMainSections();materialApp.style.display="block";document.querySelector(".bottom").style.display="none";loadMaterialPage()}
+function showWorkAdmin(){if(!hqAdmin){alert("本社管理者モードで開いてください");return}currentSection="work-admin";localStorage.setItem("tajima_section","work-admin");hideMainSections();workAdminApp.style.display="block";document.querySelector(".bottom").style.display="none";loadWorkAdmin()}
+function openWorkerPage(){window.open("fujimaki-worker.html","_blank")}
 
 // head office schedules
 function hqMonthStr(){return `${hqYear}-${String(hqMonth).padStart(2,"0")}`}
@@ -1440,10 +1456,52 @@ async function addMaterialEvent(orderId,type){
   const row={order_id:o.id,event_type:type,qty:qty,event_at:new Date().toISOString()};
   const r=await fetch(MATERIAL_EVENT_API,{method:"POST",headers:headers(),body:JSON.stringify([row])});
   if(!r.ok){alert("工程更新エラー: "+await r.text());return}
+  if(type==="received" && Number(o.sheet_slot??materialSheetSlot)===1){
+    const m=materialById(o.material_id)||{};
+    try{await upsertWorkFromReceipt(o,m,eventTotal(o.id,"received")+qty)}catch(e){alert(e.message);return}
+  }
   const willComplete = (Number(o.sheet_slot??materialSheetSlot)!==1 ? type==="received" : type==="polish_returned") && qty===max;
   await loadMaterialPage();
   if(willComplete)alert("全工程完了しました。完了履歴に保存されています。");
 }
+async function upsertWorkFromReceipt(o,m,targetQty){
+  const current=await restGet(`${MATERIAL_WORK_API}?order_id=eq.${Number(o.id)}&select=*&limit=1`),old=current[0];
+  const row={order_id:Number(o.id),material_id:Number(o.material_id),order_no:o.order_no||"",material_name:m.material_name||"",spec:m.spec||"",target_qty:Number(targetQty)||0,updated_at:new Date().toISOString()};
+  if(old&&num(old.completed_qty)<num(targetQty)){row.status=old.status==="running"?"running":"waiting";row.completed_at=null}
+  const r=await fetch(`${MATERIAL_WORK_API}?on_conflict=order_id`,{method:"POST",headers:{...headers(),"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify([row])});
+  if(!r.ok)throw new Error("作業管理の登録に失敗しました: "+await r.text());
+}
+
+function workStatusLabel(r){return r.status==="completed"?"完了":r.status==="running"?"作業中":"作業待ち"}
+function setWorkAdminFilter(v){workAdminFilter=v;drawWorkAdmin()}
+async function bootstrapExistingWork(){
+  const [orders,events,masters,existing]=await Promise.all([restGet(`${MATERIAL_ORDER_API}?sheet_slot=eq.1&select=*`),restGet(`${MATERIAL_EVENT_API}?select=*`),restGet(`${MATERIAL_MASTER_API}?sheet_slot=eq.1&select=*`),restGet(`${MATERIAL_WORK_API}?select=order_id`)]);
+  const have=new Set(existing.map(x=>Number(x.order_id))),byMaterial=Object.fromEntries(masters.map(x=>[Number(x.id),x])),rows=[];
+  const total=(id,type)=>events.filter(e=>Number(e.order_id)===Number(id)&&e.event_type===type).reduce((a,e)=>a+num(e.qty),0);
+  for(const o of orders){
+    const received=total(o.id,"received"),sent=total(o.id,"polish_sent"),returned=total(o.id,"polish_returned");
+    if(have.has(Number(o.id))||received<=0||sent>0||returned>0)continue;
+    const m=byMaterial[Number(o.material_id)]||{};
+    rows.push({order_id:Number(o.id),material_id:Number(o.material_id),order_no:o.order_no||"",material_name:m.material_name||"",spec:m.spec||"",target_qty:received,completed_qty:0,status:"waiting",sort_order:new Date(o.ordered_at||0).getTime()||Number(o.id),updated_at:new Date().toISOString()});
+  }
+  if(rows.length){const r=await fetch(`${MATERIAL_WORK_API}?on_conflict=order_id`,{method:"POST",headers:{...headers(),"Prefer":"resolution=ignore-duplicates,return=representation"},body:JSON.stringify(rows)});if(!r.ok)throw new Error(await r.text())}
+}
+async function loadWorkAdmin(){
+  if(!checkConfig())return;
+  try{await bootstrapExistingWork();workAdminRows=await restGet(`${MATERIAL_WORK_API}?select=*&order=priority.desc,sort_order.asc,id.asc`);drawWorkAdmin()}catch(e){workAdminList.innerHTML=`<div class="note" style="color:#b91c1c">作業管理を読み込めません。setup-fujimaki-work.sql を先に実行してください。<br>${esc(e.message)}</div>`}
+}
+function drawWorkAdmin(){
+  const active=workAdminRows.filter(r=>r.status!=="completed"),done=workAdminRows.filter(r=>r.status==="completed");
+  workWaitingCount.textContent=active.filter(r=>r.status!=="running").length;workRunningCount.textContent=active.filter(r=>r.status==="running").length;workRemainingCount.textContent=active.reduce((a,r)=>a+Math.max(0,num(r.target_qty)-num(r.completed_qty)),0);workDoneCount.textContent=done.length;
+  const list=workAdminFilter==="done"?done:workAdminFilter==="all"?workAdminRows:active;
+  workAdminList.innerHTML=list.length?list.map(r=>{const rem=Math.max(0,num(r.target_qty)-num(r.completed_qty));return `<div class="work-admin-card ${r.priority?"urgent":""} ${r.status==="completed"?"done":""}"><div class="work-admin-title"><div>${r.priority?'<span class="tag">最優先</span> ':""}<b>${esc(r.material_name)}</b><div class="work-admin-meta">${esc(r.order_no)}　${esc(r.spec||"")}</div></div><span class="work-status ${r.status}">${workStatusLabel(r)}</span></div><div class="work-admin-counts"><div><span>入荷</span><b>${num(r.target_qty)}</b></div><div><span>加工完了</span><b>${num(r.completed_qty)}</b></div><div><span>残り</span><b>${rem}</b></div></div><div class="work-admin-actions"><button class="btn-red btn-small" onclick="toggleWorkPriority(${r.id},${r.priority?0:1})">${r.priority?"最優先解除":"最優先"}</button><button class="btn-light btn-small" onclick="moveWorkRow(${r.id},-1)">↑</button><button class="btn-light btn-small" onclick="moveWorkRow(${r.id},1)">↓</button><input id="workQty-${r.id}" type="number" min="0" max="${num(r.target_qty)}" value="${num(r.completed_qty)}"><button class="btn-blue btn-small" onclick="saveWorkQty(${r.id})">完了台数を保存</button><button class="btn-green btn-small" onclick="setWorkAllDone(${r.id})">全数完了</button>${r.status==="completed"?`<button class="btn-light btn-small" onclick="reopenWork(${r.id})">未完了に戻す</button>`:""}</div></div>`}).join(""):'<div class="note">該当する作業はありません。</div>';
+}
+async function patchWork(id,row){const r=await fetch(`${MATERIAL_WORK_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({...row,updated_at:new Date().toISOString()})});if(!r.ok){alert("更新エラー: "+await r.text());return false}await loadWorkAdmin();return true}
+async function saveWorkQty(id){const row=workAdminRows.find(x=>Number(x.id)===Number(id));if(!row)return;const qty=Math.max(0,Math.min(num(row.target_qty),num(document.getElementById(`workQty-${id}`).value)));await patchWork(id,{completed_qty:qty,status:qty>=num(row.target_qty)?"completed":"waiting",completed_at:qty>=num(row.target_qty)?new Date().toISOString():null})}
+async function setWorkAllDone(id){const row=workAdminRows.find(x=>Number(x.id)===Number(id));if(row)await patchWork(id,{completed_qty:num(row.target_qty),status:"completed",completed_at:new Date().toISOString()})}
+async function reopenWork(id){const row=workAdminRows.find(x=>Number(x.id)===Number(id));if(row)await patchWork(id,{completed_qty:Math.max(0,num(row.target_qty)-1),status:"waiting",completed_at:null})}
+async function toggleWorkPriority(id,v){await patchWork(id,{priority:v})}
+async function moveWorkRow(id,dir){const active=workAdminRows.filter(r=>r.status!=="completed"),idx=active.findIndex(r=>Number(r.id)===Number(id)),other=active[idx+dir];if(idx<0||!other)return;const cur=active[idx];await Promise.all([fetch(`${MATERIAL_WORK_API}?id=eq.${cur.id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({sort_order:num(other.sort_order)})}),fetch(`${MATERIAL_WORK_API}?id=eq.${other.id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({sort_order:num(cur.sort_order)})})]);await loadWorkAdmin()}
 function materialEventLabel(type){
   return type==="received"?"入荷":type==="polish_sent"?"研磨発送":"研磨戻り";
 }
@@ -1983,7 +2041,7 @@ window.addEventListener("touchend",async()=>{if(!isPulling)return;const ok=pullD
 
 window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
-if(currentSection==="factory2")showFactory2();else if(currentSection==="hq")showHeadOffice();else if(currentSection==="materials")showMaterialOrders();else showHome();checkAppVersion();setInterval(()=>{if(currentSection==="factory2"&&!dirty&&!loading&&checkConfig())loadAll(); if(currentSection==="hq"&&checkConfig()&&canHqAutoRefresh())loadHqSchedules(); /* 材料発注管理は入力保護のため自動再読込しない */},60000);setInterval(checkAppVersion,60000);
+if(currentSection==="factory2")showFactory2();else if(currentSection==="hq")showHeadOffice();else if(currentSection==="materials")showMaterialOrders();else showHome();checkAppVersion();setInterval(()=>{if(currentSection==="factory2"&&!dirty&&!loading&&checkConfig())loadAll();if(currentSection==="hq"&&checkConfig()&&canHqAutoRefresh())loadHqSchedules();if(currentSection==="work-admin"&&checkConfig())loadWorkAdmin();/* 材料発注管理は入力保護のため自動再読込しない */},60000);setInterval(checkAppVersion,60000);
 </script>
 </body>
 </html>
