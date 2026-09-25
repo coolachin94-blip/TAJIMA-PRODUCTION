@@ -554,7 +554,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.37.4";
+const APP_VERSION="11.37.5";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -1485,8 +1485,8 @@ function workOrderDate(r){if(!r.ordered_at)return "日付なし";const d=new Dat
 function workProductKey(r){return `${r.material_name||"不明"}|||${r.spec||""}`}
 function workMarker(rows){const count=rows.filter(r=>r.status==="running").length;return count?`<span class="work-dot green"></span>進行中 ${count}件`:""}
 function workOpenKey(key){return "tajima_work_open_"+key}
-function isWorkProductOpen(key,rows){return localStorage.getItem(workOpenKey(key))==="yes"||rows.some(r=>r.status==="running")}
-function toggleWorkProduct(key){key=decodeURIComponent(key);const k=workOpenKey(key);localStorage.setItem(k,localStorage.getItem(k)==="yes"?"no":"yes");drawWorkAdmin()}
+function isWorkProductOpen(key,rows){const saved=localStorage.getItem(workOpenKey(key));return saved===null?rows.some(r=>r.status==="running"):saved==="yes"}
+function toggleWorkProduct(key){key=decodeURIComponent(key);const rows=workAdminRows.filter(r=>workProductKey(r)===key&&(workAdminFilter==="all"||(workAdminFilter==="done"?r.status==="completed":r.status!=="completed")));const k=workOpenKey(key);localStorage.setItem(k,isWorkProductOpen(key,rows)?"no":"yes");drawWorkAdmin()}
 function setWorkAdminFilter(v){workAdminFilter=v;drawWorkAdmin()}
 async function bootstrapExistingWork(){
   const [orders,events,masters,existing]=await Promise.all([restGet(`${MATERIAL_ORDER_API}?sheet_slot=eq.1&select=*`),restGet(`${MATERIAL_EVENT_API}?select=*`),restGet(`${MATERIAL_MASTER_API}?sheet_slot=eq.1&select=*`),restGet(`${MATERIAL_WORK_API}?select=order_id`)]);
