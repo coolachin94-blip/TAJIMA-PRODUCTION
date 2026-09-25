@@ -554,7 +554,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.37.3";
+const APP_VERSION="11.37.4";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -1468,8 +1468,15 @@ async function addMaterialEvent(orderId,type){
 async function upsertWorkFromReceipt(o,m,targetQty){
   const current=await restGet(`${MATERIAL_WORK_API}?order_id=eq.${Number(o.id)}&select=*&limit=1`),old=current[0];
   const row={order_id:Number(o.id),material_id:Number(o.material_id),order_no:o.order_no||"",material_name:m.material_name||"",spec:m.spec||"",ordered_at:o.ordered_at||null,target_qty:Number(targetQty)||0,updated_at:new Date().toISOString()};
-  if(old&&num(old.completed_qty)<num(targetQty)){row.status=old.status==="running"?"running":"waiting";row.completed_at=null}
-  const r=await fetch(`${MATERIAL_WORK_API}?on_conflict=order_id`,{method:"POST",headers:{...headers(),"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify([row])});
+  if(old){
+    if(num(old.completed_qty)<num(targetQty)&&old.status==="completed"){
+      row.status="waiting";row.completed_at=null;
+    }
+    const r=await fetch(`${MATERIAL_WORK_API}?id=eq.${Number(old.id)}`,{method:"PATCH",headers:headers(),body:JSON.stringify(row)});
+    if(!r.ok)throw new Error("作業管理の登録に失敗しました: "+await r.text());
+    return;
+  }
+  const r=await fetch(MATERIAL_WORK_API,{method:"POST",headers:headers(),body:JSON.stringify([row])});
   if(!r.ok)throw new Error("作業管理の登録に失敗しました: "+await r.text());
 }
 
