@@ -315,6 +315,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
 .work-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.work-summary>div{background:#fff;border:2px solid #dbeafe;border-radius:14px;padding:10px;text-align:center}.work-summary span{display:block;font-size:11px;color:#64748b;font-weight:900}.work-summary b{font-size:22px;color:#1e3a8a}.work-admin-card{background:#fff;border:2px solid #bfdbfe;border-radius:16px;padding:12px;margin:10px 0}.work-admin-card.done{opacity:.72;border-color:#cbd5e1}.work-admin-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.work-admin-title b{font-size:18px;color:#173b86}.work-admin-meta{font-size:12px;color:#64748b;margin-top:4px}.work-admin-counts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}.work-admin-counts>div{background:#eff6ff;border-radius:10px;padding:8px;text-align:center}.work-admin-counts span{display:block;font-size:11px;color:#64748b}.work-admin-counts b{font-size:18px}.work-admin-actions{display:flex;gap:6px;flex-wrap:wrap}.work-admin-actions input{width:90px;padding:8px;border:2px solid #cbd5e1;border-radius:9px;font-size:16px;text-align:center}.work-status{padding:5px 9px;border-radius:999px;background:#e2e8f0;font-size:12px;font-weight:900;white-space:nowrap}.work-status.running{background:#dcfce7;color:#166534}.work-status.completed{background:#dbeafe;color:#1e40af}@media(max-width:560px){.work-summary{grid-template-columns:repeat(2,1fr)}.work-admin-title b{font-size:15px}}
 .work-product{margin:11px 0}.work-product-head{width:100%;border:2px solid #bfdbfe;background:#fff;border-radius:15px;padding:13px;display:flex;justify-content:space-between;gap:10px;text-align:left;align-items:center}.work-product-name{font-size:19px;font-weight:900;color:#173b86}.work-product-info{font-size:12px;color:#64748b;margin-top:4px}.work-product-body{padding-left:12px}.work-dot{display:inline-block;width:13px;height:13px;border-radius:50%;margin-right:6px;vertical-align:-1px}.work-dot.green{background:#16a34a}.work-admin-card.running{border-left:8px solid #16a34a}
 .nikko-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.nikko-switch button{padding:14px;font-size:18px}.nikko-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:12px 0}.nikko-toolbar b{color:#1e3a8a}.nikko-item-code{font-size:18px;color:#173b86;font-weight:900;overflow-wrap:anywhere}.nikko-item-meta{font-size:12px;color:#64748b;margin-top:4px}.nikko-admin-actions{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}.nikko-admin-actions button{padding:9px 12px}.nikko-group-count{color:#166534;font-weight:900;white-space:nowrap}.nikko-group-body{padding:0 10px 7px}.nikko-admin-card{background:white;border:2px solid #bfdbfe;border-radius:14px;margin:8px 0;padding:12px}.nikko-admin-card.running{border-left:8px solid #16a34a}.nikko-admin-card.completed{border-color:#cbd5e1}.nikko-admin-card-head{display:flex;justify-content:space-between;align-items:start;gap:10px}@media(max-width:520px){.nikko-switch button{font-size:15px}.nikko-toolbar button{width:100%}}
+.nikko-product-form{display:flex;gap:9px;align-items:end;background:#eff6ff;border:2px solid #bfdbfe;border-radius:12px;padding:10px;margin:8px 0}.nikko-product-form label{flex:1;font-weight:800}.nikko-product-form input{display:block;width:100%;font-size:16px;padding:10px;border:2px solid #bfdbfe;border-radius:9px;margin-top:5px}.nikko-product-form button{min-height:44px}.nikko-due{color:#1d4ed8;font-weight:800;margin-top:5px}@media(max-width:520px){.nikko-product-form{flex-direction:column;align-items:stretch}}
 .material-simple-note{background:#ecfdf5;border:1px solid #86efac;color:#166534;border-radius:12px;padding:9px 11px;font-size:12px;font-weight:800;margin:8px 0}
 @media(max-width:430px){.material-sheet-tab{font-size:12px;padding:10px 3px}.material-sheet-settings-row{grid-template-columns:60px 1fr}.material-sheet-settings-row button{grid-column:2}}
 
@@ -396,12 +397,13 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
   <div class="material-filter-row"><button class="btn-light" onclick="setWorkAdminFilter('active')">進行中</button><button class="btn-light" onclick="setWorkAdminFilter('done')">完了履歴</button><button class="btn-light" onclick="setWorkAdminFilter('all')">全部</button></div>
   <div class="note">品目を押すと発注カードが古い順に開きます。同時に進行できる作業は2件までです。</div>
   <div id="workAdminList"></div></div>
-  <div id="nikkoWorkPanel" class="hidden"><div class="nikko-toolbar"><div><b id="nikkoRunningCount">進行中 0 / 2</b>　<span id="nikkoWaitingCount">作業待ち 0</span></div><button class="btn-green" onclick="openNikkoAdd()">＋ 品番を登録</button></div>
+  <div id="nikkoWorkPanel" class="hidden"><div class="nikko-toolbar"><div><b id="nikkoRunningCount">進行中 0 / 2</b>　<span id="nikkoWaitingCount">作業待ち 0</span></div><button class="btn-blue" onclick="toggleNikkoProductForm()">＋ 品目を登録</button><button class="btn-green" onclick="openNikkoAdd()">＋ 品番を登録</button></div>
+  <div id="nikkoProductForm" class="nikko-product-form hidden"><label>品目を先に登録<input id="nikkoNewProduct" placeholder="例：冷却プレート 上" onkeydown="if(event.key==='Enter')saveNikkoProduct()"></label><button class="btn-blue" onclick="saveNikkoProduct()">品目を追加</button></div>
   <div class="material-filter-row"><button class="btn-light" onclick="setNikkoAdminFilter('active')">作業一覧</button><button class="btn-light" onclick="setNikkoAdminFilter('done')">完了品目を確認</button></div>
   <div id="nikkoAdminList"></div></div>
 </div>
 
-<div id="nikkoAddModal" class="modal-bg"><div class="modal"><h2>ニッコー 品番登録</h2><label>品目<input id="nikkoProductInput" list="nikkoProducts" placeholder="例：冷却プレート 上"></label><datalist id="nikkoProducts"></datalist><label>品番<input id="nikkoPartInput" placeholder="個別の品番"></label><div class="row"><button class="btn-light" onclick="closeNikkoAdd()">取消</button><button class="btn-green" onclick="saveNikkoAdd()">登録</button></div></div></div>
+<div id="nikkoAddModal" class="modal-bg"><div class="modal"><h2>ニッコー 品番登録</h2><label>登録済みの品目を選択<select id="nikkoProductInput"></select></label><label>品番<input id="nikkoPartInput" placeholder="個別の品番"></label><label>納期（管理者用）<input id="nikkoDueInput" type="date"></label><div class="row"><button class="btn-light" onclick="closeNikkoAdd()">取消</button><button class="btn-green" onclick="saveNikkoAdd()">登録</button></div></div></div>
 
 <div id="hqScheduleModal" class="modal-bg"><div class="modal hq-schedule-modal">
   <h2 id="hqScheduleModalTitle">作業予定</h2>
@@ -561,7 +563,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.38.0";
+const APP_VERSION="11.38.1";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -575,6 +577,7 @@ const MATERIAL_EVENT_API=`${SUPABASE_URL}/rest/v1/material_order_events`;
 const MATERIAL_SHEET_API=`${SUPABASE_URL}/rest/v1/material_vendor_sheets`;
 const MATERIAL_WORK_API=`${SUPABASE_URL}/rest/v1/material_work_progress`;
 const NIKKO_WORK_API=`${SUPABASE_URL}/rest/v1/nikko_work_items`;
+const NIKKO_PRODUCTS_API=`${SUPABASE_URL}/rest/v1/nikko_products`;
 const ATT_EMP_API=`${SUPABASE_URL}/rest/v1/attendance_employees`;
 const ATT_CAL_API=`${SUPABASE_URL}/rest/v1/attendance_company_calendar`;
 const ATT_PUNCH_API=`${SUPABASE_URL}/rest/v1/attendance_punches`;
@@ -590,7 +593,7 @@ const HQ_MACHINES=["MPH","MPE","MVR40","MVR25","KNC"];
 let currentSection=localStorage.getItem("tajima_section")||"home";
 let hqYear=(new Date()).getFullYear(), hqMonth=(new Date()).getMonth()+1, hqSchedules=[], hqMonthlyNotes=[], hqAdmin=localStorage.getItem("tajima_hq_admin_logged_in")==="yes", hqEditing=false;
 let workAdminRows=[],workAdminFilter="active";
-let workSheet=localStorage.getItem("tajima_work_sheet")==="nikko"?"nikko":"fujimaki",nikkoAdminRows=[],nikkoAdminFilter="active",nikkoSaving=false;
+let workSheet=localStorage.getItem("tajima_work_sheet")==="nikko"?"nikko":"fujimaki",nikkoAdminRows=[],nikkoProductRows=[],nikkoAdminFilter="active",nikkoSaving=false;
 const HQ_BAR_COLORS=[{name:"青",value:"#2563EB"},{name:"赤",value:"#DC2626"},{name:"緑",value:"#16A34A"},{name:"橙",value:"#EA580C"},{name:"紫",value:"#7C3AED"},{name:"青緑",value:"#0F766E"},{name:"桃",value:"#DB2777"},{name:"紺",value:"#1E3A8A"}];
 let hqRangeDrag=null, hqSuppressClickUntil=0, hqSelectedColor=HQ_BAR_COLORS[0].value;
 const hqMachineViews=Object.fromEntries(HQ_MACHINES.map(m=>[m,{year:hqYear,month:hqMonth}]));
@@ -1530,34 +1533,68 @@ async function reopenWork(id){const row=workAdminRows.find(x=>Number(x.id)===Num
 
 async function loadNikkoAdmin(){
   if(!hqAdmin||!checkConfig())return;
-  try{nikkoAdminRows=await restGet(`${NIKKO_WORK_API}?select=*&order=sort_order.asc,id.asc`);drawNikkoAdmin()}
-  catch(err){nikkoAdminList.innerHTML=`<div class="note" style="color:#b91c1c">ニッコーを読み込めません。setup-nikko-work.sql を実行してください。<br>${esc(err.message)}</div>`}
+  try{[nikkoAdminRows,nikkoProductRows]=await Promise.all([restGet(`${NIKKO_WORK_API}?select=*&order=sort_order.asc,id.asc`),restGet(`${NIKKO_PRODUCTS_API}?select=*&order=id.asc`)]);drawNikkoAdmin()}
+  catch(err){nikkoAdminList.innerHTML=`<div class="note" style="color:#b91c1c">ニッコーを読み込めません。setup-nikko-work-v11.38.1.sql を実行してください。<br>${esc(err.message)}</div>`}
 }
 function setNikkoAdminFilter(value){nikkoAdminFilter=value;drawNikkoAdmin()}
 function nikkoGroupOpen(name,items){const saved=localStorage.getItem("tajima_nikko_admin_"+name);return saved===null?items.some(x=>x.status==="running"):saved==="yes"}
+function nikkoDueSortValue(rows){const values=rows.filter(x=>x.due_date).map(x=>Date.parse(x.due_date));return values.length?Math.min(...values):Infinity}
+function nikkoDateLabel(value){return value?String(value).slice(0,10).replaceAll("-","/"):"未設定"}
 function toggleNikkoAdminGroup(token){const name=decodeURIComponent(token),items=nikkoAdminRows.filter(x=>x.product_name===name&&(nikkoAdminFilter==="done"?x.status==="completed":x.status!=="completed")),key="tajima_nikko_admin_"+name;localStorage.setItem(key,nikkoGroupOpen(name,items)?"no":"yes");drawNikkoAdmin()}
 function drawNikkoAdmin(){
   nikkoRunningCount.textContent=`進行中 ${nikkoAdminRows.filter(x=>x.status==="running").length} / 2`;
   nikkoWaitingCount.textContent=`作業待ち ${nikkoAdminRows.filter(x=>x.status==="waiting").length}`;
   const shown=nikkoAdminRows.filter(x=>nikkoAdminFilter==="done"?x.status==="completed":x.status!=="completed"),groups=new Map();
+  if(nikkoAdminFilter!=="done")for(const product of nikkoProductRows)groups.set(product.product_name,[]);
   for(const item of shown){if(!groups.has(item.product_name))groups.set(item.product_name,[]);groups.get(item.product_name).push(item)}
-  const sorted=[...groups.entries()].sort((a,b)=>Math.min(...a[1].map(x=>Number(x.sort_order)))-Math.min(...b[1].map(x=>Number(x.sort_order)))||a[0].localeCompare(b[0],"ja"));
+  const sorted=[...groups.entries()].sort((a,b)=>{const ad=nikkoDueSortValue(a[1]),bd=nikkoDueSortValue(b[1]);return ad===bd?a[0].localeCompare(b[0],"ja"):ad-bd});
   nikkoAdminList.innerHTML=sorted.length?sorted.map(([name,items])=>{
     items.sort((a,b)=>Number(a.sort_order)-Number(b.sort_order)||Number(a.id)-Number(b.id));
     const open=nikkoGroupOpen(name,items),running=items.filter(x=>x.status==="running").length;
-    const cards=items.map((x,i)=>`<article class="nikko-admin-card ${esc(x.status)}"><div class="nikko-admin-card-head"><div><div class="nikko-item-code">${esc(x.part_no)}</div><div class="nikko-item-meta">${esc(x.product_name)}${x.status==="completed"?` · 完了 ${esc(x.completed_at?new Date(x.completed_at).toLocaleString("ja-JP"):"日時不明")}`:""}</div></div><span class="work-status ${esc(x.status)}">${workStatusLabel(x)}</span></div><div class="nikko-admin-actions">${nikkoAdminFilter!=="done"?`<button class="btn-light btn-small" onclick="moveNikkoItem(${x.id},-1)" ${i===0?"disabled":""}>↑ 上へ</button><button class="btn-light btn-small" onclick="moveNikkoItem(${x.id},1)" ${i===items.length-1?"disabled":""}>↓ 下へ</button><button class="btn-blue btn-small" onclick="editNikkoItem(${x.id})">修正</button><button class="btn-green btn-small" onclick="finishNikkoItem(${x.id})">完了にする</button>`:`<button class="btn-light btn-small" onclick="restoreNikkoItem(${x.id})">作業待ちに戻す</button>`}</div></article>`).join("");
-    return `<section class="work-product"><button class="work-product-head" onclick="toggleNikkoAdminGroup('${encodeURIComponent(name).replaceAll("'","%27")}')"><div><div class="work-product-name">${esc(name)}</div><div class="work-product-info">品番 ${items.length}件</div></div><div class="nikko-group-count">${running?`● 進行中 ${running}件`:""}　${open?"▲":"▼"}</div></button>${open?`<div class="nikko-group-body">${cards}</div>`:""}</section>`;
+    const cards=items.map((x,i)=>`<article class="nikko-admin-card ${esc(x.status)}"><div class="nikko-admin-card-head"><div><div class="nikko-item-code">${esc(x.part_no)}</div><div class="nikko-item-meta">${esc(x.product_name)}<div class="nikko-due">納期 ${nikkoDateLabel(x.due_date)}</div>${x.status==="completed"?`完了 ${esc(x.completed_at?new Date(x.completed_at).toLocaleString("ja-JP"):"日時不明")}`:""}</div></div><span class="work-status ${esc(x.status)}">${workStatusLabel(x)}</span></div><div class="nikko-admin-actions">${nikkoAdminFilter!=="done"?`<button class="btn-light btn-small" onclick="moveNikkoItem(${x.id},-1)" ${i===0?"disabled":""}>↑ 上へ</button><button class="btn-light btn-small" onclick="moveNikkoItem(${x.id},1)" ${i===items.length-1?"disabled":""}>↓ 下へ</button><button class="btn-blue btn-small" onclick="editNikkoItem(${x.id})">修正</button><button class="btn-green btn-small" onclick="finishNikkoItem(${x.id})">完了にする</button>`:`<button class="btn-light btn-small" onclick="restoreNikkoItem(${x.id})">作業待ちに戻す</button>`}</div></article>`).join("");
+    const token=encodeURIComponent(name).replaceAll("'","%27");
+    return `<section class="work-product"><button class="work-product-head" onclick="toggleNikkoAdminGroup('${token}')"><div><div class="work-product-name">${esc(name)}</div><div class="work-product-info">品番 ${items.length}件</div></div><div class="nikko-group-count">${running?`● 進行中 ${running}件`:""}　${open?"▲":"▼"}</div></button>${open?`<div class="nikko-group-body">${nikkoAdminFilter!=="done"?`<button class="btn-green btn-small" onclick="openNikkoAdd('${token}')">＋ この品目に品番を登録</button>`:""}${cards||'<div class="note">品番未登録</div>'}</div>`:""}</section>`;
   }).join(""):'<div class="note">該当する品番はありません。</div>';
 }
-function openNikkoAdd(){if(!hqAdmin)return;nikkoProductInput.value="";nikkoPartInput.value="";nikkoProducts.innerHTML=[...new Set(nikkoAdminRows.map(x=>x.product_name))].map(name=>`<option value="${esc(name)}"></option>`).join("");nikkoAddModal.style.display="flex";nikkoProductInput.focus()}
+function toggleNikkoProductForm(){if(!hqAdmin)return;nikkoProductForm.classList.toggle("hidden");if(!nikkoProductForm.classList.contains("hidden"))nikkoNewProduct.focus()}
+async function saveNikkoProduct(){
+  if(!hqAdmin||nikkoSaving)return;
+  const name=nikkoNewProduct.value.trim();if(!name){alert("品目を入力してください");return}
+  if(nikkoProductRows.some(x=>x.product_name===name)){alert("この品目は登録済みです");return}
+  nikkoSaving=true;
+  try{const r=await fetch(NIKKO_PRODUCTS_API,{method:"POST",headers:headers(),body:JSON.stringify([{product_name:name}])});if(!r.ok)throw new Error(await r.text());nikkoNewProduct.value="";localStorage.setItem("tajima_nikko_admin_"+name,"yes");await loadNikkoAdmin();nikkoNewProduct.focus()}catch(err){alert("品目登録エラー: "+err.message)}finally{nikkoSaving=false}
+}
+function openNikkoAdd(token){
+  if(!hqAdmin)return;
+  if(!nikkoProductRows.length){alert("先に品目を登録してください");nikkoProductForm.classList.remove("hidden");nikkoNewProduct.focus();return}
+  nikkoProductInput.innerHTML=nikkoProductRows.map(x=>`<option value="${esc(x.product_name)}">${esc(x.product_name)}</option>`).join("");
+  nikkoProductInput.value=token?decodeURIComponent(token):nikkoProductRows[0].product_name;
+  nikkoPartInput.value="";nikkoDueInput.value="";nikkoAddModal.style.display="flex";nikkoPartInput.focus();
+}
 function closeNikkoAdd(){nikkoAddModal.style.display="none"}
+async function nikkoInsertionOrder(name,due){
+  const siblings=nikkoAdminRows.filter(x=>x.product_name===name&&x.status!=="completed").sort((a,b)=>Number(a.sort_order)-Number(b.sort_order)||Number(a.id)-Number(b.id));
+  if(!siblings.length)return Math.max(Date.now()*1000,...nikkoAdminRows.map(x=>Number(x.sort_order)||0))+1024;
+  const index=siblings.findIndex(x=>!x.due_date||String(x.due_date)>due),at=index<0?siblings.length:index;
+  let before=at?Number(siblings[at-1].sort_order):null,after=at<siblings.length?Number(siblings[at].sort_order):null;
+  if(before!==null&&after!==null&&after-before<=1){
+    const base=Number(siblings[0].sort_order)-1024;
+    for(let i=0;i<siblings.length;i++){
+      const order=base+(i+1)*2048,r=await fetch(`${NIKKO_WORK_API}?id=eq.${siblings[i].id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({sort_order:order,updated_at:new Date().toISOString()})});
+      if(!r.ok)throw new Error(await r.text());siblings[i].sort_order=order;
+    }
+    before=at?Number(siblings[at-1].sort_order):null;after=at<siblings.length?Number(siblings[at].sort_order):null;
+  }
+  return before===null?after-1024:after===null?before+1024:Math.floor((before+after)/2);
+}
 async function saveNikkoAdd(){
   if(!hqAdmin||nikkoSaving)return;
-  const name=nikkoProductInput.value.trim(),part=nikkoPartInput.value.trim();
-  if(!name||!part){alert("品目と品番を入力してください");return}
+  const name=nikkoProductInput.value.trim(),part=nikkoPartInput.value.trim(),due=nikkoDueInput.value;
+  if(!name||!part||!due){alert("品目・品番・納期を入力してください");return}
+  if(!nikkoProductRows.some(x=>x.product_name===name)){alert("登録済みの品目を選択してください");return}
   if(nikkoAdminRows.some(x=>x.part_no===part)){alert("この品番は登録済みです");return}
   nikkoSaving=true;
-  try{const order=Math.max(Date.now()*1000,...nikkoAdminRows.map(x=>Number(x.sort_order)||0))+1024,r=await fetch(NIKKO_WORK_API,{method:"POST",headers:headers(),body:JSON.stringify([{product_name:name,part_no:part,sort_order:order}])});if(!r.ok)throw new Error(await r.text());localStorage.setItem("tajima_nikko_admin_"+name,"yes");closeNikkoAdd();await loadNikkoAdmin()}catch(err){alert("登録エラー: "+err.message)}finally{nikkoSaving=false}
+  try{const order=await nikkoInsertionOrder(name,due),r=await fetch(NIKKO_WORK_API,{method:"POST",headers:headers(),body:JSON.stringify([{product_name:name,part_no:part,due_date:due,sort_order:order}])});if(!r.ok)throw new Error(await r.text());localStorage.setItem("tajima_nikko_admin_"+name,"yes");closeNikkoAdd();await loadNikkoAdmin()}catch(err){alert("登録エラー: "+err.message);await loadNikkoAdmin()}finally{nikkoSaving=false}
 }
 async function patchNikkoAdmin(id,update){if(!hqAdmin)return false;const r=await fetch(`${NIKKO_WORK_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({...update,updated_at:new Date().toISOString()})});if(!r.ok){alert("更新エラー: "+await r.text());return false}await loadNikkoAdmin();return true}
 async function moveNikkoItem(id,dir){
@@ -1567,7 +1604,7 @@ async function moveNikkoItem(id,dir){
   nikkoSaving=true;
   try{for(const [row,value] of [[item,other.sort_order],[other,item.sort_order]]){const r=await fetch(`${NIKKO_WORK_API}?id=eq.${row.id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({sort_order:value,updated_at:new Date().toISOString()})});if(!r.ok)throw new Error(await r.text())}await loadNikkoAdmin()}catch(err){alert("並べ替えエラー: "+err.message);await loadNikkoAdmin()}finally{nikkoSaving=false}
 }
-async function editNikkoItem(id){if(!hqAdmin)return;const row=nikkoAdminRows.find(x=>Number(x.id)===Number(id));if(!row)return;const name=prompt("品目を修正",row.product_name);if(name===null)return;const part=prompt("品番を修正",row.part_no);if(part===null)return;if(!name.trim()||!part.trim()){alert("品目と品番を入力してください");return}await patchNikkoAdmin(id,{product_name:name.trim(),part_no:part.trim()})}
+async function editNikkoItem(id){if(!hqAdmin)return;const row=nikkoAdminRows.find(x=>Number(x.id)===Number(id));if(!row)return;const part=prompt("品番を修正",row.part_no);if(part===null)return;const due=prompt("納期を修正 (YYYY-MM-DD)",row.due_date||"");if(due===null)return;if(!part.trim()||!/^(\d{4})-(\d{2})-(\d{2})$/.test(due)||Number.isNaN(new Date(due).getTime())){alert("品番と正しい納期を入力してください");return}await patchNikkoAdmin(id,{part_no:part.trim(),due_date:due})}
 async function finishNikkoItem(id){if(!confirm("この品番を完了にしますか？"))return;await patchNikkoAdmin(id,{status:"completed",completed_at:new Date().toISOString()})}
 async function restoreNikkoItem(id){if(!confirm("作業待ちに戻しますか？"))return;await patchNikkoAdmin(id,{status:"waiting",completed_at:null})}
 async function rawPatchWork(id,row){const r=await fetch(`${MATERIAL_WORK_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({...row,updated_at:new Date().toISOString()})});if(!r.ok)throw new Error(await r.text())}
