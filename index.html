@@ -518,10 +518,28 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
     <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">
       <input id="attManualDate" class="att-input" type="date" style="flex:1;min-width:180px">
       <button class="btn-light" onclick="if(attManualDate.value)attOpenEdit(attManualDate.value)">指定日の打刻を修正</button>
+      <button class="btn-green" onclick="attOpenMissingDay()">記録がない日を追加</button>
     </div>
     <div id="attSummary"></div></div>
 </div>
 
+
+<div id="attMissingPanel" class="att-edit-panel">
+  <div class="att-edit-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <h3 style="margin:0">記録がない日を追加</h3>
+      <button class="btn-light btn-small" onclick="attCloseMissingDay()">閉じる</button>
+    </div>
+    <div class="note" style="margin:8px 0">一日分の出勤・退勤をまとめて登録します。登録後も期間集計から修正できます。</div>
+    <div class="att-cols">
+      <label>社員<select id="attMissingEmployee" class="att-input"></select></label>
+      <label>日付<input id="attMissingDate" class="att-input" type="date"></label>
+      <label>出勤<input id="attMissingIn" class="att-input" type="time"></label>
+      <label>退勤<input id="attMissingOut" class="att-input" type="time"></label>
+    </div>
+    <button id="attMissingSave" class="btn-green" style="margin-top:12px" onclick="attSaveMissingDay()">一日分を登録</button>
+  </div>
+</div>
 
 <div id="attEditPanel" class="att-edit-panel">
   <div class="att-edit-box">
@@ -563,7 +581,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.38.2";
+const APP_VERSION="11.38.3";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -1918,6 +1936,41 @@ function attLocalISO(dateKey,timeValue){
   const [y,m,d]=dateKey.split("-").map(Number);
   const [hh,mm]=(timeValue||"00:00").split(":").map(Number);
   return new Date(y,m-1,d,hh,mm,0,0).toISOString();
+}
+function attOpenMissingDay(){
+  attMissingEmployee.innerHTML=attEmployees.map(e=>`<option value="${e.id}">${esc(e.employee_code)} - ${esc(e.employee_name)}</option>`).join("");
+  if(!attEmployees.length){alert("先に社員を登録してください");return}
+  attMissingEmployee.value=attEmpSelect.value||String(attEmployees[0].id);
+  const {start,end}=attRange(),today=attDK(new Date());
+  attMissingDate.value=attManualDate.value||((today>=attDK(start)&&today<=attDK(end))?today:attDK(start));
+  attMissingIn.value="";
+  attMissingOut.value="";
+  attMissingPanel.style.display="flex";
+}
+function attCloseMissingDay(){attMissingPanel.style.display="none"}
+async function attSaveMissingDay(){
+  const id=Number(attMissingEmployee.value),date=attMissingDate.value,arrival=attMissingIn.value,departure=attMissingOut.value;
+  if(!id||!date||!arrival||!departure){alert("社員・日付・出勤時刻・退勤時刻を入力してください");return}
+  if(departure<=arrival){alert("退勤時刻は出勤時刻より後にしてください。日をまたぐ勤務は指定日の打刻修正から登録してください");return}
+  const {start,end}=attRange();
+  if(date<attDK(start)||date>attDK(end)){alert("表示中の期間内の日付を選んでください。別の期間は前期間・次期間で切り替えられます");return}
+  const [y,m,d]=date.split("-").map(Number);
+  const nextDay=new Date(y,m-1,d+1).toISOString();
+  attMissingSave.disabled=true;
+  try{
+    const existing=await restGet(`${ATT_PUNCH_API}?select=id&employee_id=eq.${id}&punched_at=gte.${encodeURIComponent(attLocalISO(date,"00:00"))}&punched_at=lt.${encodeURIComponent(nextDay)}&limit=1`);
+    if(existing.length){alert("この日にはすでに打刻があります。期間集計の修正から確認してください");return}
+    const rows=[
+      {employee_id:id,punch_type:"in",punched_at:attLocalISO(date,arrival),source:"admin"},
+      {employee_id:id,punch_type:"out",punched_at:attLocalISO(date,departure),source:"admin"}
+    ];
+    const r=await fetch(ATT_PUNCH_API,{method:"POST",headers:headers(),body:JSON.stringify(rows)});
+    if(!r.ok)throw new Error(await r.text());
+    attEmpSelect.value=String(id);
+    attManualDate.value=date;
+    attCloseMissingDay();
+    await attLoad();
+  }catch(e){alert("一日分の登録エラー: "+e.message)}finally{attMissingSave.disabled=false}
 }
 async function attSavePunch(id){
   const type=document.getElementById(`attType-${id}`).value;
