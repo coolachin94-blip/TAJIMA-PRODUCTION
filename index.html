@@ -511,7 +511,7 @@ button{border:0;border-radius:13px;padding:11px 12px;font-size:15px;font-weight:
     <div class="note">土曜日は通常勤務。日曜日は自動で休日。会社全体の休みは日付を押して休日に切り替えます。</div>
     <div id="attCalendar" class="att-cal"></div>
   </div>
-  <div class="att-card"><h3>期間集計</h3><select id="attEmpSelect" class="att-input" onchange="attDrawSummary()"></select>
+  <div class="att-card"><h3>期間集計</h3><select id="attEmpSelect" class="att-input" onchange="attRememberView();attDrawSummary()"></select>
     <div style="margin-top:9px">
       <button class="btn-blue" onclick="attPrintMonthly()">月間勤怠表を印刷</button>
     </div>
@@ -581,7 +581,7 @@ const CONFIG=window.TAJIMA_CONFIG||{};
 const SUPABASE_URL=CONFIG.SUPABASE_URL||"";
 const SUPABASE_KEY=CONFIG.SUPABASE_KEY||"";
 const DEFAULT_ADMIN_PASSWORD="2342";
-const APP_VERSION="11.38.3";
+const APP_VERSION="11.38.5";
 const API=`${SUPABASE_URL}/rest/v1/products`;
 const SHIP_API=`${SUPABASE_URL}/rest/v1/shipment_schedules`;
 const TEMPLATE_API=`${SUPABASE_URL}/rest/v1/product_templates`;
@@ -1850,8 +1850,9 @@ function attOpenPin(){attPin="";attPinView.textContent="○○○○○○";attO
 function attClosePin(){attOverlay.style.display="none";attPin=""}
 function attClear(){attPin="";attPinView.textContent="○○○○○○"}
 function attKey(n){if(attPin.length>=6)return;attPin+=n;attPinView.textContent="●".repeat(attPin.length)+"○".repeat(6-attPin.length);if(attPin.length===6){if(attPin==="234223"){attClosePin();attOpenAdmin()}else{alert("パスワードが違います");attClear()}}}
-function attOpenAdmin(){homeScreen.style.display="none";factoryApp.style.display="none";hqApp.style.display="none";materialApp.style.display="none";const b=document.querySelector(".bottom");if(b)b.style.display="none";attPage.style.display="block";const cur=attCurrentPayrollPeriod();attPeriodYear=cur.year;attPeriodMonth=cur.month;attLoad()}
-function attCloseAdmin(){attPage.style.display="none";showHome()}
+function attRememberView(){sessionStorage.setItem("tajima_att_period",`${attPeriodYear}-${attPeriodMonth}`);if(attEmpSelect.value)sessionStorage.setItem("tajima_att_employee",attEmpSelect.value)}
+function attOpenAdmin(restore=false){homeScreen.style.display="none";factoryApp.style.display="none";hqApp.style.display="none";materialApp.style.display="none";const b=document.querySelector(".bottom");if(b)b.style.display="none";attPage.style.display="block";sessionStorage.setItem("tajima_att_open","yes");if(restore){const saved=sessionStorage.getItem("tajima_att_period"),match=saved?.match(/^(\d{4})-(\d{1,2})$/);if(match&&Number(match[2])>=1&&Number(match[2])<=12){attPeriodYear=Number(match[1]);attPeriodMonth=Number(match[2])}}else{const cur=attCurrentPayrollPeriod();attPeriodYear=cur.year;attPeriodMonth=cur.month}attLoad()}
+function attCloseAdmin(){attPage.style.display="none";sessionStorage.removeItem("tajima_att_open");showHome()}
 function attRange(){return{start:new Date(attPeriodYear,attPeriodMonth-2,26,0,0,0,0),end:new Date(attPeriodYear,attPeriodMonth-1,25,23,59,59,999)}}
 function attDK(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 function attHM(m){m=Math.max(0,Math.round(Number(m)||0));return `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`}
@@ -1887,8 +1888,8 @@ async function attLoad(){if(!checkConfig()){alert("config.jsを確認してく�
 async function attAddEmployee(){const c=(attCode.value||"").trim(),n=(attName.value||"").trim();if(!c||!n){alert("社員番号と氏名を入力してください");return}const r=await fetch(ATT_EMP_API,{method:"POST",headers:headers(),body:JSON.stringify([{employee_code:c,employee_name:n,is_active:true,sort_order:Date.now(),updated_at:new Date().toISOString()}])});if(!r.ok){alert("社員登録エラー: "+await r.text());return}attCode.value="";attName.value="";await attLoad()}
 async function attHide(id){if(!confirm("この社員を一覧から非表示にしますか？"))return;const r=await fetch(`${ATT_EMP_API}?id=eq.${id}`,{method:"PATCH",headers:headers(),body:JSON.stringify({is_active:false,updated_at:new Date().toISOString()})});if(!r.ok){alert("更新エラー: "+await r.text());return}await attLoad()}
 function attDrawEmployees(){attEmpList.innerHTML=attEmployees.length?attEmployees.map(e=>`<div class="att-emp-row"><b>${esc(e.employee_code)}</b><span>${esc(e.employee_name)}</span><button class="btn-red btn-small" onclick="attHide(${e.id})">非表示</button></div>`).join(""):'<div class="note">社員未登録</div>'}
-function attDrawSelect(){const old=attEmpSelect.value;attEmpSelect.innerHTML=attEmployees.map(e=>`<option value="${e.id}">${esc(e.employee_code)} - ${esc(e.employee_name)}</option>`).join("");if(old&&[...attEmpSelect.options].some(o=>o.value===old))attEmpSelect.value=old}
-function attChangePeriod(n){attPeriodMonth+=n;if(attPeriodMonth<1){attPeriodMonth=12;attPeriodYear--}if(attPeriodMonth>12){attPeriodMonth=1;attPeriodYear++}attLoad()}
+function attDrawSelect(){const old=attEmpSelect.value||sessionStorage.getItem("tajima_att_employee");attEmpSelect.innerHTML=attEmployees.map(e=>`<option value="${e.id}">${esc(e.employee_code)} - ${esc(e.employee_name)}</option>`).join("");if(old&&[...attEmpSelect.options].some(o=>o.value===old))attEmpSelect.value=old;attRememberView()}
+function attChangePeriod(n){attPeriodMonth+=n;if(attPeriodMonth<1){attPeriodMonth=12;attPeriodYear--}if(attPeriodMonth>12){attPeriodMonth=1;attPeriodYear++}attRememberView();attLoad()}
 function attDrawCalendar(){const{start,end}=attRange();attPeriodTitle.textContent=`${attPeriodYear}年${attPeriodMonth}月分　${start.getMonth()+1}/26〜${end.getMonth()+1}/25`;let out=["日","月","火","水","木","金","土"].map(x=>`<div class="att-cal-head">${x}</div>`).join("");for(let i=0;i<start.getDay();i++)out+="<div></div>";for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){const k=attDK(d),t=attDayType(k);out+=`<button class="att-day ${t==="holiday"?"holiday":""}" onclick="attToggleHoliday('${k}')"><b>${d.getMonth()+1}/${d.getDate()}</b><br><small>${t==="holiday"?"休日":"通常"}</small></button>`}attCalendar.innerHTML=out}
 async function attToggleHoliday(k){const next=attDayType(k)==="holiday"?"normal":"holiday";const r=await fetch(`${ATT_CAL_API}?on_conflict=work_date`,{method:"POST",headers:{...headers(),"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify([{work_date:k,day_type:next,updated_at:new Date().toISOString()}])});if(!r.ok){alert("休日設定エラー: "+await r.text());return}await attLoad()}
 
@@ -1967,6 +1968,7 @@ async function attSaveMissingDay(){
     const r=await fetch(ATT_PUNCH_API,{method:"POST",headers:headers(),body:JSON.stringify(rows)});
     if(!r.ok)throw new Error(await r.text());
     attEmpSelect.value=String(id);
+    attRememberView();
     attManualDate.value=date;
     attCloseMissingDay();
     await attLoad();
@@ -2081,7 +2083,11 @@ function attPrintMonthly(){
     const k=attDK(d);
     const dayPs=days[k]||[];
     const type=attDayType(k),cat=attWorkCategory(k);
-    if(!dayPs.length) continue;
+    if(!dayPs.length){
+      const note=cat==="sunday"?"日曜":cat==="company_holiday"?"会社休日":"";
+      rows+=`<tr><td>${k.slice(5).replace("-","/")} (${"日月火水木金土"[d.getDay()]})</td><td></td><td></td><td></td><td></td><td>${note}</td></tr>`;
+      continue;
+    }
 
     const x=attSessions(dayPs);
     let ot=0,holiday=0;
@@ -2194,16 +2200,6 @@ function attPrintMonthly(){
 }
 
 
-// 勤怠期間の自動切替：26日になったら翌月分へ
-setInterval(()=>{
-  if(window.attPage && attPage.style.display==="block"){
-    const cur=attCurrentPayrollPeriod();
-    if(cur.year!==attPeriodYear || cur.month!==attPeriodMonth){
-      attPeriodYear=cur.year;attPeriodMonth=cur.month;attLoad();
-    }
-  }
-},60000);
-
 // update check
 async function checkAppVersion(){try{const res=await fetch(`./version.json?ts=${Date.now()}`,{cache:"no-store"});if(!res.ok)return;const v=await res.json();if(v.version&&v.version!==APP_VERSION){updateText.textContent=`現在 v${APP_VERSION} → 最新 v${v.version}`;updateBanner.style.display="block"}else{updateBanner.style.display="none"}}catch(e){}}
 async function applyAppUpdate(){updateText.textContent="更新中...";updateBanner.style.display="none";try{if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();for(const reg of regs){await reg.unregister()}}if(window.caches){const keys=await caches.keys();for(const key of keys){await caches.delete(key)}}}catch(e){}const u=new URL(location.href);u.searchParams.set("update",Date.now());location.replace(u.toString())}
@@ -2217,7 +2213,7 @@ window.addEventListener("touchend",async()=>{if(!isPulling)return;const ok=pullD
 
 window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
-if(currentSection==="factory2")showFactory2();else if(currentSection==="hq")showHeadOffice();else if(currentSection==="materials")showMaterialOrders();else if(currentSection==="work-admin"&&hqAdmin)showWorkAdmin();else showHome();checkAppVersion();setInterval(()=>{if(currentSection==="factory2"&&!dirty&&!loading&&checkConfig())loadAll();if(currentSection==="hq"&&checkConfig()&&canHqAutoRefresh())loadHqSchedules();if(currentSection==="work-admin"&&checkConfig())refreshWorkSheet();/* 材料発注管理は入力保護のため自動再読込しない */},60000);setInterval(checkAppVersion,60000);
+if(sessionStorage.getItem("tajima_att_open")==="yes")attOpenAdmin(true);else if(currentSection==="factory2")showFactory2();else if(currentSection==="hq")showHeadOffice();else if(currentSection==="materials")showMaterialOrders();else if(currentSection==="work-admin"&&hqAdmin)showWorkAdmin();else showHome();checkAppVersion();setInterval(()=>{if(currentSection==="factory2"&&!dirty&&!loading&&checkConfig())loadAll();if(currentSection==="hq"&&checkConfig()&&canHqAutoRefresh())loadHqSchedules();if(currentSection==="work-admin"&&checkConfig())refreshWorkSheet();/* 材料発注管理は入力保護のため自動再読込しない */},60000);setInterval(checkAppVersion,60000);
 </script>
 </body>
 </html>
