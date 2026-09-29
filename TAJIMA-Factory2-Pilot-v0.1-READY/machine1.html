@@ -236,7 +236,7 @@ async function load(){
       api("f2_products?active=eq.true&order=product_name.asc"),
       api("f2_process_master?active=eq.true&order=product_id,sort_order,id"),
       api("f2_process_routes?select=*"),
-      api("f2_items?select=*,f2_shapes(shape_name)&shipped=eq.false&arrival_cancelled_at=is.null&order=part_no.asc"),
+      api("f2_items?select=*,f2_shapes(shape_name,sort_order)&shipped=eq.false&arrival_cancelled_at=is.null"),
       apiAll("f2_process_logs?cancelled_at=is.null&select=id,item_id,process_id,machine_no,worker_id,attention,created_at"),
       api(`f2_machine_process_assignments?machine_no=eq.${M}&select=process_id`).catch(()=>[]),
       api(`f2_tool_process_assignments?machine_no=eq.${M}&select=tool_id,process_id`).catch(()=>[]),
@@ -368,7 +368,12 @@ function showItemButtons(){
   document.getElementById("processTitle").textContent=`${chosenProduct.product_name} / ${chosenProcess.process_name}　品番を選択`;
   document.getElementById("processGuide").textContent="この工程に進める品番だけ表示しています。";
   document.getElementById("registerCard").classList.add("hidden");
-  let a=processItems.filter(x=>x.product_id==chosenProduct.id&&eligible(x));
+  let a=processItems.filter(x=>x.product_id==chosenProduct.id&&eligible(x)).sort((x,y)=>{
+    const sx=x.f2_shapes,sy=y.f2_shapes;
+    return (Number(sx?.sort_order??999999)-Number(sy?.sort_order??999999))||
+      String(sx?.shape_name||"").localeCompare(String(sy?.shape_name||""),"ja",{numeric:true})||
+      String(x.part_no).localeCompare(String(y.part_no),"ja",{numeric:true})||(x.id-y.id);
+  });
   document.getElementById("processButtons").innerHTML=a.map(x=>`<button class="btn process-choice ${x.attention?'warn':''}" style="position:relative" onclick="openItemProcessCheck(${x.id})">${x.f2_shapes?.shape_name?`<span style="position:absolute;left:7px;top:6px;font-size:11px;font-weight:900;background:#102b4e;color:white;border-radius:6px;padding:2px 6px">${esc(x.f2_shapes.shape_name)}</span>`:""}${esc(x.part_no)}${x.attention?'<br>⚠ 注意あり':''}</button>`).join("")||'<div class="card muted">現在この工程に進める品番はありません</div>';
 }
 function openItemProcessCheck(id){const item=processItems.find(x=>x.id==id);if(!item)return;pendingItemId=id;const all=allProcessMaster.filter(x=>x.product_id==item.product_id).sort((a,b)=>(a.sort_order-b.sort_order)||(a.id-b.id)),idx=all.findIndex(x=>x.id==chosenProcess.id),ps=idx>0?all.slice(0,idx):[];document.getElementById("itemCheckTitle").textContent=`${chosenProduct.product_name} / ${item.part_no}`;document.getElementById("itemProcessList").innerHTML=ps.map(p=>{const ok=hasDone(item.id,p.id);return `<div class="item-process-row ${ok?"done":"missing"}"><span>${esc(p.process_name)}</span><span class="item-process-mark">${ok?"〇":"✕"}</span></div>`}).join("")||'<div class="muted" style="text-align:center;font-size:20px;padding:18px">前工程なし</div>';document.getElementById("itemProcessModal").classList.remove("hidden")}

@@ -100,6 +100,7 @@
       </div>
     </div>
     <div id="shipCalendar" class="ship-cal"></div>
+    <div id="shipMonthSummary" class="ship-day-summary" style="margin-top:12px"></div>
     <div style="height:12px"></div>
     <div class="ship-day-list-head"><div id="shipDayTitle" class="ship-day-summary"></div><button id="shipDaySortBtn" class="btn" onclick="toggleShipDaySort()">品番 ▲</button></div>
     <div id="shipDayList" class="ship-day-list"></div>
@@ -250,7 +251,7 @@ async function batchArrival(){
  const now=new Date().toISOString(),newRows=[];let restored=0,skipped=0;
  try{
    for(let n=a;n<=b;n++){
-     const part_no=String(n),old=items.find(x=>x.product_id==product_id&&String(x.part_no)===part_no);
+     const part_no=String(n),old=items.find(x=>x.product_id==product_id&&Number(x.shape_id)===shape_id&&String(x.part_no)===part_no);
      if(old){
        if(old.arrival_cancelled_at){
          await api(`f2_items?id=eq.${old.id}`,{method:"PATCH",body:JSON.stringify({shape_id,current_step:0,shipped:false,attention:false,arrival_at:now,arrival_cancelled_at:null})});
@@ -371,6 +372,15 @@ function renderShippingHistory(){
    html+=`<button class="ship-day ${selected?"selected":""} ${dow===0?"sun":dow===6?"sat":""}" onclick="selectShipDay(${y},${m},${d})"><span class="num">${d}</span>${count?`<div class="count">${count}件</div>`:""}</button>`;
  }
  $("shipCalendar").innerHTML=html;
+ const monthShipments=ss.filter(x=>{const d=new Date(x.shipped_at);return d.getFullYear()===y&&d.getMonth()+1===m});
+ const monthArrivals=activeItems().filter(i=>{const d=new Date(i.arrival_at||i.created_at);return d.getFullYear()===y&&d.getMonth()+1===m});
+ const shownProducts=products.filter(p=>shipProduct==='all'||Number(shipProduct)===Number(p.id));
+ $("shipMonthSummary").innerHTML=`<b>${y}年${m}月 集計</b>`+shownProducts.map(p=>{
+   const received=monthArrivals.filter(i=>i.product_id==p.id).length;
+   const shipped=monthShipments.filter(s=>items.find(i=>i.id==s.item_id)?.product_id==p.id).length;
+   const stock=activeItems().filter(i=>i.product_id==p.id&&!i.shipped).length;
+   return `<div class="box">${esc(p.product_name)}　当月入荷 ${received}台 ／ 当月出荷 ${shipped}台 ／ 現在庫（未出荷）${stock}台</div>`;
+ }).join("");
  renderShipDayList();
 }
 function renderShipDayList(){
