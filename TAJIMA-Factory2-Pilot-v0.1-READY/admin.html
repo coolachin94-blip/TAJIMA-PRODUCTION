@@ -278,7 +278,7 @@ function setArrivalProductFilter(v){arrivalProductFilter=v;arrivalShapeFilter="a
 function setArrivalShapeFilter(v){arrivalShapeFilter=v;selectedArrivalIds.clear();renderArrivals()}
 function renderArrivals(){
  renderArrivalFilters();
- const a=activeItems().filter(x=>(arrivalProductFilter==="all"||x.product_id==Number(arrivalProductFilter))&&(arrivalShapeFilter==="all"||x.shape_id==Number(arrivalShapeFilter))).sort((x,y)=>String(x.part_no).localeCompare(String(y.part_no),"ja",{numeric:true,sensitivity:"base"})).slice(0,100);
+ const a=activeItems().filter(x=>(arrivalProductFilter==="all"||x.product_id==Number(arrivalProductFilter))&&(arrivalShapeFilter==="all"||x.shape_id==Number(arrivalShapeFilter))).sort((x,y)=>String(x.part_no).localeCompare(String(y.part_no),"ja",{numeric:true,sensitivity:"base"}));
  $("arrivalList").innerHTML=a.map(x=>{const sel=selectedArrivalIds.has(x.id);return `<div class="box row selectable-row ${sel?'selected':''}" onclick="toggleArrivalSelection(${x.id})"><span class="select-mark">✓</span><div>${dt(x.arrival_at||x.created_at)}　<b>${esc(x.f2_products?.product_name)} / ${x.f2_shapes?.shape_name?`<span class="tag">${esc(x.f2_shapes.shape_name)}型</span> `:""}${esc(x.part_no)}</b></div></div>`}).join("")||'<div class="muted">入荷登録なし</div>';
  updateArrivalBulkBar();
 }
