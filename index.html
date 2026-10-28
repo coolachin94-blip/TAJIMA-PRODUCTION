@@ -719,7 +719,7 @@ function setDirty(){if(!isAdmin)return;dirty=true;setState("未保存・自動�
 function scheduleAutoSave(){clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>autoSaveNow(),8000)}
 async function autoSaveNow(){if(!isAdmin||!dirty||autoSaving)return;autoSaving=true;setState("自動保存中...","dirty");setBottom("☁ 自動保存中...");try{await saveData();setBottom("✔ 自動保存しました "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit"}))}catch(e){setState("自動保存エラー","error");setBottom("保存失敗");console.error(e)}finally{autoSaving=false}}
 async function saveData(){
-  for(const p of data){
+  for(const [i,p] of data.entries()){
     const row={product_name:p.product_name,order_qty:num(p.order_qty),finished_qty:num(p.finished_qty),shipped_qty:num(p.shipped_qty),process21_qty:num(p.process21_qty),process1_qty:num(p.process1_qty),sort_order:Number(p.sort_order??p.id??i+1),custom_fields:p.custom_fields||[],updated_at:new Date().toISOString()};
     if(p.id)await apiPatchProduct(p.id,row);
     else{const ins=await apiInsertProducts([{...row,month:monthStr()}]);p.id=ins[0].id}
