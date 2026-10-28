@@ -2102,7 +2102,7 @@ function attPrintMonthly(){
     }else{
       if(x.s.length){
         ot=attOT(x.s[0][0],x.s[x.s.length-1][1]);
-        normalDays++;
+        if(cat==="normal")normalDays++;
         if(cat==="saturday")satDays++;
       }
       otTotal+=ot;
